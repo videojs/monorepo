@@ -1,0 +1,19 @@
+name: continuous
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    name: Quality Gates
+    steps:
+      - uses: actions/checkout@v3
+      - uses: oven-sh/setup-bun@v1
+      - name: install
+        run: bun install
+      - name: lint
+        run: bun run lint
+      - name: build
+        run: bun run build
+      - name: test
+        run: bun run test
