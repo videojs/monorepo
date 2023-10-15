@@ -1,0 +1,36 @@
+{
+  "name": "web-media-box",
+  "version": "0.0.0",
+  "scripts": {
+    "lint": "eslint .",
+    "build": "bun run build:player & bun run build:dts",
+    "build:player": "bun build.js",
+    "build:dts": "dts-bundle-generator --config .dts-bundle-generator.config.json"
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^6.7.3",
+    "@typescript-eslint/parser": "^6.7.3",
+    "dts-bundle-generator": "^8.0.1",
+    "bun-types": "^1.0.3",
+    "eslint": "^8.50.0",
+    "eslint-config-prettier": "^9.0.0",
+    "eslint-plugin-prettier": "^5.0.0",
+    "prettier": "^3.0.3",
+    "typescript": "^5.2.2"
+  },
+  "type": "module",
+  "exports": {
+    "./hls-parser": {
+      "types": "./dist/hls-parser/index.d.ts",
+      "default": "./dist/hls-parser/index.js"
+    },
+    "./dash-parser": {
+      "types": "./dist/dash-parser/index.d.ts",
+      "default": "./dist/dash-parser/index.js"
+    },
+    "./player": {
+      "types": "./dist/player/index.d.ts",
+      "default": "./dist/player/index.js"
+    }
+  }
+}
