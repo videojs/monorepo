@@ -389,10 +389,12 @@ export default class Player {
   }
 
   public loadRemoteAsset(uri: string, mimeType: string): void {
+    this.logger.info(uri, mimeType);
     // TODO
   }
 
   public loadLocalAsset(asset: string | ArrayBuffer, mimeType: string): void {
+    this.logger.info(asset, mimeType);
     // TODO
   }
 }

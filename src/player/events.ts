@@ -4,15 +4,15 @@ export const Events = {
 } as const;
 
 abstract class PlayerEvent {
-  abstract readonly type: (typeof Events)[keyof typeof Events];
+  public abstract readonly type: (typeof Events)[keyof typeof Events];
 }
 
 export class EnterPictureInPictureModeEvent extends PlayerEvent {
-  readonly type = Events.EnterPictureInPictureMode;
+  public readonly type = Events.EnterPictureInPictureMode;
 }
 
 export class LeavePictureInPictureModeEvent extends PlayerEvent {
-  readonly type = Events.LeavePictureInPictureMode;
+  public readonly type = Events.LeavePictureInPictureMode;
 }
 
 export interface EventToTypeMap {

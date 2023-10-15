@@ -14,24 +14,24 @@ export default class Logger {
 
   private level: LoggerLevel = LoggerLevel.WARN;
 
-  constructor(console: Console, label: string) {
+  public constructor(console: Console, label: string) {
     this.console = console;
     this.label = `%c${label}`;
   }
 
-  createSubLogger(subLabel: string): Logger {
+  public createSubLogger(subLabel: string): Logger {
     return new Logger(this.console, this.label + ' > ' + subLabel);
   }
 
-  setLoggerLevel(level: LoggerLevel): void {
+  public setLoggerLevel(level: LoggerLevel): void {
     this.level = level;
   }
 
-  getLoggerLevel(): LoggerLevel {
+  public getLoggerLevel(): LoggerLevel {
     return this.level;
   }
 
-  debug(...args: unknown[]): void {
+  public debug(...args: unknown[]): void {
     if (this.level > LoggerLevel.DEBUG) {
       return;
     }
@@ -39,7 +39,7 @@ export default class Logger {
     this.console.debug(this.label, style, ...args);
   }
 
-  info(...args: unknown[]): void {
+  public info(...args: unknown[]): void {
     if (this.level > LoggerLevel.INFO) {
       return;
     }
@@ -47,7 +47,7 @@ export default class Logger {
     this.console.info(this.label, style, ...args);
   }
 
-  warn(...args: unknown[]): void {
+  public warn(...args: unknown[]): void {
     if (this.level > LoggerLevel.WARN) {
       return;
     }
@@ -55,7 +55,7 @@ export default class Logger {
     this.console.warn(this.label, style, ...args);
   }
 
-  error(...args: unknown[]): void {
+  public error(...args: unknown[]): void {
     if (this.level > LoggerLevel.ERROR) {
       return;
     }

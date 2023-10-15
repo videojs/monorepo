@@ -7,7 +7,7 @@ import { parseBoolean } from '../utils/parse.ts';
 export abstract class TagWithAttributesProcessor extends TagProcessor {
   protected abstract readonly requiredAttributes: Set<string>;
 
-  process(tagAttributes: Record<string, string>, playlist: ParsedPlaylist): void {
+  public process(tagAttributes: Record<string, string>, playlist: ParsedPlaylist): void {
     let isRequiredAttributedMissed = false;
 
     this.requiredAttributes.forEach((requiredAttribute) => {
@@ -30,13 +30,13 @@ export abstract class TagWithAttributesProcessor extends TagProcessor {
 }
 
 export class ExtXStart extends TagWithAttributesProcessor {
-  static TIME_OFFSET = 'TIME-OFFSET';
-  static PRECISE = 'PRECISE';
+  private static readonly TIME_OFFSET = 'TIME-OFFSET';
+  private static readonly PRECISE = 'PRECISE';
 
-  requiredAttributes = new Set([ExtXStart.TIME_OFFSET]);
-  tag = EXT_X_START;
+  protected readonly requiredAttributes = new Set([ExtXStart.TIME_OFFSET]);
+  protected readonly tag = EXT_X_START;
 
-  safeProcess(tagAttributes: Record<string, string>, playlist: ParsedPlaylist): void {
+  protected safeProcess(tagAttributes: Record<string, string>, playlist: ParsedPlaylist): void {
     playlist.start = {
       timeOffset: Number(tagAttributes[ExtXStart.TIME_OFFSET]),
       precise: parseBoolean(tagAttributes[ExtXStart.PRECISE], false),
@@ -45,12 +45,12 @@ export class ExtXStart extends TagWithAttributesProcessor {
 }
 
 export class ExtXPartInf extends TagWithAttributesProcessor {
-  static PART_TARGET = 'PART-TARGET';
+  private static readonly PART_TARGET = 'PART-TARGET';
 
-  requiredAttributes = new Set([ExtXPartInf.PART_TARGET]);
-  tag = EXT_X_PART_INF;
+  protected readonly requiredAttributes = new Set([ExtXPartInf.PART_TARGET]);
+  protected readonly tag = EXT_X_PART_INF;
 
-  safeProcess(tagAttributes: Record<string, string>, playlist: ParsedPlaylist): void {
+  protected safeProcess(tagAttributes: Record<string, string>, playlist: ParsedPlaylist): void {
     playlist.partInf = {
       partTarget: Number(tagAttributes[ExtXPartInf.PART_TARGET]),
     };
@@ -58,16 +58,16 @@ export class ExtXPartInf extends TagWithAttributesProcessor {
 }
 
 export class ExtXServerControl extends TagWithAttributesProcessor {
-  static HOLD_BACK = 'HOLD-BACK';
-  static CAN_SKIP_UNTIL = 'CAN-SKIP-UNTIL';
-  static PART_HOLD_BACK = 'PART-HOLD-BACK';
-  static CAN_BLOCK_RELOAD = 'CAN-BLOCK-RELOAD';
-  static CAN_SKIP_DATERANGES = 'CAN-SKIP-DATERANGES';
+  private static readonly HOLD_BACK = 'HOLD-BACK';
+  private static readonly CAN_SKIP_UNTIL = 'CAN-SKIP-UNTIL';
+  private static readonly PART_HOLD_BACK = 'PART-HOLD-BACK';
+  private static readonly CAN_BLOCK_RELOAD = 'CAN-BLOCK-RELOAD';
+  private static readonly CAN_SKIP_DATERANGES = 'CAN-SKIP-DATERANGES';
 
-  requiredAttributes = new Set<string>();
-  tag = EXT_X_SERVER_CONTROL;
+  protected readonly requiredAttributes = new Set<string>();
+  protected readonly tag = EXT_X_SERVER_CONTROL;
 
-  safeProcess(tagAttributes: Record<string, string>, playlist: ParsedPlaylist): void {
+  protected safeProcess(tagAttributes: Record<string, string>, playlist: ParsedPlaylist): void {
     let holdBack;
 
     if (tagAttributes[ExtXServerControl.HOLD_BACK]) {
