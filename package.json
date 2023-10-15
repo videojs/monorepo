@@ -2,6 +2,7 @@
   "name": "web-media-box",
   "version": "0.0.0",
   "scripts": {
+    "test": "bun test",
     "lint": "eslint .",
     "build": "bun run build:player & bun run build:dts",
     "build:player": "bun build.js",
