@@ -4,8 +4,11 @@ import Logger from '../utils/logger.ts';
 import { getDefaultPlayerConfiguration } from './configuration.ts';
 import EventEmitter from '../utils/eventEmitter.ts';
 
-import { Events, EnterPictureInPictureModeEvent, LeavePictureInPictureModeEvent } from './events.ts';
+import { Events, EnterPictureInPictureModeEvent, LeavePictureInPictureModeEvent, ErrorEvent } from './events.ts';
 import type { EventToTypeMap } from './events.ts';
+import Pipeline from '@/pipelines/basePipeline.ts';
+import NativePipeline from '@/pipelines/native/nativePipeline.ts';
+import { NoSupportedPipelinesError } from '@/player/errors.ts';
 
 enum PlaybackState {
   Playing = 'Playing',
@@ -36,7 +39,13 @@ interface PlayerVideoTrack {}
 interface PlayerStats {}
 
 export default class Player {
+  private static readonly pipelinesMap: Map<string, Pipeline> = new Map();
+
   public static readonly Events = Events;
+
+  public static registerPipeline(mimeType: string, pipeline: Pipeline) {
+    Player.pipelinesMap.set(mimeType, pipeline);
+  }
 
   private videoElement: HTMLVideoElement | null = null;
   private pictureInPictureWindow: PictureInPictureWindow | null = null;
@@ -388,13 +397,35 @@ export default class Player {
     // TODO
   }
 
+  private load(mimeType: string, pipelineHandler: (pipeline: Pipeline) => void): void {
+    const pipeline = Player.pipelinesMap.get(mimeType);
+
+    if (pipeline) {
+      return pipelineHandler(pipeline);
+    }
+
+    if (this.videoElement?.canPlayType(mimeType)) {
+      return pipelineHandler(new NativePipeline());
+    }
+
+    this.logger.warn('no supported pipelines found for ', mimeType);
+
+    this.eventEmitter.emit(Events.Error, new ErrorEvent(new NoSupportedPipelinesError()));
+  }
+
   public loadRemoteAsset(uri: string, mimeType: string): void {
-    this.logger.info(uri, mimeType);
-    // TODO
+    if (this.videoElement === null) {
+      return this.warnAttempt('loadRemoteAsset');
+    }
+
+    return this.load(mimeType, (pipeline) => pipeline.loadRemoteAsset(uri));
   }
 
   public loadLocalAsset(asset: string | ArrayBuffer, mimeType: string): void {
-    this.logger.info(asset, mimeType);
-    // TODO
+    if (this.videoElement === null) {
+      return this.warnAttempt('loadLocalAsset');
+    }
+
+    return this.load(mimeType, (pipeline) => pipeline.loadLocalAsset(asset));
   }
 }
