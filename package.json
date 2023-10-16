@@ -1,6 +1,8 @@
 {
-  "name": "web-media-box",
-  "version": "0.0.0",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
   "scripts": {
     "test": "bun test",
     "lint": "eslint .",
@@ -19,20 +21,5 @@
     "eslint-plugin-prettier": "^5.0.0",
     "prettier": "^3.0.3",
     "typescript": "^5.2.2"
-  },
-  "type": "module",
-  "exports": {
-    "./hls-parser": {
-      "types": "./dist/hls-parser/index.d.ts",
-      "default": "./dist/hls-parser/index.js"
-    },
-    "./dash-parser": {
-      "types": "./dist/dash-parser/index.d.ts",
-      "default": "./dist/dash-parser/index.js"
-    },
-    "./player": {
-      "types": "./dist/player/index.d.ts",
-      "default": "./dist/player/index.js"
-    }
   }
 }

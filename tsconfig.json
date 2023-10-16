@@ -17,7 +17,7 @@
     "forceConsistentCasingInFileNames": true,
     "allowJs": false,
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./packages/web-media-box/src/*"]
     }
   }
 }

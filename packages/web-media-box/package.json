@@ -1,0 +1,19 @@
+{
+  "name": "web-media-box",
+  "version": "0.0.0",
+  "type": "module",
+  "exports": {
+    "./hls-parser": {
+      "types": "./dist/hls-parser/index.d.ts",
+      "default": "./dist/hls-parser/index.js"
+    },
+    "./dash-parser": {
+      "types": "./dist/dash-parser/index.d.ts",
+      "default": "./dist/dash-parser/index.js"
+    },
+    "./player": {
+      "types": "./dist/player/index.d.ts",
+      "default": "./dist/player/index.js"
+    }
+  }
+}
