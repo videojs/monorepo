@@ -1,3 +1,1 @@
-export default function () {
-  return 'hello from dash-parser';
-}
+export { default as parse } from './parse.ts';
