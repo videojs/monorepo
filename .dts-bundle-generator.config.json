@@ -4,16 +4,16 @@
   },
   "entries": [
     {
-      "filePath": "./src/player/index.ts",
-      "outFile": "./dist/player/index.d.ts"
+      "filePath": "./packages/web-media-box/src/player/index.ts",
+      "outFile": "./packages/web-media-box/dist/player/index.d.ts"
     },
     {
-      "filePath": "./src/hls-parser/index.ts",
-      "outFile": "./dist/hls-parser/index.d.ts"
+      "filePath": "./packages/web-media-box/src/hls-parser/index.ts",
+      "outFile": "./packages/web-media-box/dist/hls-parser/index.d.ts"
     },
     {
-      "filePath": "./src/dash-parser/index.ts",
-      "outFile": "./dist/dash-parser/index.d.ts"
+      "filePath": "./packages/web-media-box/src/dash-parser/index.ts",
+      "outFile": "./packages/web-media-box/dist/dash-parser/index.d.ts"
     }
   ]
 }
