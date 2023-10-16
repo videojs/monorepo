@@ -1,6 +1,6 @@
-import Pipeline from '@/pipelines/basePipeline.ts';
+import MsePipeLine from '@/pipelines/mse/msePipeline.ts';
 
-export default class DashPipeline extends Pipeline {
+export default class DashPipeline extends MsePipeLine {
   public loadLocalAsset(asset: string | ArrayBuffer): void {
     //TODO
   }
