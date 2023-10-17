@@ -19,11 +19,19 @@ import {
   EXT_X_BYTERANGE,
   EXT_X_DISCONTINUITY,
   EXT_X_KEY,
-  EXT_X_MAP
+  EXT_X_MAP,
+  EXT_X_GAP
 } from './consts/tags.ts';
 import type { ParserOptions } from './types/parserOptions';
 import type { Segment, ParsedPlaylist } from './types/parsedPlaylist';
-import { EmptyTagProcessor, ExtXEndList, ExtXIframesOnly, ExtXIndependentSegments, ExtXDiscontinuity } from './tags/emptyTagProcessors.ts';
+import {
+  EmptyTagProcessor,
+  ExtXEndList,
+  ExtXIframesOnly,
+  ExtXIndependentSegments,
+  ExtXDiscontinuity,
+  ExtXGap
+} from './tags/emptyTagProcessors.ts';
 import {
   ExtXByteRange,
   ExtInf,
@@ -73,7 +81,8 @@ export default function parse(playlist: string, options: ParserOptions = {}): Pa
     [EXT_X_INDEPENDENT_SEGMENTS]: new ExtXIndependentSegments(warnCallback),
     [EXT_X_ENDLIST]: new ExtXEndList(warnCallback),
     [EXT_X_I_FRAMES_ONLY]: new ExtXIframesOnly(warnCallback),
-    [EXT_X_DISCONTINUITY]: new ExtXDiscontinuity(warnCallback)
+    [EXT_X_DISCONTINUITY]: new ExtXDiscontinuity(warnCallback),
+    [EXT_X_GAP]: new ExtXGap(warnCallback)
   };
 
   const tagValueMap: Record<string, TagWithValueProcessor> = {
