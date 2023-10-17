@@ -1,7 +1,7 @@
 import type { ParsedPlaylist } from '../types/parsedPlaylist';
 import { TagProcessor } from './base.ts';
 import { missingRequiredAttributeWarn } from '../utils/warn.ts';
-import { EXT_X_PART_INF, EXT_X_SERVER_CONTROL, EXT_X_START } from '../consts/tags.ts';
+import { EXT_X_PART_INF, EXT_X_SERVER_CONTROL, EXT_X_START, EXT_X_KEY } from '../consts/tags.ts';
 import { parseBoolean } from '../utils/parse.ts';
 
 export abstract class TagWithAttributesProcessor extends TagProcessor {
@@ -82,6 +82,37 @@ export class ExtXServerControl extends TagWithAttributesProcessor {
       canBlockReload: parseBoolean(tagAttributes[ExtXServerControl.CAN_BLOCK_RELOAD], false),
       canSkipDateRanges: parseBoolean(tagAttributes[ExtXServerControl.CAN_SKIP_DATERANGES], false),
       holdBack,
+    };
+  }
+}
+
+export class ExtXKey extends TagWithAttributesProcessor {
+  private static readonly METHOD = 'METHOD';
+  private static readonly URI = 'URI';
+  private static readonly IV = 'IV';
+  private static readonly KEYFORMAT = 'KEYFORMAT';
+  private static readonly KEYFORMATVERSIONS = 'KEYFORMATVERSIONS';
+
+  protected readonly requiredAttributes = new Set([ExtXKey.METHOD]);
+  protected readonly tag = EXT_X_KEY;
+
+  protected safeProcess(tagAttributes: Record<string, string>, playlist: ParsedPlaylist): void {
+    const method = tagAttributes[ExtXKey.METHOD];
+    const uri = tagAttributes[ExtXKey.URI];
+
+    // URI attribute is required unless the METHOD is 'NONE'
+    if (method !== 'NONE' && !uri) {
+      return this.warnCallback(missingRequiredAttributeWarn(this.tag, ExtXKey.URI));
+    }
+
+    playlist.encryption = {
+      method: method as 'NONE' | 'AES-128' | 'SAMPLE-AES',
+      uri: uri,
+      iv: tagAttributes[ExtXKey.IV],
+      keyFormat: tagAttributes[ExtXKey.KEYFORMAT] || 'identity',
+      keyFormatVersions: tagAttributes[ExtXKey.KEYFORMATVERSIONS]
+        ? tagAttributes[ExtXKey.KEYFORMATVERSIONS].split('/').map(Number)
+        : [1]
     };
   }
 }
