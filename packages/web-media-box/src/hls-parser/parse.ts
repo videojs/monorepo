@@ -16,11 +16,12 @@ import {
   EXT_X_TARGETDURATION,
   EXT_X_VERSION,
   EXTINF,
-  EXT_X_BYTERANGE
+  EXT_X_BYTERANGE,
+  EXT_X_DISCONTINUITY
 } from './consts/tags.ts';
 import type { ParserOptions } from './types/parserOptions';
 import type { Segment, ParsedPlaylist } from './types/parsedPlaylist';
-import { EmptyTagProcessor, ExtXEndList, ExtXIframesOnly, ExtXIndependentSegments } from './tags/emptyTagProcessors.ts';
+import { EmptyTagProcessor, ExtXEndList, ExtXIframesOnly, ExtXIndependentSegments, ExtXDiscontinuity } from './tags/emptyTagProcessors.ts';
 import {
   ExtXByteRange,
   ExtInf,
@@ -67,6 +68,7 @@ export default function parse(playlist: string, options: ParserOptions = {}): Pa
     [EXT_X_INDEPENDENT_SEGMENTS]: new ExtXIndependentSegments(warnCallback),
     [EXT_X_ENDLIST]: new ExtXEndList(warnCallback),
     [EXT_X_I_FRAMES_ONLY]: new ExtXIframesOnly(warnCallback),
+    [EXT_X_DISCONTINUITY]: new ExtXDiscontinuity(warnCallback)
   };
 
   const tagValueMap: Record<string, TagWithValueProcessor> = {
@@ -95,7 +97,7 @@ export default function parse(playlist: string, options: ParserOptions = {}): Pa
     //1. Process simple tags without values or attributes:
     if (tagKey in emptyTagMap) {
       const emptyTagProcessor = emptyTagMap[tagKey];
-      return emptyTagProcessor.process(parsedPlaylist);
+      return emptyTagProcessor.process(parsedPlaylist, currentSegment);
     }
 
     //2. Process tags with values:

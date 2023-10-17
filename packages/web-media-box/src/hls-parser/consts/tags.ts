@@ -12,4 +12,5 @@ export const EXT_X_I_FRAMES_ONLY = 'EXT-X-I-FRAMES-ONLY';
 export const EXT_X_PART_INF = 'EXT-X-PART-INF';
 export const EXT_X_SERVER_CONTROL = 'EXT-X-SERVER-CONTROL';
 export const EXTINF = 'EXTINF';
-export const EXT_X_BYTERANGE = "EXT-X-BYTERANGE";
+export const EXT_X_BYTERANGE = 'EXT-X-BYTERANGE';
+export const EXT_X_DISCONTINUITY = 'EXT_X_DISCONTINUITY';
