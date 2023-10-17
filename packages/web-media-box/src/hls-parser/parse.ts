@@ -1,5 +1,5 @@
 import scanner from './scanner.ts';
-import { noop } from './utils/fn.ts';
+import { noop } from '../utils/fn.ts';
 import { ignoreTagWarn, missingTagValueWarn, unsupportedTagWarn } from './utils/warn.ts';
 
 import {

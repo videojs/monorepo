@@ -1,20 +1,54 @@
-export enum RequestType {}
+import {
+  BadStatusNetworkError,
+  FetchError,
+  RequestAbortedNetworkError,
+  RequestInterceptorNetworkError,
+  ResponseInterceptorNetworkError,
+  TimeoutNetworkError,
+} from '@/player/errors.ts';
+import type { RetryWrapperOptions } from '@/utils/retryWrapper.ts';
+import RetryWrapper from '@/utils/retryWrapper.ts';
+import Logger from '@/utils/logger.ts';
 
-export type RequestInterceptor = (requestInit: RequestInit) => RequestInit;
+export enum RequestType {
+  InitSegment,
+  Segment,
+  DashManifest,
+  HlsPlaylist,
+  LicenseCertificate,
+  LicenseKey,
+}
 
-export interface ResponseInterceptor {}
+export type RequestInterceptor = (request: Request) => Promise<Request>;
+export type ResponseHandler = (response: Response) => void;
 
-type RequestOptions = RequestInit & { type: RequestType };
+type RequestInitGet = Omit<RequestInit, 'method' | 'body' | 'signal'>;
+type RequestInitPost = Omit<RequestInit, 'method' | 'signal'>;
 
-type GetOptions = Omit<RequestOptions, 'method' | 'body'>;
+interface NetworkRequest {
+  abort: (reason: string) => void;
+  headersReceived: Promise<Response>;
+}
 
-type PostOptions = Omit<RequestOptions, 'method'>;
+interface NetworkRequestWithFullResponse<T> {
+  abort: (reason: string) => void;
+  done: Promise<T>;
+}
 
-interface NetworkResponse {}
+interface NetworkRequestWithProgressiveResponse {
+  abort: (reason: string) => void;
+  done: Promise<void>;
+}
 
 export default class NetworkManager {
   private readonly requestInterceptors: Map<RequestType, Array<RequestInterceptor>> = new Map();
-  private readonly responseInterceptors: Map<RequestType, Array<ResponseInterceptor>> = new Map();
+  private readonly responseHandlers: Map<RequestType, Array<ResponseHandler>> = new Map();
+
+  private readonly logger: Logger;
+
+  public constructor(logger: Logger) {
+    this.logger = logger.createSubLogger('NetworkManager');
+  }
 
   private add<T>(type: RequestType, interceptor: T, interceptors: Map<RequestType, Array<T>>): void {
     if (interceptors.has(type)) {
@@ -43,49 +77,255 @@ export default class NetworkManager {
     this.remove(type, interceptor, this.requestInterceptors);
   }
 
-  public addResponseInterceptor(type: RequestType, interceptor: ResponseInterceptor): void {
-    this.add(type, interceptor, this.responseInterceptors);
+  public addResponseHandler(type: RequestType, interceptor: ResponseHandler): void {
+    this.add(type, interceptor, this.responseHandlers);
   }
 
-  public removeResponseInterceptor(type: RequestType, interceptor: RequestInterceptor): void {
-    this.remove(type, interceptor, this.responseInterceptors);
+  public removeResponseHandler(type: RequestType, interceptor: ResponseHandler): void {
+    this.remove(type, interceptor, this.responseHandlers);
   }
 
-  private async sendRequest(uri: string, method: string, options: RequestOptions): Promise<NetworkResponse> {
-    const headers = options.headers ?? new Headers();
+  public get<T>(
+    uri: string,
+    type: RequestType,
+    requestInit: RequestInitGet,
+    retryOptions: RetryWrapperOptions,
+    timeout: number,
+    mapper: (body: Uint8Array) => T
+  ): NetworkRequestWithFullResponse<T> {
+    (requestInit as RequestInit).method = 'GET';
 
+    return this.createNetworkRequestWithFullBody<T>(uri, type, requestInit, retryOptions, timeout, mapper);
+  }
+
+  public getProgressive(
+    uri: string,
+    type: RequestType,
+    requestInit: RequestInitGet,
+    retryOptions: RetryWrapperOptions,
+    timeout: number,
+    chunkHandler: (chunk: Uint8Array) => void
+  ): NetworkRequestWithProgressiveResponse {
+    (requestInit as RequestInit).method = 'GET';
+
+    return this.createProgressiveNetworkRequest(uri, type, requestInit, retryOptions, timeout, chunkHandler);
+  }
+
+  public post<T>(
+    uri: string,
+    type: RequestType,
+    requestInit: RequestInitPost,
+    retryOptions: RetryWrapperOptions,
+    timeout: number,
+    mapper: (body: Uint8Array) => T
+  ): NetworkRequestWithFullResponse<T> {
+    (requestInit as RequestInit).method = 'POST';
+
+    return this.createNetworkRequestWithFullBody<T>(uri, type, requestInit, retryOptions, timeout, mapper);
+  }
+
+  public postProgressive(
+    uri: string,
+    type: RequestType,
+    requestInit: RequestInitPost,
+    retryOptions: RetryWrapperOptions,
+    timeout: number,
+    chunkHandler: (chunk: Uint8Array) => void
+  ): NetworkRequestWithProgressiveResponse {
+    (requestInit as RequestInit).method = 'POST';
+
+    return this.createProgressiveNetworkRequest(uri, type, requestInit, retryOptions, timeout, chunkHandler);
+  }
+
+  private createProgressiveNetworkRequest(
+    uri: string,
+    type: RequestType,
+    requestInit: RequestInit,
+    retryOptions: RetryWrapperOptions,
+    timeout: number,
+    chunkHandler: (chunk: Uint8Array) => void
+  ): NetworkRequestWithProgressiveResponse {
+    const { abort, headersReceived } = this.createNetworkRequest(uri, type, requestInit, retryOptions, timeout);
+
+    const done = headersReceived.then((response) => {
+      const reader = response.body?.getReader();
+
+      if (!reader) {
+        return;
+      }
+
+      return this.readFromBodyStream(reader, chunkHandler);
+    });
+
+    headersReceived
+      .then((response) => this.applyResponseHandlers(type, response))
+      .catch((e) => {
+        this.logger.debug('Error cached from response handlers: ', e);
+      });
+
+    return { done, abort };
+  }
+
+  private createNetworkRequestWithFullBody<T>(
+    uri: string,
+    type: RequestType,
+    requestInit: RequestInitPost,
+    retryOptions: RetryWrapperOptions,
+    timeout: number,
+    mapper: (body: Uint8Array) => T
+  ): NetworkRequestWithFullResponse<T> {
+    const { abort, headersReceived } = this.createNetworkRequest(uri, type, requestInit, retryOptions, timeout);
+
+    const chunks: Uint8Array[] = [];
+
+    const done = headersReceived
+      .then((response) => {
+        const reader = response.body?.getReader();
+
+        if (!reader) {
+          return;
+        }
+
+        return this.readFromBodyStream(reader, (chunk) => chunks.push(chunk));
+      })
+      .then(() => {
+        const totalLength = chunks.reduce((total, chunk) => total + chunk.length, 0);
+        const { fullBody } = chunks.reduce(
+          (data, chunk) => {
+            data.fullBody.set(chunk, data.offset);
+            data.offset += chunk.length;
+            return data;
+          },
+          { fullBody: new Uint8Array(totalLength), offset: 0 }
+        );
+
+        return mapper(fullBody);
+      });
+
+    headersReceived
+      .then((response) => this.applyResponseHandlers(type, response))
+      .catch((e) => {
+        this.logger.debug('Error cached from response handlers: ', e);
+      });
+
+    return { done, abort };
+  }
+
+  private createNetworkRequest(
+    uri: string,
+    type: RequestType,
+    requestInit: RequestInit,
+    retryOptions: RetryWrapperOptions,
+    timeout: number
+  ): NetworkRequest {
+    const retryWrapper = new RetryWrapper(retryOptions);
     const abortController = new AbortController();
-
-    let requestInit: RequestInit = {
-      get method() {
-        return method;
-      },
-      get headers() {
-        return headers;
-      },
-      get signal() {
-        return abortController.signal;
-      },
-    };
-
-    const requestInterceptors = this.requestInterceptors.get(options.type);
-
-    if (requestInterceptors) {
-      requestInit = requestInterceptors.reduce((ri: RequestInit, interceptor) => interceptor(ri), requestInit);
-    }
-
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const request = new Request(uri, requestInit);
 
-    // TODO  retry wrapper/timeout/abort/progress
-    return {};
+    const wrappedSendRequest = retryWrapper.wrap<Response>(
+      () => this.sendRequest(request, type, abortController, timeout),
+      (e) => !(e instanceof RequestAbortedNetworkError),
+      {
+        onAttempt: (diagnosticInfo) => this.logger.debug('attempt network request: ', diagnosticInfo),
+      }
+    );
+
+    return {
+      abort: () => abortController.abort(),
+      headersReceived: wrappedSendRequest(),
+    };
   }
 
-  public get(uri: string, options: GetOptions): Promise<NetworkResponse> {
-    return this.sendRequest(uri, 'GET', options);
+  private applyResponseHandlers(type: RequestType, response: Response) {
+    const responseHandlers = this.responseHandlers.get(type);
+
+    if (responseHandlers) {
+      for (const responseHandler of responseHandlers) {
+        try {
+          responseHandler(response);
+        } catch (e) {
+          throw new ResponseInterceptorNetworkError();
+        }
+      }
+    }
   }
 
-  public post(uri: string, options: PostOptions): Promise<NetworkResponse> {
-    return this.sendRequest(uri, 'POST', options);
+  private async sendRequest(
+    request: Request,
+    type: RequestType,
+    abortController: AbortController,
+    timeout: number
+  ): Promise<Response> {
+    const requestInterceptors = this.requestInterceptors.get(type);
+
+    if (requestInterceptors) {
+      for (const requestInterceptor of requestInterceptors) {
+        try {
+          request = await requestInterceptor(request);
+        } catch (e) {
+          throw new RequestInterceptorNetworkError();
+        }
+      }
+    }
+
+    return await this.wrapFetch(request, abortController, timeout);
+  }
+
+  private wrapFetch(request: Request, abortController: AbortController, timeout: number): Promise<Response> {
+    return new Promise((resolve, reject) => {
+      let hitTimeout = false;
+
+      const timeoutId = setTimeout(() => {
+        hitTimeout = true;
+        abortController.abort();
+      }, timeout);
+
+      const onResponse = (response: Response) => {
+        clearTimeout(timeoutId);
+        response.ok ? resolve(response) : reject(new BadStatusNetworkError(response));
+      };
+
+      const onError = (fetchError: DOMException | TypeError) => {
+        clearTimeout(timeoutId);
+
+        if (this.isAbortError(fetchError)) {
+          if (hitTimeout) {
+            // abort from timeout:
+            reject(new TimeoutNetworkError());
+          } else {
+            // external abort
+            reject(new RequestAbortedNetworkError());
+          }
+        } else {
+          reject(new FetchError(fetchError));
+        }
+      };
+
+      fetch(request).then(onResponse, onError);
+    });
+  }
+
+  private isAbortError(e: unknown): boolean {
+    return e instanceof DOMException && e.name === 'AbortError';
+  }
+
+  private async readFromBodyStream(
+    reader: ReadableStreamDefaultReader,
+    handleChunk: (chunk: Uint8Array) => void
+  ): Promise<void> {
+    try {
+      const { done, value } = await reader.read();
+
+      value && handleChunk(value);
+
+      if (done) {
+        return;
+      }
+
+      return this.readFromBodyStream(reader, handleChunk);
+    } catch (e) {
+      reader.releaseLock();
+      throw new RequestAbortedNetworkError();
+    }
   }
 }
