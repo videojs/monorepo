@@ -16,11 +16,13 @@ import {
   EXT_X_TARGETDURATION,
   EXT_X_VERSION,
   EXTINF,
+  EXT_X_BYTERANGE
 } from './consts/tags.ts';
 import type { ParserOptions } from './types/parserOptions';
 import type { Segment, ParsedPlaylist } from './types/parsedPlaylist';
 import { EmptyTagProcessor, ExtXEndList, ExtXIframesOnly, ExtXIndependentSegments } from './tags/emptyTagProcessors.ts';
 import {
+  ExtXByteRange,
   ExtInf,
   ExtXDiscontinuitySequence,
   ExtXMediaSequence,
@@ -74,6 +76,7 @@ export default function parse(playlist: string, options: ParserOptions = {}): Pa
     [EXT_X_DISCONTINUITY_SEQUENCE]: new ExtXDiscontinuitySequence(warnCallback),
     [EXT_X_PLAYLIST_TYPE]: new ExtXPlaylistType(warnCallback),
     [EXTINF]: new ExtInf(warnCallback),
+    [EXT_X_BYTERANGE]: new ExtXByteRange(warnCallback),
   };
 
   const tagAttributesMap: Record<string, TagWithAttributesProcessor> = {
