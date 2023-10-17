@@ -39,6 +39,7 @@ export interface Segment {
   byteRange?: ByteRange;
   uri: string;
   isDiscontinuity: boolean;
+  isGap: boolean
 }
 
 export type PlaylistType = 'EVENT' | 'VOD';

@@ -46,6 +46,7 @@ import {
 const defaultSegment: Segment = {
   duration: 0,
   isDiscontinuity: false,
+  isGap: false,
   uri: '',
 };
 

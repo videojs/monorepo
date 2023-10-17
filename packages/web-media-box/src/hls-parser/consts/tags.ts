@@ -16,3 +16,4 @@ export const EXT_X_BYTERANGE = 'EXT-X-BYTERANGE';
 export const EXT_X_DISCONTINUITY = 'EXT_X_DISCONTINUITY';
 export const EXT_X_KEY = 'EXT_X_KEY';
 export const EXT_X_MAP = 'EXT_X_MAP';
+export const EXT_X_GAP = 'EXT-X-GAP';
