@@ -1,7 +1,7 @@
 import type { ParsedPlaylist } from '../types/parsedPlaylist';
 import { TagProcessor } from './base.ts';
 import { missingRequiredAttributeWarn } from '../utils/warn.ts';
-import { EXT_X_PART_INF, EXT_X_SERVER_CONTROL, EXT_X_START, EXT_X_KEY } from '../consts/tags.ts';
+import { EXT_X_PART_INF, EXT_X_SERVER_CONTROL, EXT_X_START, EXT_X_KEY, EXT_X_MAP } from '../consts/tags.ts';
 import { parseBoolean } from '../utils/parse.ts';
 
 export abstract class TagWithAttributesProcessor extends TagProcessor {
@@ -113,6 +113,32 @@ export class ExtXKey extends TagWithAttributesProcessor {
       keyFormatVersions: tagAttributes[ExtXKey.KEYFORMATVERSIONS]
         ? tagAttributes[ExtXKey.KEYFORMATVERSIONS].split('/').map(Number)
         : [1]
+    };
+  }
+}
+
+export class ExtXMap extends TagWithAttributesProcessor {
+  private static readonly URI = 'URI';
+  private static readonly BYTERANGE = 'BYTERANGE';
+
+  protected readonly requiredAttributes = new Set([ExtXMap.URI]);
+  protected readonly tag = EXT_X_MAP;
+
+  protected safeProcess(tagAttributes: Record<string, string>, playlist: ParsedPlaylist): void {
+    let byteRange;
+
+    if (tagAttributes[ExtXMap.BYTERANGE]) {
+      const [length, offset] = tagAttributes[ExtXMap.BYTERANGE].split('@').map(Number);
+
+      byteRange = {
+        from: length,
+        to: offset
+      };
+    }
+
+    playlist.mediaInitializationSection = {
+      uri: tagAttributes[ExtXMap.URI],
+      byteRange
     };
   }
 }

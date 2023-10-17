@@ -18,7 +18,8 @@ import {
   EXTINF,
   EXT_X_BYTERANGE,
   EXT_X_DISCONTINUITY,
-  EXT_X_KEY
+  EXT_X_KEY,
+  EXT_X_MAP
 } from './consts/tags.ts';
 import type { ParserOptions } from './types/parserOptions';
 import type { Segment, ParsedPlaylist } from './types/parsedPlaylist';
@@ -38,7 +39,8 @@ import {
   ExtXServerControl,
   ExtXStart,
   TagWithAttributesProcessor,
-  ExtXKey
+  ExtXKey,
+  ExtXMap
 } from './tags/tagWithAttributesProcessors.ts';
 
 const defaultSegment: Segment = {
@@ -87,7 +89,8 @@ export default function parse(playlist: string, options: ParserOptions = {}): Pa
     [EXT_X_START]: new ExtXStart(warnCallback),
     [EXT_X_PART_INF]: new ExtXPartInf(warnCallback),
     [EXT_X_SERVER_CONTROL]: new ExtXServerControl(warnCallback),
-    [EXT_X_KEY]: new ExtXKey(warnCallback)
+    [EXT_X_KEY]: new ExtXKey(warnCallback),
+    [EXT_X_MAP]: new ExtXMap(warnCallback)
   };
 
   function tagInfoCallback(tagKey: string, tagValue: string | null, tagAttributes: Record<string, string>): void {
