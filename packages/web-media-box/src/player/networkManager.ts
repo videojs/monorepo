@@ -1,32 +1,54 @@
-export enum RequestType {}
+import {
+  BadStatusNetworkError,
+  FetchError,
+  RequestAbortedNetworkError,
+  RequestInterceptorNetworkError,
+  ResponseInterceptorNetworkError,
+  TimeoutNetworkError,
+} from '@/player/errors.ts';
+import type { RetryWrapperOptions } from '@/utils/retryWrapper.ts';
+import RetryWrapper from '@/utils/retryWrapper.ts';
+import Logger from '@/utils/logger.ts';
 
-export type RequestInterceptor = (requestInit: RequestInit) => RequestInit;
+export enum RequestType {
+  InitSegment,
+  Segment,
+  DashManifest,
+  HlsPlaylist,
+  LicenseCertificate,
+  LicenseKey,
+}
 
-export type ResponseInterceptor = (response: Response) => Response;
+export type RequestInterceptor = (request: Request) => Promise<Request>;
+export type ResponseHandler = (response: Response) => void;
 
-type RequestOptions = RequestInit & {
-  requestType: RequestType;
-  requestTimeout: number;
-  fuzzFactor: number;
-  delayFactor: number;
-  initialDelay: number;
-  maxAttempts: number;
-};
-
-type GetOptions = Omit<RequestOptions, 'method' | 'body'>;
-
-type PostOptions = Omit<RequestOptions, 'method'>;
+type RequestInitGet = Omit<RequestInit, 'method' | 'body' | 'signal'>;
+type RequestInitPost = Omit<RequestInit, 'method' | 'signal'>;
 
 interface NetworkRequest {
   abort: (reason: string) => void;
-  pending: Promise<Response>;
+  headersReceived: Promise<Response>;
 }
 
-const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+interface NetworkRequestWithFullResponse<T> {
+  abort: (reason: string) => void;
+  done: Promise<T>;
+}
+
+interface NetworkRequestWithProgressiveResponse {
+  abort: (reason: string) => void;
+  done: Promise<void>;
+}
 
 export default class NetworkManager {
   private readonly requestInterceptors: Map<RequestType, Array<RequestInterceptor>> = new Map();
-  private readonly responseInterceptors: Map<RequestType, Array<ResponseInterceptor>> = new Map();
+  private readonly responseHandlers: Map<RequestType, Array<ResponseHandler>> = new Map();
+
+  private readonly logger: Logger;
+
+  public constructor(logger: Logger) {
+    this.logger = logger.createSubLogger('NetworkManager');
+  }
 
   private add<T>(type: RequestType, interceptor: T, interceptors: Map<RequestType, Array<T>>): void {
     if (interceptors.has(type)) {
@@ -55,197 +77,255 @@ export default class NetworkManager {
     this.remove(type, interceptor, this.requestInterceptors);
   }
 
-  public addResponseInterceptor(type: RequestType, interceptor: ResponseInterceptor): void {
-    this.add(type, interceptor, this.responseInterceptors);
+  public addResponseHandler(type: RequestType, interceptor: ResponseHandler): void {
+    this.add(type, interceptor, this.responseHandlers);
   }
 
-  public removeResponseInterceptor(type: RequestType, interceptor: ResponseInterceptor): void {
-    this.remove(type, interceptor, this.responseInterceptors);
+  public removeResponseHandler(type: RequestType, interceptor: ResponseHandler): void {
+    this.remove(type, interceptor, this.responseHandlers);
+  }
+
+  public get<T>(
+    uri: string,
+    type: RequestType,
+    requestInit: RequestInitGet,
+    retryOptions: RetryWrapperOptions,
+    timeout: number,
+    mapper: (body: Uint8Array) => T
+  ): NetworkRequestWithFullResponse<T> {
+    (requestInit as RequestInit).method = 'GET';
+
+    return this.createNetworkRequestWithFullBody<T>(uri, type, requestInit, retryOptions, timeout, mapper);
+  }
+
+  public getProgressive(
+    uri: string,
+    type: RequestType,
+    requestInit: RequestInitGet,
+    retryOptions: RetryWrapperOptions,
+    timeout: number,
+    chunkHandler: (chunk: Uint8Array) => void
+  ): NetworkRequestWithProgressiveResponse {
+    (requestInit as RequestInit).method = 'GET';
+
+    return this.createProgressiveNetworkRequest(uri, type, requestInit, retryOptions, timeout, chunkHandler);
+  }
+
+  public post<T>(
+    uri: string,
+    type: RequestType,
+    requestInit: RequestInitPost,
+    retryOptions: RetryWrapperOptions,
+    timeout: number,
+    mapper: (body: Uint8Array) => T
+  ): NetworkRequestWithFullResponse<T> {
+    (requestInit as RequestInit).method = 'POST';
+
+    return this.createNetworkRequestWithFullBody<T>(uri, type, requestInit, retryOptions, timeout, mapper);
+  }
+
+  public postProgressive(
+    uri: string,
+    type: RequestType,
+    requestInit: RequestInitPost,
+    retryOptions: RetryWrapperOptions,
+    timeout: number,
+    chunkHandler: (chunk: Uint8Array) => void
+  ): NetworkRequestWithProgressiveResponse {
+    (requestInit as RequestInit).method = 'POST';
+
+    return this.createProgressiveNetworkRequest(uri, type, requestInit, retryOptions, timeout, chunkHandler);
+  }
+
+  private createProgressiveNetworkRequest(
+    uri: string,
+    type: RequestType,
+    requestInit: RequestInit,
+    retryOptions: RetryWrapperOptions,
+    timeout: number,
+    chunkHandler: (chunk: Uint8Array) => void
+  ): NetworkRequestWithProgressiveResponse {
+    const { abort, headersReceived } = this.createNetworkRequest(uri, type, requestInit, retryOptions, timeout);
+
+    const done = headersReceived.then((response) => {
+      const reader = response.body?.getReader();
+
+      if (!reader) {
+        return;
+      }
+
+      return this.readFromBodyStream(reader, chunkHandler);
+    });
+
+    headersReceived
+      .then((response) => this.applyResponseHandlers(type, response))
+      .catch((e) => {
+        this.logger.debug('Error cached from response handlers: ', e);
+      });
+
+    return { done, abort };
+  }
+
+  private createNetworkRequestWithFullBody<T>(
+    uri: string,
+    type: RequestType,
+    requestInit: RequestInitPost,
+    retryOptions: RetryWrapperOptions,
+    timeout: number,
+    mapper: (body: Uint8Array) => T
+  ): NetworkRequestWithFullResponse<T> {
+    const { abort, headersReceived } = this.createNetworkRequest(uri, type, requestInit, retryOptions, timeout);
+
+    const chunks: Uint8Array[] = [];
+
+    const done = headersReceived
+      .then((response) => {
+        const reader = response.body?.getReader();
+
+        if (!reader) {
+          return;
+        }
+
+        return this.readFromBodyStream(reader, (chunk) => chunks.push(chunk));
+      })
+      .then(() => {
+        const totalLength = chunks.reduce((total, chunk) => total + chunk.length, 0);
+        const { fullBody } = chunks.reduce(
+          (data, chunk) => {
+            data.fullBody.set(chunk, data.offset);
+            data.offset += chunk.length;
+            return data;
+          },
+          { fullBody: new Uint8Array(totalLength), offset: 0 }
+        );
+
+        return mapper(fullBody);
+      });
+
+    headersReceived
+      .then((response) => this.applyResponseHandlers(type, response))
+      .catch((e) => {
+        this.logger.debug('Error cached from response handlers: ', e);
+      });
+
+    return { done, abort };
+  }
+
+  private createNetworkRequest(
+    uri: string,
+    type: RequestType,
+    requestInit: RequestInit,
+    retryOptions: RetryWrapperOptions,
+    timeout: number
+  ): NetworkRequest {
+    const retryWrapper = new RetryWrapper(retryOptions);
+    const abortController = new AbortController();
+    const request = new Request(uri, requestInit);
+
+    const wrappedSendRequest = retryWrapper.wrap<Response>(
+      () => this.sendRequest(request, type, abortController, timeout),
+      (e) => !(e instanceof RequestAbortedNetworkError),
+      {
+        onAttempt: (diagnosticInfo) => this.logger.debug('attempt network request: ', diagnosticInfo),
+      }
+    );
+
+    return {
+      abort: () => abortController.abort(),
+      headersReceived: wrappedSendRequest(),
+    };
+  }
+
+  private applyResponseHandlers(type: RequestType, response: Response) {
+    const responseHandlers = this.responseHandlers.get(type);
+
+    if (responseHandlers) {
+      for (const responseHandler of responseHandlers) {
+        try {
+          responseHandler(response);
+        } catch (e) {
+          throw new ResponseInterceptorNetworkError();
+        }
+      }
+    }
   }
 
   private async sendRequest(
-    uri: string,
-    method: string,
-    options: RequestOptions,
+    request: Request,
+    type: RequestType,
     abortController: AbortController,
-    delay: number,
-    attemptCount: number = 0
+    timeout: number
   ): Promise<Response> {
-    if (attemptCount > options.maxAttempts) {
-      throw new Error(); // TODO max attempts error
-    }
+    const requestInterceptors = this.requestInterceptors.get(type);
 
-    const headers = options.headers ?? new Headers();
-
-    const requestInit = this.applyRequestInterceptors(
-      {
-        get method() {
-          return method;
-        },
-        get headers() {
-          return headers;
-        },
-        get signal() {
-          return abortController.signal;
-        },
-      },
-      options.requestType
-    );
-
-    const request = new Request(uri, requestInit);
-
-    try {
-      const fetchWithThrow = this.wrapFetch(request);
-      const requestStartTime = performance.now();
-      const response = await this.requestWithTimeout(fetchWithThrow, options.requestTimeout);
-
-      void this.sampleBandwidth(response, requestStartTime);
-
-      return this.applyResponseInterceptors(response, options.requestType);
-    } catch (e) {
-      // do not retry if request was aborted
-      if (this.isAbortError(e)) {
-        throw new Error(); // TODO: aborted error
-      }
-
-      // TODO: do not retry if error is from response interceptors
-
-      await wait(this.applyFuzzFactor(delay, options.fuzzFactor));
-      return this.sendRequest(
-        uri,
-        method,
-        options,
-        abortController,
-        this.applyDelayFactor(delay, options.delayFactor),
-        ++attemptCount
-      );
-    }
-  }
-
-  private applyRequestInterceptors(requestInit: RequestInit, requestType: RequestType): RequestInit {
-    const requestInterceptors = this.requestInterceptors.get(requestType);
-
-    if (!requestInterceptors) {
-      return requestInit;
-    }
-
-    try {
-      return requestInterceptors.reduce((ri: RequestInit, interceptor) => interceptor(ri), requestInit);
-    } catch (e) {
-      throw new Error(); // TODO request interceptor error
-    }
-  }
-
-  private applyResponseInterceptors(response: Response, requestType: RequestType): Response {
-    const responseInterceptors = this.responseInterceptors.get(requestType);
-
-    if (!responseInterceptors) {
-      return response;
-    }
-
-    try {
-      return responseInterceptors.reduce((response: Response, interceptor) => interceptor(response), response);
-    } catch (e) {
-      throw new Error(); // TODO response interceptor error
-    }
-  }
-
-  private async sampleBandwidth(response: Response, requestStartTime: number): Promise<void> {
-    let contentLength = response.headers.get('Content-Length');
-
-    if (!contentLength) {
-      return;
-    }
-
-    contentLength = Number(contentLength);
-
-    const cloneResponse = response.clone();
-    const reader = cloneResponse.body?.getReader();
-
-    if (!reader) {
-      return;
-    }
-
-    const bytesReceived = 0;
-
-    // eslint-disable-next-line no-constant-condition
-    while (true) {
-      try {
-        const { done, value } = await reader.read();
-
-        if (done) {
-          // TODO: update bandwidth
-          break;
+    if (requestInterceptors) {
+      for (const requestInterceptor of requestInterceptors) {
+        try {
+          request = await requestInterceptor(request);
+        } catch (e) {
+          throw new RequestInterceptorNetworkError();
         }
-
-        // TODO: update bandwidth
-      } catch (e) {
-        // ignore
-        break;
       }
     }
+
+    return await this.wrapFetch(request, abortController, timeout);
+  }
+
+  private wrapFetch(request: Request, abortController: AbortController, timeout: number): Promise<Response> {
+    return new Promise((resolve, reject) => {
+      let hitTimeout = false;
+
+      const timeoutId = setTimeout(() => {
+        hitTimeout = true;
+        abortController.abort();
+      }, timeout);
+
+      const onResponse = (response: Response) => {
+        clearTimeout(timeoutId);
+        response.ok ? resolve(response) : reject(new BadStatusNetworkError(response));
+      };
+
+      const onError = (fetchError: DOMException | TypeError) => {
+        clearTimeout(timeoutId);
+
+        if (this.isAbortError(fetchError)) {
+          if (hitTimeout) {
+            // abort from timeout:
+            reject(new TimeoutNetworkError());
+          } else {
+            // external abort
+            reject(new RequestAbortedNetworkError());
+          }
+        } else {
+          reject(new FetchError(fetchError));
+        }
+      };
+
+      fetch(request).then(onResponse, onError);
+    });
   }
 
   private isAbortError(e: unknown): boolean {
     return e instanceof DOMException && e.name === 'AbortError';
   }
 
-  private async wrapFetch(request: Request): Promise<Response> {
-    const response = await fetch(request);
+  private async readFromBodyStream(
+    reader: ReadableStreamDefaultReader,
+    handleChunk: (chunk: Uint8Array) => void
+  ): Promise<void> {
+    try {
+      const { done, value } = await reader.read();
 
-    if (response.ok) {
-      return response;
+      value && handleChunk(value);
+
+      if (done) {
+        return;
+      }
+
+      return this.readFromBodyStream(reader, handleChunk);
+    } catch (e) {
+      reader.releaseLock();
+      throw new RequestAbortedNetworkError();
     }
-    throw new Error(); // TODO: error with status code/text/body
-  }
-
-  private requestWithTimeout<T>(promise: Promise<T>, timeout: number): Promise<T> {
-    return Promise.race<T>([
-      promise,
-      new Promise((resolve, reject) => {
-        setTimeout(() => {
-          reject(); // TODO: timeout error
-        }, timeout);
-      }),
-    ]);
-  }
-
-  private applyFuzzFactor(delay: number, fuzzFactor: number): number {
-    /**
-     * For example fuzzFactor is 0.1
-     * This means ±10% deviation
-     * So if we have delay as 1000
-     * This function can generate any value from 900 to 1100
-     */
-
-    const lowValue = (1 - fuzzFactor) * delay;
-    const highValue = (1 + fuzzFactor) * delay;
-
-    return lowValue + Math.random() * (highValue - lowValue);
-  }
-
-  private applyDelayFactor(delay: number, delayFactor: number): number {
-    const delta = delay * delayFactor;
-
-    return delay + delta;
-  }
-
-  private createNetworkRequest(uri: string, method: string, options: RequestOptions): NetworkRequest {
-    const abortController = new AbortController();
-
-    const pending = this.sendRequest(uri, 'GET', options, abortController, options.initialDelay);
-
-    return {
-      abort: (reason) => abortController.abort(reason),
-      pending,
-    };
-  }
-
-  public get(uri: string, options: GetOptions): NetworkRequest {
-    return this.createNetworkRequest(uri, 'GET', options);
-  }
-
-  public post(uri: string, options: PostOptions): NetworkRequest {
-    return this.createNetworkRequest(uri, 'POST', options);
   }
 }
