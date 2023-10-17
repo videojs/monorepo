@@ -15,6 +15,19 @@ export interface ServerControl {
   canBlockReload: boolean;
 }
 
+export interface Encryption {
+  method: 'NONE' | 'AES-128' | 'SAMPLE-AES';
+  uri?: string;
+  iv?: string;
+  keyFormat?: string;
+  keyFormatVersions: number[];
+}
+
+export interface MediaInitializationSection {
+  uri: string;
+  byteRange?: ByteRange;
+}
+
 export interface ByteRange {
   from: number;
   to: number;
@@ -26,6 +39,7 @@ export interface Segment {
   byteRange?: ByteRange;
   uri: string;
   isDiscontinuity: boolean;
+  isGap: boolean
 }
 
 export type PlaylistType = 'EVENT' | 'VOD';
@@ -57,6 +71,8 @@ export interface ParsedPlaylist {
   partInf?: PartInf;
   // https://datatracker.ietf.org/doc/html/draft-pantos-hls-rfc8216bis#section-4.4.3.8
   serverControl?: ServerControl;
+  encryption?: Encryption;
+  mediaInitializationSection?: MediaInitializationSection;
   segments: Array<Segment>;
   custom: Record<string, unknown>;
 }

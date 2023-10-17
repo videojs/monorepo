@@ -16,11 +16,24 @@ import {
   EXT_X_TARGETDURATION,
   EXT_X_VERSION,
   EXTINF,
+  EXT_X_BYTERANGE,
+  EXT_X_DISCONTINUITY,
+  EXT_X_KEY,
+  EXT_X_MAP,
+  EXT_X_GAP
 } from './consts/tags.ts';
 import type { ParserOptions } from './types/parserOptions';
 import type { Segment, ParsedPlaylist } from './types/parsedPlaylist';
-import { EmptyTagProcessor, ExtXEndList, ExtXIframesOnly, ExtXIndependentSegments } from './tags/emptyTagProcessors.ts';
 import {
+  EmptyTagProcessor,
+  ExtXEndList,
+  ExtXIframesOnly,
+  ExtXIndependentSegments,
+  ExtXDiscontinuity,
+  ExtXGap
+} from './tags/emptyTagProcessors.ts';
+import {
+  ExtXByteRange,
   ExtInf,
   ExtXDiscontinuitySequence,
   ExtXMediaSequence,
@@ -34,11 +47,14 @@ import {
   ExtXServerControl,
   ExtXStart,
   TagWithAttributesProcessor,
+  ExtXKey,
+  ExtXMap
 } from './tags/tagWithAttributesProcessors.ts';
 
 const defaultSegment: Segment = {
   duration: 0,
   isDiscontinuity: false,
+  isGap: false,
   uri: '',
 };
 
@@ -65,6 +81,8 @@ export default function parse(playlist: string, options: ParserOptions = {}): Pa
     [EXT_X_INDEPENDENT_SEGMENTS]: new ExtXIndependentSegments(warnCallback),
     [EXT_X_ENDLIST]: new ExtXEndList(warnCallback),
     [EXT_X_I_FRAMES_ONLY]: new ExtXIframesOnly(warnCallback),
+    [EXT_X_DISCONTINUITY]: new ExtXDiscontinuity(warnCallback),
+    [EXT_X_GAP]: new ExtXGap(warnCallback)
   };
 
   const tagValueMap: Record<string, TagWithValueProcessor> = {
@@ -74,12 +92,15 @@ export default function parse(playlist: string, options: ParserOptions = {}): Pa
     [EXT_X_DISCONTINUITY_SEQUENCE]: new ExtXDiscontinuitySequence(warnCallback),
     [EXT_X_PLAYLIST_TYPE]: new ExtXPlaylistType(warnCallback),
     [EXTINF]: new ExtInf(warnCallback),
+    [EXT_X_BYTERANGE]: new ExtXByteRange(warnCallback),
   };
 
   const tagAttributesMap: Record<string, TagWithAttributesProcessor> = {
     [EXT_X_START]: new ExtXStart(warnCallback),
     [EXT_X_PART_INF]: new ExtXPartInf(warnCallback),
     [EXT_X_SERVER_CONTROL]: new ExtXServerControl(warnCallback),
+    [EXT_X_KEY]: new ExtXKey(warnCallback),
+    [EXT_X_MAP]: new ExtXMap(warnCallback)
   };
 
   function tagInfoCallback(tagKey: string, tagValue: string | null, tagAttributes: Record<string, string>): void {
@@ -92,7 +113,7 @@ export default function parse(playlist: string, options: ParserOptions = {}): Pa
     //1. Process simple tags without values or attributes:
     if (tagKey in emptyTagMap) {
       const emptyTagProcessor = emptyTagMap[tagKey];
-      return emptyTagProcessor.process(parsedPlaylist);
+      return emptyTagProcessor.process(parsedPlaylist, currentSegment);
     }
 
     //2. Process tags with values:
