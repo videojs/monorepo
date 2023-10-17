@@ -9,7 +9,7 @@ import {
   EXTINF,
   EXT_X_BYTERANGE
 } from '../consts/tags.ts';
-import { fallbackUsedWarn, unableToParseValueWarn, unsupportedEnumValue, tagVersionCompatibilityWarn } from '../utils/warn.ts';
+import { fallbackUsedWarn, unableToParseValueWarn, unsupportedEnumValue } from '../utils/warn.ts';
 
 export abstract class TagWithValueProcessor extends TagProcessor {
   public abstract process(tagValue: string, playlist: ParsedPlaylist, currentSegment: Segment): void;
@@ -117,10 +117,6 @@ export class ExtXByteRange extends TagWithValueProcessor {
   protected readonly tag = EXT_X_BYTERANGE;
 
   public process(tagValue: string, playlist: ParsedPlaylist, currentSegment: Segment): void {
-    if ((playlist.version ?? 0) < 4) {
-      return this.warnCallback(tagVersionCompatibilityWarn(this.tag, 4));
-    }
-
     const values = tagValue.split('@');
     const length = Number(values[0]);
     const start = values[1] ? Number(values[1]) : undefined;

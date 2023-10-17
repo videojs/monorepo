@@ -15,6 +15,3 @@ export const unsupportedEnumValue = (tag: string, actual: string, required: Set<
   skipProcessing(tag, `received unsupported tag value: ${actual}. Possible values: ${Array.from(required).toString()}`);
 
 export const ignoreTagWarn = (tag: string) => skipProcessing(tag, 'Tag is included in the ignore list');
-
-export const tagVersionCompatibilityWarn = (tag: string, requiredVersion: number) =>
-  skipProcessing(tag, `Requires compatibility version ${requiredVersion} or greater`);
