@@ -2,7 +2,7 @@ interface AttemptDiagnosticInfo {
   attemptNumber: number;
   currentDelaySec: number;
   expectedFuzzedDelayRangeSec: { from: number; to: number };
-  retryReason: string | null;
+  retryReason: unknown | undefined;
 }
 
 type WrappedWithRetry<T> = {
@@ -10,7 +10,7 @@ type WrappedWithRetry<T> = {
   attempts: Array<AttemptDiagnosticInfo>;
 };
 
-interface RetryWrapperOptions {
+export interface RetryWrapperOptions {
   maxAttempts: number;
   delay: number;
   delayFactor: number;
@@ -42,11 +42,15 @@ export default class RetryWrapper {
     this.fuzzFactor = options.fuzzFactor;
   }
 
-  // eslint-disable-next-line @typescript-eslint/ban-types
-  public wrap<T>(fn: Function, hooks: RetryWrapperHooks = {}, waitFn = wait): WrappedWithRetry<T> {
+  public wrap<T>(
+    fn: (...args: unknown[]) => Promise<T>,
+    shouldRetry: (error: unknown) => boolean = () => true,
+    hooks: RetryWrapperHooks = {},
+    waitFn = wait
+  ): WrappedWithRetry<T> {
     let attemptNumber = 1;
     let delay = this.delay;
-    let lastError: Error | null = null;
+    let lastError: unknown | undefined;
 
     const attempts: Array<AttemptDiagnosticInfo> = [];
 
@@ -65,7 +69,11 @@ export default class RetryWrapper {
         hooks.onAttempt?.call(null, attemptDiagnosticInfo);
         return await fn(...args);
       } catch (e) {
-        lastError = e as Error;
+        if (!shouldRetry(e)) {
+          throw e;
+        }
+
+        lastError = e;
         await waitFn(this.applyFuzzFactor(delay));
         attemptNumber++;
         delay = this.applyDelayFactor(delay);
@@ -102,7 +110,7 @@ export default class RetryWrapper {
   private createDiagnosticInfoForAttempt(
     attemptNumber: number,
     delay: number,
-    lastError: Error | null
+    lastError: unknown | undefined
   ): AttemptDiagnosticInfo {
     const fuzzedDelayFrom = delay - delay * this.fuzzFactor;
     const fuzzedDelayTo = delay + delay * this.fuzzFactor;
@@ -110,7 +118,7 @@ export default class RetryWrapper {
     return {
       attemptNumber,
       currentDelaySec: delay / 1000,
-      retryReason: lastError?.message ?? null,
+      retryReason: lastError,
       expectedFuzzedDelayRangeSec: { from: fuzzedDelayFrom / 1000, to: fuzzedDelayTo / 1000 },
     };
   }

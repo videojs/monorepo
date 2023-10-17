@@ -8,7 +8,7 @@ import { Events, EnterPictureInPictureModeEvent, LeavePictureInPictureModeEvent,
 import type { EventToTypeMap } from './events.ts';
 import Pipeline from '@/pipelines/basePipeline.ts';
 import NativePipeline from '@/pipelines/native/nativePipeline.ts';
-import { NoSupportedPipelinesError } from '@/player/errors.ts';
+import { NoSupportedPipelineError } from '@/player/errors.ts';
 
 enum PlaybackState {
   Playing = 'Playing',
@@ -410,7 +410,7 @@ export default class Player {
 
     this.logger.warn('no supported pipelines found for ', mimeType);
 
-    this.eventEmitter.emit(Events.Error, new ErrorEvent(new NoSupportedPipelinesError()));
+    this.eventEmitter.emit(Events.Error, new ErrorEvent(new NoSupportedPipelineError()));
   }
 
   public loadRemoteAsset(uri: string, mimeType: string): void {
