@@ -44,6 +44,7 @@ export interface PartialSegment {
 export interface Segment {
   duration: number;
   title?: string;
+  programDateTime?: number;
   byteRange?: ByteRange;
   bitrate?: number;
   uri: string;

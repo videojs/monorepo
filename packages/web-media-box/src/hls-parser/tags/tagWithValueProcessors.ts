@@ -8,7 +8,8 @@ import {
   EXT_X_VERSION,
   EXTINF,
   EXT_X_BYTERANGE,
-  EXT_X_BITRATE
+  EXT_X_BITRATE,
+  EXT_X_PROGRAM_DATE_TIME,
 } from '../consts/tags.ts';
 import { fallbackUsedWarn, unableToParseValueWarn, unsupportedEnumValue } from '../utils/warn.ts';
 
@@ -150,5 +151,38 @@ export class ExtXBitrate extends TagWithValueProcessor {
 
     // Store on the playlist so the bitrate value can be applied to subsequent segments
     playlist.currentBitrate = bitrate;
+  }
+}
+
+export class ExtXProgramDateTime extends TagWithValueProcessor {
+  protected readonly tag = EXT_X_PROGRAM_DATE_TIME;
+
+  public process(tagValue: string, playlist: ParsedPlaylist, currentSegment: Segment): void {
+    const timestamp = Date.parse(tagValue);
+
+    if (Number.isNaN(timestamp)) {
+      return this.warnCallback(unableToParseValueWarn(this.tag));
+    }
+
+    currentSegment.programDateTime = timestamp;
+
+    // If this is the first segment, abort early
+    if (!playlist.segments.length) {
+      return;
+    }
+
+    const previousSegment = playlist.segments[playlist.segments.length - 1];
+
+    // If there are preceding segments without programDateTime, we need to backfill them
+    if (!previousSegment.programDateTime) {
+      let currentTimestamp = currentSegment.programDateTime;
+
+      for (let i = playlist.segments.length - 1; i >= 0; i--) {
+        const segment = playlist.segments[i];
+
+        currentTimestamp -= segment.duration * 1000;
+        segment.programDateTime = currentTimestamp;
+      }
+    }
   }
 }
