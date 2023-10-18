@@ -23,6 +23,7 @@ import {
   EXT_X_MAP,
   EXT_X_GAP,
   EXT_X_BITRATE,
+  EXT_X_PART,
 } from './consts/tags.ts';
 import type {
   CustomTagMap,
@@ -59,6 +60,7 @@ import {
   TagWithAttributesProcessor,
   ExtXKey,
   ExtXMap,
+  ExtXPart,
 } from './tags/tagWithAttributesProcessors.ts';
 
 const defaultSegment: Segment = {
@@ -106,7 +108,7 @@ class Parser {
       [EXT_X_ENDLIST]: new ExtXEndList(this.warnCallback),
       [EXT_X_I_FRAMES_ONLY]: new ExtXIframesOnly(this.warnCallback),
       [EXT_X_DISCONTINUITY]: new ExtXDiscontinuity(this.warnCallback),
-      [EXT_X_GAP]: new ExtXGap(this.warnCallback),
+      [EXT_X_GAP]: new ExtXGap(this.warnCallback)
     };
 
     this.tagValueMap = {
@@ -117,7 +119,7 @@ class Parser {
       [EXT_X_PLAYLIST_TYPE]: new ExtXPlaylistType(this.warnCallback),
       [EXTINF]: new ExtInf(this.warnCallback),
       [EXT_X_BYTERANGE]: new ExtXByteRange(this.warnCallback),
-      [EXT_X_BITRATE]: new ExtXBitrate(this.warnCallback),
+      [EXT_X_BITRATE]: new ExtXBitrate(this.warnCallback)
     };
 
     this.tagAttributesMap = {
@@ -126,6 +128,7 @@ class Parser {
       [EXT_X_SERVER_CONTROL]: new ExtXServerControl(this.warnCallback),
       [EXT_X_KEY]: new ExtXKey(this.warnCallback),
       [EXT_X_MAP]: new ExtXMap(this.warnCallback),
+      [EXT_X_PART]: new ExtXPart(this.warnCallback)
     };
   }
 
@@ -163,7 +166,7 @@ class Parser {
       tagAttributes = this.transformTagAttributes(tagKey, tagAttributes);
       const tagWithAttributesProcessor = this.tagAttributesMap[tagKey];
 
-      return tagWithAttributesProcessor.process(tagAttributes, this.parsedPlaylist);
+      return tagWithAttributesProcessor.process(tagAttributes, this.parsedPlaylist, this.currentSegment);
     }
 
     //4. Process custom tags:

@@ -29,8 +29,16 @@ export interface MediaInitializationSection {
 }
 
 export interface ByteRange {
-  from: number;
-  to: number;
+  length: number;
+  offset: number;
+}
+
+export interface PartialSegment {
+  uri: string;
+  duration: number;
+  byteRange?: ByteRange;
+  independent?: boolean;
+  isGap?: boolean;
 }
 
 export interface Segment {
@@ -40,7 +48,8 @@ export interface Segment {
   bitrate?: number;
   uri: string;
   isDiscontinuity: boolean;
-  isGap: boolean
+  isGap: boolean;
+  parts?: PartialSegment[];
 }
 
 export type PlaylistType = 'EVENT' | 'VOD';

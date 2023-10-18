@@ -18,3 +18,4 @@ export const EXT_X_KEY = 'EXT_X_KEY';
 export const EXT_X_MAP = 'EXT_X_MAP';
 export const EXT_X_GAP = 'EXT-X-GAP';
 export const EXT_X_BITRATE = 'EXT-X-BITRATE';
+export const EXT_X_PART = 'EXT-X-PART';

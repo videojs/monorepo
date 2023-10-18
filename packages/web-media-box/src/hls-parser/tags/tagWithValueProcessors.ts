@@ -120,25 +120,19 @@ export class ExtXByteRange extends TagWithValueProcessor {
   public process(tagValue: string, playlist: ParsedPlaylist, currentSegment: Segment): void {
     const values = tagValue.split('@');
     const length = Number(values[0]);
-    const start = values[1] ? Number(values[1]) : undefined;
+    let offset = values[1] ? Number(values[1]) : undefined;
 
-    if (typeof start === 'undefined') {
+    if (typeof offset === 'undefined') {
       const previousSegment = playlist.segments[playlist.segments.length - 1];
 
       if (!previousSegment || !previousSegment.byteRange) {
         return this.warnCallback(`Unable to parse ${this.tag}: EXT-X-BYTERANGE without offset requires a previous segment with a byte range in the playlist`);
       }
 
-      currentSegment.byteRange = {
-        from: previousSegment.byteRange.to + 1,
-        to: previousSegment.byteRange.to + length
-      };
-    } else {
-      currentSegment.byteRange = {
-        from: start,
-        to: start + length - 1
-      };
+      offset = previousSegment.byteRange.offset + previousSegment.byteRange.length + 1;
     }
+
+    currentSegment.byteRange = {length, offset};
   }
 }
 
