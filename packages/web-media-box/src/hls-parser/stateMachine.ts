@@ -9,12 +9,12 @@ const PARSE_QUOTED_STRING_ATTRIBUTE_VALUE = 7;
 type TagInfoCallback = (tagKey: string, tagValue: string | null, tagAttributes: Record<string, string>) => void;
 type UriInfoCallback = (url: string) => void;
 
-export default function scanner(
-  playlist: string,
+export type StateMachineTransition = (char: string) => void;
+
+export default function createStateMachine(
   tagInfoCallback: TagInfoCallback,
   uriInfoCallback: UriInfoCallback
-): void {
-  const length = playlist.length;
+): StateMachineTransition {
   let currentState = PARSE_EMPTY_SPACE_STATE;
 
   let currentTagKey = '';
@@ -143,7 +143,7 @@ export default function scanner(
     },
   };
 
-  for (let i = 0; i < length; i++) {
-    stateMachine[currentState](playlist[i]);
-  }
+  return (char: string) => {
+    stateMachine[currentState](char);
+  };
 }

@@ -1,1 +1,1 @@
-export { default as parse } from './parse.ts';
+export { ProgressiveParser, FullPlaylistParser } from './parse.ts';
