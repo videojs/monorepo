@@ -22,6 +22,7 @@ import {
   EXT_X_KEY,
   EXT_X_MAP,
   EXT_X_GAP,
+  EXT_X_BITRATE,
 } from './consts/tags.ts';
 import type {
   CustomTagMap,
@@ -41,6 +42,7 @@ import {
   ExtXGap,
 } from './tags/emptyTagProcessors.ts';
 import {
+  ExtXBitrate,
   ExtXByteRange,
   ExtInf,
   ExtXDiscontinuitySequence,
@@ -115,6 +117,7 @@ class Parser {
       [EXT_X_PLAYLIST_TYPE]: new ExtXPlaylistType(this.warnCallback),
       [EXTINF]: new ExtInf(this.warnCallback),
       [EXT_X_BYTERANGE]: new ExtXByteRange(this.warnCallback),
+      [EXT_X_BITRATE]: new ExtXBitrate(this.warnCallback),
     };
 
     this.tagAttributesMap = {
@@ -176,6 +179,15 @@ class Parser {
 
   protected readonly uriInfoCallback = (uri: string): void => {
     this.currentSegment.uri = uri;
+
+    // TODO: consider using shared private object instead of polluting parsed playlist object, since it is public interface
+    // Apply the EXT-X-BITRATE value from previous segments to this segment as well,
+    // as long as it doesn't have an EXT-X-BYTERANGE tag applied to it.
+    // https://datatracker.ietf.org/doc/html/draft-pantos-hls-rfc8216bis#section-4.4.4.8
+    if (this.parsedPlaylist.currentBitrate && !this.currentSegment.byteRange) {
+      this.currentSegment.bitrate = this.parsedPlaylist.currentBitrate;
+    }
+
     this.parsedPlaylist.segments.push(this.currentSegment);
     this.currentSegment = { ...defaultSegment };
   };

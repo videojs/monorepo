@@ -7,7 +7,8 @@ import {
   EXT_X_TARGETDURATION,
   EXT_X_VERSION,
   EXTINF,
-  EXT_X_BYTERANGE
+  EXT_X_BYTERANGE,
+  EXT_X_BITRATE
 } from '../consts/tags.ts';
 import { fallbackUsedWarn, unableToParseValueWarn, unsupportedEnumValue } from '../utils/warn.ts';
 
@@ -138,5 +139,22 @@ export class ExtXByteRange extends TagWithValueProcessor {
         to: start + length - 1
       };
     }
+  }
+}
+
+export class ExtXBitrate extends TagWithValueProcessor {
+  protected readonly tag = EXT_X_BITRATE;
+
+  public process(tagValue: string, playlist: ParsedPlaylist, currentSegment: Segment): void {
+    const bitrate = Number(tagValue);
+
+    if (Number.isNaN(bitrate) || bitrate < 0) {
+      return this.warnCallback(unableToParseValueWarn(this.tag));
+    }
+
+    currentSegment.bitrate = bitrate;
+
+    // Store on the playlist so the bitrate value can be applied to subsequent segments
+    playlist.currentBitrate = bitrate;
   }
 }

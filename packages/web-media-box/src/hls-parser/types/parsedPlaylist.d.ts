@@ -37,6 +37,7 @@ export interface Segment {
   duration: number;
   title?: string;
   byteRange?: ByteRange;
+  bitrate?: number;
   uri: string;
   isDiscontinuity: boolean;
   isGap: boolean
@@ -75,4 +76,6 @@ export interface ParsedPlaylist {
   mediaInitializationSection?: MediaInitializationSection;
   segments: Array<Segment>;
   custom: Record<string, unknown>;
+  // Used to persist EXT_X_BITRATE across segments
+  currentBitrate?: number
 }
