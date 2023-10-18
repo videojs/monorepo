@@ -1,0 +1,31 @@
+{
+  "compilationOptions": {
+    "preferredConfigPath": "../../tsconfig.json"
+  },
+  "entries": [
+    {
+      "filePath": "./src/player/index.ts",
+      "outFile": "./dist/player/index.d.ts"
+    },
+    {
+      "filePath": "./src/hls-parser/index.ts",
+      "outFile": "./dist/hls-parser/index.d.ts"
+    },
+    {
+      "filePath": "./src/dash-parser/index.ts",
+      "outFile": "./dist/dash-parser/index.d.ts"
+    },
+    {
+      "filePath": "./src/pipelines/mse/hls/index.ts",
+      "outFile": "./dist/pipelines/mse/hls/index.d.ts"
+    },
+    {
+      "filePath": "./src/pipelines/mse/dash/index.ts",
+      "outFile": "./dist/pipelines/mse/dash/index.d.ts"
+    },
+    {
+      "filePath": "./src/pipelines/mse/index.ts",
+      "outFile": "./dist/pipelines/mse/index.d.ts"
+    }
+  ]
+}

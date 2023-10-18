@@ -4,8 +4,30 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>web-media-box demo</title>
+    <style>
+        .videoContainer {
+            position: relative;
+        }
+
+        .videoContainer video {
+            width: 100%;
+            height: auto;
+        }
+
+        .controls {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .manifestLoader {
+            margin-top: 1rem;
+        }
+    </style>
 </head>
 <body>
-    <script type="module" src="./src/index.js"></script>
+    <div id="root"></div>
+    <script type="module" src="./dist/index.debug.js"></script>
 </body>
 </html>

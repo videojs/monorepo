@@ -1,9 +1,16 @@
 /* eslint-disable no-undef */
-import { version } from './packages/web-media-box/package.json';
+import { version } from './package.json';
 
 const createConfig = ({ minify, naming }) => ({
-  entrypoints: ['./packages/web-media-box/src/player/index.ts', './packages/web-media-box/src/hls-parser/index.ts', './packages/web-media-box/src/dash-parser/index.ts'],
-  outdir: './packages/web-media-box/dist',
+  entrypoints: [
+    './src/player/index.ts',
+    './src/hls-parser/index.ts',
+    './src/dash-parser/index.ts',
+    './src/pipelines/mse/dash/index.ts',
+    './src/pipelines/mse/hls/index.ts',
+    './src/pipelines/mse/index.ts',
+  ],
+  outdir: './dist',
   target: 'browser',
   format: 'esm',
   sourcemap: 'external',
