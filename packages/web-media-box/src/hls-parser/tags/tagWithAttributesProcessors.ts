@@ -1,7 +1,7 @@
-import type { ParsedPlaylist, PartialSegment, Segment } from '../types/parsedPlaylist';
+import type { ParsedPlaylist, PartialSegment, Segment, Rendition } from '../types/parsedPlaylist';
 import { TagProcessor } from './base.ts';
 import { missingRequiredAttributeWarn } from '../utils/warn.ts';
-import { EXT_X_PART_INF, EXT_X_SERVER_CONTROL, EXT_X_START, EXT_X_KEY, EXT_X_MAP, EXT_X_PART } from '../consts/tags.ts';
+import { EXT_X_PART_INF, EXT_X_SERVER_CONTROL, EXT_X_START, EXT_X_KEY, EXT_X_MAP, EXT_X_PART, EXT_X_MEDIA } from '../consts/tags.ts';
 import { parseBoolean } from '../utils/parse.ts';
 
 export abstract class TagWithAttributesProcessor extends TagProcessor {
@@ -187,5 +187,46 @@ export class ExtXPart extends TagWithAttributesProcessor {
     }
 
     currentSegment.parts.push(part);
+  }
+}
+
+export class ExtXMedia extends TagWithAttributesProcessor {
+  private static readonly TYPE = 'TYPE';
+  private static readonly URI = 'URI';
+  private static readonly GROUP_ID = 'GROUP-ID';
+  private static readonly LANGUAGE = 'LANGUAGE';
+  private static readonly ASSOC_LANGUAGE = 'ASSOC-LANGUAGE';
+  private static readonly NAME = 'NAME';
+  private static readonly DEFAULT = 'DEFAULT';
+  private static readonly AUTOSELECT = 'AUTOSELECT';
+  private static readonly FORCED = 'FORCED';
+  private static readonly INSTREAM_ID = 'INSTREAM-ID';
+  private static readonly CHARACTERISTICS = 'CHARACTERISTICS';
+  private static readonly CHANNELS = 'CHANNELS';
+
+  protected readonly requiredAttributes = new Set([ExtXMedia.TYPE, ExtXMedia.GROUP_ID, ExtXMedia.NAME]);
+  protected readonly tag = EXT_X_MEDIA;
+
+  protected safeProcess(tagAttributes: Record<string, string>, playlist: ParsedPlaylist): void {
+    const rendition: Rendition = {
+      type: tagAttributes[ExtXMedia.TYPE] as 'AUDIO' | 'VIDEO' | 'SUBTITLES' | 'CLOSED-CAPTIONS',
+      groupId: tagAttributes[ExtXMedia.GROUP_ID],
+      name: tagAttributes[ExtXMedia.NAME],
+      uri: tagAttributes[ExtXMedia.URI],
+      language: tagAttributes[ExtXMedia.LANGUAGE],
+      assocLanguage: tagAttributes[ExtXMedia.ASSOC_LANGUAGE],
+      default: parseBoolean(tagAttributes[ExtXMedia.DEFAULT], false),
+      autoSelect: parseBoolean(tagAttributes[ExtXMedia.AUTOSELECT], false),
+      forced: parseBoolean(tagAttributes[ExtXMedia.FORCED], false),
+      inStreamId: tagAttributes[ExtXMedia.INSTREAM_ID],
+      characteristics: tagAttributes[ExtXMedia.CHARACTERISTICS] ? tagAttributes[ExtXMedia.CHARACTERISTICS].split(',') : [],
+      channels: tagAttributes[ExtXMedia.CHANNELS] ? tagAttributes[ExtXMedia.CHANNELS].split('/') : []
+    };
+
+    if (!playlist.alternativeRenditions) {
+      playlist.alternativeRenditions = [];
+    }
+
+    playlist.alternativeRenditions.push(rendition);
   }
 }

@@ -53,6 +53,22 @@ export interface Segment {
   parts?: PartialSegment[];
 }
 
+export interface Rendition {
+  type: 'AUDIO' | 'VIDEO' | 'SUBTITLES' | 'CLOSED-CAPTIONS';
+  uri?: string;
+  groupId: string;
+  language?: string;
+  assocLanguage?: string;
+  name: string;
+  stableRenditionId?: string;
+  default: boolean;
+  autoSelect: boolean;
+  forced: boolean;
+  inStreamId?: string;
+  characteristics?: string[];
+  channels?: string[];
+}
+
 export type PlaylistType = 'EVENT' | 'VOD';
 
 export interface ParsedPlaylist {
@@ -86,6 +102,7 @@ export interface ParsedPlaylist {
   mediaInitializationSection?: MediaInitializationSection;
   segments: Array<Segment>;
   custom: Record<string, unknown>;
+  alternativeRenditions?: Rendition[];
   // Used to persist EXT_X_BITRATE across segments
-  currentBitrate?: number
+  currentBitrate?: number;
 }
