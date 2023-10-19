@@ -1,1 +1,1 @@
-export { default as parse } from './parse.ts';
+export { FullManifestParser, ProgressiveParser } from './parse.ts';

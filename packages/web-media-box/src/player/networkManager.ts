@@ -8,7 +8,7 @@ import {
 } from '@/player/errors.ts';
 import type { RetryWrapperOptions } from '@/utils/retryWrapper.ts';
 import RetryWrapper from '@/utils/retryWrapper.ts';
-import Logger from '@/utils/logger.ts';
+import type Logger from '@/utils/logger.ts';
 
 export enum RequestType {
   InitSegment,

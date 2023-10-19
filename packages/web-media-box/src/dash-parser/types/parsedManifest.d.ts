@@ -1,5 +1,10 @@
+export type ManifestType = 'static' | 'dynamic';
+
 export interface ParsedManifest {
-  // TODO: There will be more fields here
+  id?: number;
+  type: ManifestType;
+  availabilityStartTime?: number;
+  availabilityEndTime?: number;
   segments: Array<unknown>;
-  custom: unknown;
+  custom: Record<string, unknown>;
 }
