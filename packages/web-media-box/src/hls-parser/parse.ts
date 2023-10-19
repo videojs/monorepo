@@ -103,6 +103,12 @@ class Parser {
       iFramesOnly: false,
       segments: [],
       custom: {},
+      renditionGroups: {
+        audio: {},
+        video: {},
+        subtitles: {},
+        closedCaptions: {}
+      },
     };
 
     this.currentSegment = { ...defaultSegment };

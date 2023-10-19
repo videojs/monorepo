@@ -1,4 +1,4 @@
-import type { ParsedPlaylist, PartialSegment, Segment, Rendition } from '../types/parsedPlaylist';
+import type { ParsedPlaylist, PartialSegment, Segment, Rendition, RenditionType, RenditionGroups, GroupId } from '../types/parsedPlaylist';
 import { TagProcessor } from './base.ts';
 import { missingRequiredAttributeWarn } from '../utils/warn.ts';
 import { EXT_X_PART_INF, EXT_X_SERVER_CONTROL, EXT_X_START, EXT_X_KEY, EXT_X_MAP, EXT_X_PART, EXT_X_MEDIA } from '../consts/tags.ts';
@@ -209,8 +209,8 @@ export class ExtXMedia extends TagWithAttributesProcessor {
 
   protected safeProcess(tagAttributes: Record<string, string>, playlist: ParsedPlaylist): void {
     const rendition: Rendition = {
-      type: tagAttributes[ExtXMedia.TYPE] as 'AUDIO' | 'VIDEO' | 'SUBTITLES' | 'CLOSED-CAPTIONS',
-      groupId: tagAttributes[ExtXMedia.GROUP_ID],
+      type: tagAttributes[ExtXMedia.TYPE] as RenditionType,
+      groupId: tagAttributes[ExtXMedia.GROUP_ID] as GroupId,
       name: tagAttributes[ExtXMedia.NAME],
       uri: tagAttributes[ExtXMedia.URI],
       language: tagAttributes[ExtXMedia.LANGUAGE],
@@ -223,10 +223,20 @@ export class ExtXMedia extends TagWithAttributesProcessor {
       channels: tagAttributes[ExtXMedia.CHANNELS] ? tagAttributes[ExtXMedia.CHANNELS].split('/') : []
     };
 
-    if (!playlist.alternativeRenditions) {
-      playlist.alternativeRenditions = [];
+    const typeToKeyMap: Record<string, keyof RenditionGroups> = {
+      'AUDIO': 'audio',
+      'VIDEO': 'video',
+      'SUBTITLES': 'subtitles',
+      'CLOSED-CAPTIONS': 'closedCaptions'
+    };
+    const renditionTypeKey = typeToKeyMap[rendition.type];
+    const matchingGroup = playlist.renditionGroups[renditionTypeKey][rendition.groupId];
+
+    if (matchingGroup) {
+      matchingGroup.push(rendition);
+      return;
     }
 
-    playlist.alternativeRenditions.push(rendition);
+    playlist.renditionGroups[renditionTypeKey][rendition.groupId] = [rendition];
   }
 }
