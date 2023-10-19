@@ -203,6 +203,12 @@ export class ExtXMedia extends TagWithAttributesProcessor {
   private static readonly INSTREAM_ID = 'INSTREAM-ID';
   private static readonly CHARACTERISTICS = 'CHARACTERISTICS';
   private static readonly CHANNELS = 'CHANNELS';
+  private static readonly typeToKeyMap: Record<string, keyof RenditionGroups> = {
+    'AUDIO': 'audio',
+    'VIDEO': 'video',
+    'SUBTITLES': 'subtitles',
+    'CLOSED-CAPTIONS': 'closedCaptions'
+  };
 
   protected readonly requiredAttributes = new Set([ExtXMedia.TYPE, ExtXMedia.GROUP_ID, ExtXMedia.NAME]);
   protected readonly tag = EXT_X_MEDIA;
@@ -223,13 +229,7 @@ export class ExtXMedia extends TagWithAttributesProcessor {
       channels: tagAttributes[ExtXMedia.CHANNELS] ? tagAttributes[ExtXMedia.CHANNELS].split('/') : []
     };
 
-    const typeToKeyMap: Record<string, keyof RenditionGroups> = {
-      'AUDIO': 'audio',
-      'VIDEO': 'video',
-      'SUBTITLES': 'subtitles',
-      'CLOSED-CAPTIONS': 'closedCaptions'
-    };
-    const renditionTypeKey = typeToKeyMap[rendition.type];
+    const renditionTypeKey = ExtXMedia.typeToKeyMap[rendition.type];
     const matchingGroup = playlist.renditionGroups[renditionTypeKey][rendition.groupId];
 
     if (matchingGroup) {
