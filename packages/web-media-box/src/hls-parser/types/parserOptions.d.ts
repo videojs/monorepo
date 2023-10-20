@@ -1,3 +1,5 @@
+import type { SharedState } from '../types/sharedState';
+
 export type WarnCallback = (warn: string) => void;
 export type DebugCallback = (...debug: Array<unknown>) => void;
 
@@ -7,7 +9,8 @@ export type CustomTagMap = Record<
     tagKey: string,
     tagValue: string | null,
     tagAttributes: Record<string, string>,
-    custom: Record<string, unknown>
+    custom: Record<string, unknown>,
+    sharedState: SharedState
   ) => void
 >;
 

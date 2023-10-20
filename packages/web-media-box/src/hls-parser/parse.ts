@@ -26,6 +26,7 @@ import {
   EXT_X_PART,
   EXT_X_PROGRAM_DATE_TIME,
   EXT_X_MEDIA,
+  EXT_X_STREAM_INF,
   EXT_X_SKIP,
 } from './consts/tags.ts';
 import type {
@@ -36,7 +37,8 @@ import type {
   TransformTagValue,
   WarnCallback,
 } from './types/parserOptions';
-import type { Segment, ParsedPlaylist } from './types/parsedPlaylist';
+import type { Segment, ParsedPlaylist, VariantStream } from './types/parsedPlaylist';
+import type { SharedState } from './types/sharedState';
 import {
   EmptyTagProcessor,
   ExtXEndList,
@@ -66,6 +68,7 @@ import {
   ExtXMap,
   ExtXPart,
   ExtXMedia,
+  ExtXStreamInf,
   ExtXSkip,
 } from './tags/tagWithAttributesProcessors.ts';
 
@@ -73,6 +76,11 @@ const defaultSegment: Segment = {
   duration: 0,
   isDiscontinuity: false,
   isGap: false,
+  uri: '',
+};
+
+const defaultVariantStream: VariantStream = {
+  bandwidth: 0,
   uri: '',
 };
 
@@ -88,7 +96,7 @@ class Parser {
   private readonly tagAttributesMap: Record<string, TagWithAttributesProcessor>;
 
   protected readonly parsedPlaylist: ParsedPlaylist;
-  protected currentSegment: Segment;
+  protected sharedState: SharedState;
 
   public constructor(options: ParserOptions) {
     this.warnCallback = options.warnCallback || noop;
@@ -112,9 +120,14 @@ class Parser {
         subtitles: {},
         closedCaptions: {},
       },
+      variantStreams: []
     };
 
-    this.currentSegment = { ...defaultSegment };
+    this.sharedState = {
+      isMultivariantPlaylist: false,
+      currentSegment: { ...defaultSegment },
+      currentVariant: { ...defaultVariantStream },
+    };
 
     this.emptyTagMap = {
       [EXT_X_INDEPENDENT_SEGMENTS]: new ExtXIndependentSegments(this.warnCallback),
@@ -144,6 +157,7 @@ class Parser {
       [EXT_X_MAP]: new ExtXMap(this.warnCallback),
       [EXT_X_PART]: new ExtXPart(this.warnCallback),
       [EXT_X_MEDIA]: new ExtXMedia(this.warnCallback),
+      [EXT_X_STREAM_INF]: new ExtXStreamInf(this.warnCallback),
       [EXT_X_SKIP]: new ExtXSkip(this.warnCallback),
     };
   }
@@ -162,7 +176,7 @@ class Parser {
     //1. Process simple tags without values or attributes:
     if (tagKey in this.emptyTagMap) {
       const emptyTagProcessor = this.emptyTagMap[tagKey];
-      return emptyTagProcessor.process(this.parsedPlaylist, this.currentSegment);
+      return emptyTagProcessor.process(this.parsedPlaylist, this.sharedState);
     }
 
     //2. Process tags with values:
@@ -174,7 +188,7 @@ class Parser {
       }
 
       const tagWithValueProcessor = this.tagValueMap[tagKey];
-      return tagWithValueProcessor.process(tagValue, this.parsedPlaylist, this.currentSegment);
+      return tagWithValueProcessor.process(tagValue, this.parsedPlaylist, this.sharedState);
     }
 
     //3. Process tags with attributes:
@@ -182,14 +196,14 @@ class Parser {
       tagAttributes = this.transformTagAttributes(tagKey, tagAttributes);
       const tagWithAttributesProcessor = this.tagAttributesMap[tagKey];
 
-      return tagWithAttributesProcessor.process(tagAttributes, this.parsedPlaylist, this.currentSegment);
+      return tagWithAttributesProcessor.process(tagAttributes, this.parsedPlaylist, this.sharedState);
     }
 
     //4. Process custom tags:
     if (tagKey in this.customTagMap) {
       const customTagProcessor = this.customTagMap[tagKey];
 
-      return customTagProcessor(tagKey, tagValue, tagAttributes, this.parsedPlaylist.custom);
+      return customTagProcessor(tagKey, tagValue, tagAttributes, this.parsedPlaylist.custom, this.sharedState);
     }
 
     // 5. Unable to process received tag:
@@ -197,26 +211,40 @@ class Parser {
   };
 
   protected readonly uriInfoCallback = (uri: string): void => {
+    if (this.sharedState.isMultivariantPlaylist) {
+      this.handleCurrentVariant(uri)
+    } else {
+      this.handleCurrentSegment(uri);
+    }
+  };
+
+  private handleCurrentVariant(uri: string): void {
+    this.sharedState.currentVariant.uri = uri;
+    this.parsedPlaylist.variantStreams.push(this.sharedState.currentVariant);
+    this.sharedState.currentVariant = { ...defaultVariantStream };
+  }
+
+  private handleCurrentSegment(uri: string): void {
     const previousSegment = this.parsedPlaylist.segments[this.parsedPlaylist.segments.length - 1];
 
-    this.currentSegment.uri = uri;
+    this.sharedState.currentSegment.uri = uri;
 
     // TODO: consider using shared private object instead of polluting parsed playlist object, since it is public interface
     // Apply the EXT-X-BITRATE value from previous segments to this segment as well,
     // as long as it doesn't have an EXT-X-BYTERANGE tag applied to it.
     // https://datatracker.ietf.org/doc/html/draft-pantos-hls-rfc8216bis#section-4.4.4.8
-    if (this.parsedPlaylist.currentBitrate && !this.currentSegment.byteRange) {
-      this.currentSegment.bitrate = this.parsedPlaylist.currentBitrate;
+    if (this.sharedState.currentBitrate && !this.sharedState.currentSegment.byteRange) {
+      this.sharedState.currentSegment.bitrate = this.sharedState.currentBitrate;
     }
 
     // Extrapolate a program date time value from the previous segment's program date time
-    if (!this.currentSegment.programDateTime && previousSegment?.programDateTime) {
-      this.currentSegment.programDateTime = previousSegment.programDateTime + previousSegment.duration * 1000;
+    if (!this.sharedState.currentSegment.programDateTime && previousSegment?.programDateTime) {
+      this.sharedState.currentSegment.programDateTime = previousSegment.programDateTime + previousSegment.duration * 1000;
     }
 
-    this.parsedPlaylist.segments.push(this.currentSegment);
-    this.currentSegment = { ...defaultSegment };
-  };
+    this.parsedPlaylist.segments.push(this.sharedState.currentSegment);
+    this.sharedState.currentSegment = { ...defaultSegment };
+  }
 }
 
 export class FullPlaylistParser extends Parser {

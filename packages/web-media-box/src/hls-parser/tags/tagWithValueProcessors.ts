@@ -1,4 +1,5 @@
-import type { ParsedPlaylist, PlaylistType, Segment } from '../types/parsedPlaylist';
+import type { ParsedPlaylist, PlaylistType } from '../types/parsedPlaylist';
+import type { SharedState } from '../types/sharedState';
 import { TagProcessor } from './base.ts';
 import {
   EXT_X_DISCONTINUITY_SEQUENCE,
@@ -14,13 +15,13 @@ import {
 import { fallbackUsedWarn, unableToParseValueWarn, unsupportedEnumValue } from '../utils/warn.ts';
 
 export abstract class TagWithValueProcessor extends TagProcessor {
-  public abstract process(tagValue: string, playlist: ParsedPlaylist, currentSegment: Segment): void;
+  public abstract process(tagValue: string, playlist: ParsedPlaylist, sharedState: SharedState): void;
 }
 
 abstract class TagWithNumberValueProcessor extends TagWithValueProcessor {
   protected readonly fallback: number | undefined;
 
-  public process(tagValue: string, playlist: ParsedPlaylist): void {
+  public process(tagValue: string, playlist: ParsedPlaylist, sharedState: SharedState): void {
     let parsed = Number(tagValue);
 
     if (Number.isNaN(parsed)) {
@@ -32,10 +33,10 @@ abstract class TagWithNumberValueProcessor extends TagWithValueProcessor {
       }
     }
 
-    return this.processNumberValue(parsed, playlist);
+    return this.processNumberValue(parsed, playlist, sharedState);
   }
 
-  protected abstract processNumberValue(value: number, playlist: ParsedPlaylist): void;
+  protected abstract processNumberValue(value: number, playlist: ParsedPlaylist, sharedState: SharedState): void;
 }
 
 abstract class TagWithEnumValueProcessor<T> extends TagWithValueProcessor {
@@ -96,7 +97,7 @@ export class ExtXPlaylistType extends TagWithEnumValueProcessor<PlaylistType> {
 export class ExtInf extends TagWithValueProcessor {
   protected readonly tag = EXTINF;
 
-  public process(tagValue: string, playlist: ParsedPlaylist, currentSegment: Segment): void {
+  public process(tagValue: string, playlist: ParsedPlaylist, sharedState: SharedState): void {
     const parts = tagValue.split(',');
     const duration = parseInt(parts[0]);
 
@@ -110,15 +111,15 @@ export class ExtInf extends TagWithValueProcessor {
       title = title.trim();
     }
 
-    currentSegment.duration = duration;
-    currentSegment.title = title;
+    sharedState.currentSegment.duration = duration;
+    sharedState.currentSegment.title = title;
   }
 }
 
 export class ExtXByteRange extends TagWithValueProcessor {
   protected readonly tag = EXT_X_BYTERANGE;
 
-  public process(tagValue: string, playlist: ParsedPlaylist, currentSegment: Segment): void {
+  public process(tagValue: string, playlist: ParsedPlaylist, sharedState: SharedState): void {
     const values = tagValue.split('@');
     const length = Number(values[0]);
     let offset = values[1] ? Number(values[1]) : undefined;
@@ -133,38 +134,38 @@ export class ExtXByteRange extends TagWithValueProcessor {
       offset = previousSegment.byteRange.offset + previousSegment.byteRange.length + 1;
     }
 
-    currentSegment.byteRange = {length, offset};
+    sharedState.currentSegment.byteRange = {length, offset};
   }
 }
 
 export class ExtXBitrate extends TagWithValueProcessor {
   protected readonly tag = EXT_X_BITRATE;
 
-  public process(tagValue: string, playlist: ParsedPlaylist, currentSegment: Segment): void {
+  public process(tagValue: string, playlist: ParsedPlaylist, sharedState: SharedState): void {
     const bitrate = Number(tagValue);
 
     if (Number.isNaN(bitrate) || bitrate < 0) {
       return this.warnCallback(unableToParseValueWarn(this.tag));
     }
 
-    currentSegment.bitrate = bitrate;
+    sharedState.currentSegment.bitrate = bitrate;
 
-    // Store on the playlist so the bitrate value can be applied to subsequent segments
-    playlist.currentBitrate = bitrate;
+    // Store the bitrate value so it can be applied to subsequent segments
+    sharedState.currentBitrate = bitrate;
   }
 }
 
 export class ExtXProgramDateTime extends TagWithValueProcessor {
   protected readonly tag = EXT_X_PROGRAM_DATE_TIME;
 
-  public process(tagValue: string, playlist: ParsedPlaylist, currentSegment: Segment): void {
+  public process(tagValue: string, playlist: ParsedPlaylist, sharedState: SharedState): void {
     const timestamp = Date.parse(tagValue);
 
     if (Number.isNaN(timestamp)) {
       return this.warnCallback(unableToParseValueWarn(this.tag));
     }
 
-    currentSegment.programDateTime = timestamp;
+    sharedState.currentSegment.programDateTime = timestamp;
 
     // If this is the first segment, abort early
     if (!playlist.segments.length) {
@@ -175,7 +176,7 @@ export class ExtXProgramDateTime extends TagWithValueProcessor {
 
     // If there are preceding segments without programDateTime, we need to backfill them
     if (!previousSegment.programDateTime) {
-      let currentTimestamp = currentSegment.programDateTime;
+      let currentTimestamp = sharedState.currentSegment.programDateTime;
 
       for (let i = playlist.segments.length - 1; i >= 0; i--) {
         const segment = playlist.segments[i];

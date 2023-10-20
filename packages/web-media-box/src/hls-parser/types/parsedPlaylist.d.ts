@@ -81,6 +81,34 @@ export interface RenditionGroups {
   closedCaptions: Record<GroupId, RenditionGroup>;
 }
 
+export interface Resolution {
+  width: number,
+  height: number
+}
+
+export type CpcRecord = Record<string, string[]>;
+export type AllowedCpc = Array<CpcRecord>;
+
+export interface VariantStream {
+  uri: string;
+  bandwidth: number;
+  averageBandwidth?: number;
+  score?: number;
+  codecs?: string[];
+  supplementalCodecs?: string[];
+  resolution?: Resolution;
+  frameRate?: number;
+  hdcpLevel?: 'TYPE-0' | 'TYPE-1' | 'NONE';
+  allowedCpc?: AllowedCpc;
+  videoRange?: 'SDR' | 'HLG' | 'PQ';
+  stableVariantId?: string;
+  audio?: string;
+  video?: string;
+  subtitles?: string;
+  closedCaptions?: string;
+  pathwayId?: string;
+}
+
 export interface Skip {
   skippedSegments: number;
   recentlyRemovedDateranges?: Array<string>;
@@ -120,8 +148,7 @@ export interface ParsedPlaylist {
   segments: Array<Segment>;
   custom: Record<string, unknown>;
   renditionGroups: RenditionGroups;
-  // Used to persist EXT_X_BITRATE across segments
-  currentBitrate?: number;
+  variantStreams: Array<VariantStream>;
   // https://datatracker.ietf.org/doc/html/draft-pantos-hls-rfc8216bis#section-4.4.5.2
-  skip?: Skip
+  skip?: Skip;
 }

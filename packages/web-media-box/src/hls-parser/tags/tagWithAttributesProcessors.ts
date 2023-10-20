@@ -1,13 +1,14 @@
-import type { ParsedPlaylist, PartialSegment, Segment, Rendition, RenditionType, RenditionGroups, GroupId } from '../types/parsedPlaylist';
+import type { ParsedPlaylist, PartialSegment, Rendition, RenditionType, RenditionGroups, GroupId, Resolution, AllowedCpc } from '../types/parsedPlaylist';
+import type { SharedState } from '../types/sharedState';
 import { TagProcessor } from './base.ts';
 import { missingRequiredAttributeWarn } from '../utils/warn.ts';
-import { EXT_X_PART_INF, EXT_X_SERVER_CONTROL, EXT_X_START, EXT_X_KEY, EXT_X_MAP, EXT_X_PART, EXT_X_MEDIA, EXT_X_SKIP } from '../consts/tags.ts';
+import { EXT_X_PART_INF, EXT_X_SERVER_CONTROL, EXT_X_START, EXT_X_KEY, EXT_X_MAP, EXT_X_PART, EXT_X_MEDIA, EXT_X_STREAM_INF, EXT_X_SKIP } from '../consts/tags.ts';
 import { parseBoolean } from '../utils/parse.ts';
 
 export abstract class TagWithAttributesProcessor extends TagProcessor {
   protected abstract readonly requiredAttributes: Set<string>;
 
-  public process(tagAttributes: Record<string, string>, playlist: ParsedPlaylist, currentSegment: Segment): void {
+  public process(tagAttributes: Record<string, string>, playlist: ParsedPlaylist, sharedState: SharedState): void {
     let isRequiredAttributedMissed = false;
 
     this.requiredAttributes.forEach((requiredAttribute) => {
@@ -23,10 +24,10 @@ export abstract class TagWithAttributesProcessor extends TagProcessor {
       return;
     }
 
-    return this.safeProcess(tagAttributes, playlist, currentSegment);
+    return this.safeProcess(tagAttributes, playlist, sharedState);
   }
 
-  protected abstract safeProcess(tagAttributes: Record<string, string>, playlist: ParsedPlaylist, currentSegment: Segment): void;
+  protected abstract safeProcess(tagAttributes: Record<string, string>, playlist: ParsedPlaylist, sharedState: SharedState): void;
 }
 
 export class ExtXStart extends TagWithAttributesProcessor {
@@ -150,7 +151,7 @@ export class ExtXPart extends TagWithAttributesProcessor {
   protected readonly requiredAttributes = new Set([ExtXPart.URI, ExtXPart.DURATION]);
   protected readonly tag = EXT_X_PART;
 
-  protected safeProcess(tagAttributes: Record<string, string>, playlist: ParsedPlaylist, currentSegment: Segment): void {
+  protected safeProcess(tagAttributes: Record<string, string>, playlist: ParsedPlaylist, sharedState: SharedState): void {
     const part: PartialSegment = {
       uri: tagAttributes[ExtXPart.URI],
       duration: Number(tagAttributes[ExtXPart.DURATION]),
@@ -159,10 +160,10 @@ export class ExtXPart extends TagWithAttributesProcessor {
     if (tagAttributes[ExtXPart.BYTERANGE]) {
       const values = tagAttributes[ExtXPart.BYTERANGE].split('@');
       const length = Number(values[0]);
-      let offset = values[1] ? Number(values[1]) : undefined;
+      let offset = Number(values[1]);
 
-      if (typeof offset === 'undefined') {
-        const previousPartialSegment = currentSegment.parts?.[currentSegment.parts.length - 1];
+      if (Number.isNaN(offset)) {
+        const previousPartialSegment = sharedState.currentSegment.parts?.[sharedState.currentSegment.parts.length - 1];
 
         if (!previousPartialSegment || !previousPartialSegment.byteRange) {
           return this.warnCallback(`Unable to parse ${this.tag}: A BYTERANGE attribute without offset requires a previous partial segment with a byterange`);
@@ -182,11 +183,11 @@ export class ExtXPart extends TagWithAttributesProcessor {
       part.isGap = parseBoolean(tagAttributes[ExtXPart.GAP], false);
     }
 
-    if (!currentSegment.parts) {
-      currentSegment.parts = [];
+    if (!sharedState.currentSegment.parts) {
+      sharedState.currentSegment.parts = [];
     }
 
-    currentSegment.parts.push(part);
+    sharedState.currentSegment.parts.push(part);
   }
 }
 
@@ -238,6 +239,77 @@ export class ExtXMedia extends TagWithAttributesProcessor {
     }
 
     playlist.renditionGroups[renditionTypeKey][rendition.groupId] = [rendition];
+  }
+}
+
+export class ExtXStreamInf extends TagWithAttributesProcessor {
+  private static readonly BANDWIDTH = 'BANDWIDTH';
+  private static readonly AVERAGE_BANDWIDTH = 'AVERAGE-BANDWIDTH';
+  private static readonly SCORE = 'SCORE';
+  private static readonly CODECS = 'CODECS';
+  private static readonly SUPPLEMENTAL_CODECS = 'SUPPLEMENTAL-CODECS';
+  private static readonly RESOLUTION = 'RESOLUTION';
+  private static readonly FRAME_RATE = 'FRAME-RATE';
+  private static readonly HDCP_LEVEL = 'HDCP-LEVEL';
+  private static readonly ALLOWED_CPC = 'ALLOWED-CPC';
+  private static readonly VIDEO_RANGE = 'VIDEO-RANGE';
+  private static readonly STABLE_VARIANT_ID = 'STABLE-VARIANT-ID';
+  private static readonly AUDIO = 'AUDIO';
+  private static readonly VIDEO = 'VIDEO';
+  private static readonly SUBTITLES = 'SUBTITLES';
+  private static readonly CLOSED_CAPTIONS = 'CLOSED-CAPTIONS';
+  private static readonly PATHWAY_ID = 'PATHWAY-ID';
+
+  protected readonly requiredAttributes = new Set([ExtXStreamInf.BANDWIDTH]);
+  protected readonly tag = EXT_X_STREAM_INF;
+
+  protected safeProcess(tagAttributes: Record<string, string>, playlist: ParsedPlaylist, sharedState: SharedState): void {
+    // RESOLUTION attribute
+    let parsedResolution = tagAttributes[ExtXStreamInf.RESOLUTION] ? tagAttributes[ExtXStreamInf.RESOLUTION].split('x').map(Number) : [];
+    let resolution: Resolution | undefined;
+
+    if (parsedResolution.length === 2) {
+      resolution = {
+        width: parsedResolution[0],
+        height: parsedResolution[1]
+      };
+    }
+
+    // ALLOWED_CPC attribute
+    const parsedAllowedCpc = tagAttributes[ExtXStreamInf.ALLOWED_CPC] ? tagAttributes[ExtXStreamInf.ALLOWED_CPC].split(',') : [];
+    let allowedCpc: AllowedCpc = [];
+
+    if (parsedAllowedCpc) {
+      parsedAllowedCpc.forEach((entry) => {
+        const parsedEntry = entry.split(':');
+        const keyFormat = parsedEntry[0];
+        const cpcs = parsedEntry[1].split('/');
+
+        allowedCpc.push({ [keyFormat]: cpcs });
+      })
+    }
+
+    const variantStream = {
+      bandwidth: Number(tagAttributes[ExtXStreamInf.BANDWIDTH]),
+      averageBandwidth: tagAttributes[ExtXStreamInf.AVERAGE_BANDWIDTH] ? Number(tagAttributes[ExtXStreamInf.AVERAGE_BANDWIDTH]) : undefined,
+      score: tagAttributes[ExtXStreamInf.SCORE] ? Number(tagAttributes[ExtXStreamInf.SCORE]) : undefined,
+      codecs: tagAttributes[ExtXStreamInf.CODECS] ? tagAttributes[ExtXStreamInf.CODECS].split(',') : [],
+      supplementalCodecs: tagAttributes[ExtXStreamInf.SUPPLEMENTAL_CODECS] ? tagAttributes[ExtXStreamInf.SUPPLEMENTAL_CODECS].split(',') : [],
+      resolution,
+      frameRate: tagAttributes[ExtXStreamInf.FRAME_RATE] ? Number(tagAttributes[ExtXStreamInf.FRAME_RATE]) : undefined,
+      hdcpLevel: tagAttributes[ExtXStreamInf.HDCP_LEVEL] as 'NONE' | 'TYPE-0' | 'TYPE-1' | undefined,
+      allowedCpc: allowedCpc,
+      videoRange: tagAttributes[ExtXStreamInf.VIDEO_RANGE] as 'SDR' | 'HLG' | 'PQ' | undefined,
+      stableVariantId: tagAttributes[ExtXStreamInf.STABLE_VARIANT_ID],
+      audio: tagAttributes[ExtXStreamInf.AUDIO],
+      video: tagAttributes[ExtXStreamInf.VIDEO],
+      subtitles: tagAttributes[ExtXStreamInf.SUBTITLES],
+      closedCaptions: tagAttributes[ExtXStreamInf.CLOSED_CAPTIONS],
+      pathwayId: tagAttributes[ExtXStreamInf.PATHWAY_ID]
+    };
+
+    Object.assign(sharedState.currentVariant, variantStream);
+    sharedState.isMultivariantPlaylist = true;
   }
 }
 
