@@ -21,3 +21,4 @@ export const EXT_X_PROGRAM_DATE_TIME = 'EXT-X-PROGRAM-DATE-TIME';
 export const EXT_X_BITRATE = 'EXT-X-BITRATE';
 export const EXT_X_PART = 'EXT-X-PART';
 export const EXT_X_MEDIA = 'EXT_X_MEDIA';
+export const EXT_X_SKIP = 'EXT-X-SKIP';

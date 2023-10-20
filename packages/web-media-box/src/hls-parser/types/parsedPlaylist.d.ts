@@ -81,6 +81,11 @@ export interface RenditionGroups {
   closedCaptions: Record<GroupId, RenditionGroup>;
 }
 
+export interface Skip {
+  skippedSegments: number;
+  recentlyRemovedDateranges?: Array<string>;
+}
+
 export type PlaylistType = 'EVENT' | 'VOD';
 
 export interface ParsedPlaylist {
@@ -117,4 +122,6 @@ export interface ParsedPlaylist {
   renditionGroups: RenditionGroups;
   // Used to persist EXT_X_BITRATE across segments
   currentBitrate?: number;
+  // https://datatracker.ietf.org/doc/html/draft-pantos-hls-rfc8216bis#section-4.4.5.2
+  skip?: Skip
 }
