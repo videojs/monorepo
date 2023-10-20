@@ -28,6 +28,7 @@ import {
   EXT_X_MEDIA,
   EXT_X_STREAM_INF,
   EXT_X_SKIP,
+  EXT_X_DATERANGE,
 } from './consts/tags.ts';
 import type {
   CustomTagMap,
@@ -70,6 +71,7 @@ import {
   ExtXMedia,
   ExtXStreamInf,
   ExtXSkip,
+  ExtXDaterange,
 } from './tags/tagWithAttributesProcessors.ts';
 
 const defaultSegment: Segment = {
@@ -120,7 +122,8 @@ class Parser {
         subtitles: {},
         closedCaptions: {},
       },
-      variantStreams: []
+      variantStreams: [],
+      dateRanges: [],
     };
 
     this.sharedState = {
@@ -159,6 +162,7 @@ class Parser {
       [EXT_X_MEDIA]: new ExtXMedia(this.warnCallback),
       [EXT_X_STREAM_INF]: new ExtXStreamInf(this.warnCallback),
       [EXT_X_SKIP]: new ExtXSkip(this.warnCallback),
+      [EXT_X_DATERANGE]: new ExtXDaterange(this.warnCallback),
     };
   }
 

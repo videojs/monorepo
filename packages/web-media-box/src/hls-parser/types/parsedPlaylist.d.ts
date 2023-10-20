@@ -81,6 +81,27 @@ export interface RenditionGroups {
   closedCaptions: Record<GroupId, RenditionGroup>;
 }
 
+export enum Cue {
+  PRE = 'PRE',
+  POST = 'POST',
+  ONCE = 'ONCE'
+}
+
+export interface DateRange {
+  id: string;
+  class?: string;
+  startDate: string;
+  cue?: Cue[];
+  endDate?: string;
+  duration?: number;
+  plannedDuration?: number;
+  clientAttributes: Record<string, string | number>;
+  scte35Cmd?: number;
+  scte35Out?: number;
+  scte35In?: number;
+  endOnNext: boolean;
+}
+
 export interface Resolution {
   width: number,
   height: number
@@ -148,6 +169,8 @@ export interface ParsedPlaylist {
   segments: Array<Segment>;
   custom: Record<string, unknown>;
   renditionGroups: RenditionGroups;
+  // https://datatracker.ietf.org/doc/html/draft-pantos-hls-rfc8216bis#section-4.4.5.1
+  dateRanges: DateRange[];
   variantStreams: Array<VariantStream>;
   // https://datatracker.ietf.org/doc/html/draft-pantos-hls-rfc8216bis#section-4.4.5.2
   skip?: Skip;

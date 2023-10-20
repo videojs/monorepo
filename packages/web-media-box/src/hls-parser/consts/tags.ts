@@ -23,3 +23,4 @@ export const EXT_X_PART = 'EXT-X-PART';
 export const EXT_X_MEDIA = 'EXT-X-MEDIA';
 export const EXT_X_STREAM_INF = 'EXT-X-STREAM-INF';
 export const EXT_X_SKIP = 'EXT-X-SKIP';
+export const EXT_X_DATERANGE = 'EXT-X-DATERANGE';
