@@ -1,4 +1,4 @@
-import { testString } from '@/dash-parser/examples/mpd.ts';
+import { testMPD } from '../../test/dash-parser/examples/mpd';
 
 const PARSE_EMPTY_SPACE_STATE = 1;
 const PARSE_TAG_KEY_STATE = 2;
@@ -52,7 +52,11 @@ export default function createStateMachine(tagInfoCallback: TagInfoCallback): St
         currentState = PARSE_TAG_KEY_STATE;
 
         if (currentTagKey) {
-          tagInfoCallback(currentTagKey, currentTagValue || null, currentTagAttributeKeyValueMap);
+          tagInfoCallback({
+            tagKey: currentTagKey,
+            tagValue: currentTagValue || null,
+            tagAttributes: currentTagAttributeKeyValueMap
+          }, null);
           currentTagKey = '';
           currentTagValue = '';
           currentTagAttributeKeyValueMap = {};
@@ -146,7 +150,7 @@ const test = (): void => {
     console.log('tagName: ', tagName, ' tagValue: ', tagValue, ' tagAttributes: ', tagAttributes);
   });
 
-  for (const char of testString) {
+  for (const char of testMPD) {
     stateMachine(char);
   }
 };
