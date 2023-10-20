@@ -142,6 +142,18 @@ export interface Skip {
   recentlyRemovedDateranges?: Array<string>;
 }
 
+export enum HintType {
+  PART = 'PART',
+  MAP = 'MAP'
+}
+
+export interface PreloadHint {
+  type: HintType;
+  uri: string;
+  byterangeStart?: number;
+  byterangeLength?: number;
+}
+
 export type PlaylistType = 'EVENT' | 'VOD';
 
 export interface ParsedPlaylist {
@@ -182,4 +194,6 @@ export interface ParsedPlaylist {
   iFramePlaylists: Array<IFramePlaylist>
   // https://datatracker.ietf.org/doc/html/draft-pantos-hls-rfc8216bis#section-4.4.5.2
   skip?: Skip;
+  // https://datatracker.ietf.org/doc/html/draft-pantos-hls-rfc8216bis#section-4.4.5.3
+  preloadHints: PreloadHint[];
 }

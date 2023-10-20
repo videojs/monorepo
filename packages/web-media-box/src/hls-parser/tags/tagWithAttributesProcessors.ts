@@ -1,4 +1,4 @@
-import type { ParsedPlaylist, PartialSegment, Rendition, RenditionType, RenditionGroups, GroupId, Resolution, AllowedCpc, IFramePlaylist, BaseStreamInf, DateRange, Cue } from '../types/parsedPlaylist';
+import type { ParsedPlaylist, PartialSegment, Rendition, RenditionType, RenditionGroups, GroupId, Resolution, AllowedCpc, IFramePlaylist, BaseStreamInf, DateRange, Cue, HintType } from '../types/parsedPlaylist';
 import type { SharedState } from '../types/sharedState';
 import { TagProcessor } from './base.ts';
 import { missingRequiredAttributeWarn } from '../utils/warn.ts';
@@ -14,6 +14,7 @@ import {
   EXT_X_STREAM_INF,
   EXT_X_I_FRAME_STREAM_INF,
   EXT_X_DATERANGE,
+  EXT_X_PRELOAD_HINT,
 } from '../consts/tags.ts';
 import { parseBoolean } from '../utils/parse.ts';
 
@@ -414,5 +415,26 @@ export class ExtXDaterange extends TagWithAttributesProcessor {
       }, dateRange.clientAttributes);
 
     playlist.dateRanges.push(dateRange);
+  }
+}
+
+export class ExtXPreloadHint extends TagWithAttributesProcessor {
+  private static readonly TYPE = 'TYPE';
+  private static readonly URI = 'URI';
+  private static readonly BYTERANGE_START = 'BYTERANGE-START';
+  private static readonly BYTERANGE_LENGTH = 'BYTERANGE-LENGTH';
+  
+  protected requiredAttributes = new Set([ExtXPreloadHint.TYPE, ExtXPreloadHint.URI]);
+  protected tag = EXT_X_PRELOAD_HINT;
+
+  protected safeProcess(tagAttributes: Record<string, string>, playlist: ParsedPlaylist): void {
+    const preloadHint = {
+      type: tagAttributes[ExtXPreloadHint.TYPE] as HintType,
+      uri: tagAttributes[ExtXPreloadHint.URI],
+      byterangeStart: Number(tagAttributes[ExtXPreloadHint.BYTERANGE_START]),
+      byterangeLength: Number(tagAttributes[ExtXPreloadHint.BYTERANGE_LENGTH])
+    };
+
+    playlist.preloadHints.push(preloadHint);
   }
 }

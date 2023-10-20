@@ -25,3 +25,4 @@ export const EXT_X_MEDIA = 'EXT-X-MEDIA';
 export const EXT_X_STREAM_INF = 'EXT-X-STREAM-INF';
 export const EXT_X_I_FRAME_STREAM_INF = 'EXT-X-I-FRAME-STREAM-INF';
 export const EXT_X_DATERANGE = 'EXT-X-DATERANGE';
+export const EXT_X_PRELOAD_HINT = 'EXT-X-PRELOAD-HINT';
