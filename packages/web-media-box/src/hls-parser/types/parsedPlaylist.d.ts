@@ -110,7 +110,7 @@ export interface Resolution {
 export type CpcRecord = Record<string, string[]>;
 export type AllowedCpc = Array<CpcRecord>;
 
-export interface VariantStream {
+export interface BaseStreamInf {
   uri: string;
   bandwidth: number;
   averageBandwidth?: number;
@@ -118,17 +118,24 @@ export interface VariantStream {
   codecs?: string[];
   supplementalCodecs?: string[];
   resolution?: Resolution;
-  frameRate?: number;
   hdcpLevel?: 'TYPE-0' | 'TYPE-1' | 'NONE';
   allowedCpc?: AllowedCpc;
   videoRange?: 'SDR' | 'HLG' | 'PQ';
   stableVariantId?: string;
-  audio?: string;
   video?: string;
-  subtitles?: string;
-  closedCaptions?: string;
   pathwayId?: string;
 }
+
+// VariantStream properties that are not in BaseStreamInf
+export interface VariantStreamSpecific {
+  frameRate?: number;
+  audio?: string;
+  subtitles?: string;
+  closedCaptions?: string;
+}
+
+export interface VariantStream extends BaseStreamInf, VariantStreamSpecific {}
+export interface IFramePlaylist extends BaseStreamInf {}
 
 export interface Skip {
   skippedSegments: number;
@@ -172,6 +179,7 @@ export interface ParsedPlaylist {
   // https://datatracker.ietf.org/doc/html/draft-pantos-hls-rfc8216bis#section-4.4.5.1
   dateRanges: DateRange[];
   variantStreams: Array<VariantStream>;
+  iFramePlaylists: Array<IFramePlaylist>
   // https://datatracker.ietf.org/doc/html/draft-pantos-hls-rfc8216bis#section-4.4.5.2
   skip?: Skip;
 }
