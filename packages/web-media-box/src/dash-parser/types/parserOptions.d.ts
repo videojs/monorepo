@@ -12,7 +12,7 @@ export type CustomTagMap = Record<
 >;
 
 export interface ParserOptions {
-  uri?: string,
+  uri?: string;
   warnCallback?: WarnCallback;
   debugCallback?: DebugCallback;
   customTagMap?: CustomTagMap;

@@ -128,13 +128,15 @@ export class ExtXByteRange extends TagWithValueProcessor {
       const previousSegment = playlist.segments[playlist.segments.length - 1];
 
       if (!previousSegment || !previousSegment.byteRange) {
-        return this.warnCallback(`Unable to parse ${this.tag}: EXT-X-BYTERANGE without offset requires a previous segment with a byte range in the playlist`);
+        return this.warnCallback(
+          `Unable to parse ${this.tag}: EXT-X-BYTERANGE without offset requires a previous segment with a byte range in the playlist`
+        );
       }
 
       offset = previousSegment.byteRange.offset + previousSegment.byteRange.length + 1;
     }
 
-    sharedState.currentSegment.byteRange = {length, offset};
+    sharedState.currentSegment.byteRange = { length, offset };
   }
 }
 

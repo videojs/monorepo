@@ -3,4 +3,4 @@ export const getContent = (element: Element): string | null => {
   const trimmed = str.trim();
 
   return trimmed.length ? trimmed : null;
-}
+};

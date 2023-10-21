@@ -1,7 +1,7 @@
 type Callback<T> = (data: T) => void;
 
 export default class EventEmitter<M> {
-  private events: Map<keyof M, Set<Callback<unknown>>> = new Map();
+  private events = new Map<keyof M, Set<Callback<unknown>>>();
 
   public on<K extends keyof M>(event: K, callback: Callback<M[K]>): void {
     if (!this.events.has(event)) {
@@ -29,7 +29,7 @@ export default class EventEmitter<M> {
   }
 
   public once<K extends keyof M>(event: K, callback: Callback<M[K]>): void {
-    const onceCallback = (data: M[K]) => {
+    const onceCallback = (data: M[K]): void => {
       this.off(event, onceCallback);
       callback(data);
     };

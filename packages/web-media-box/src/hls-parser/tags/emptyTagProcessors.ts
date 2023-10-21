@@ -6,7 +6,7 @@ import {
   EXT_X_I_FRAMES_ONLY,
   EXT_X_INDEPENDENT_SEGMENTS,
   EXT_X_DISCONTINUITY,
-  EXT_X_GAP
+  EXT_X_GAP,
 } from '../consts/tags.ts';
 
 export abstract class EmptyTagProcessor extends TagProcessor {

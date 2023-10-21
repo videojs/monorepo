@@ -1,9 +1,9 @@
 export enum OperationType {
   append,
-  remove
-};
+  remove,
+}
 
 export interface SourceBufferWrapper {
   buffer: SourceBuffer;
   queue: Array<SourceBufferOperation>;
-};
+}

@@ -19,7 +19,7 @@ export type StateMachineTransition = (char: string) => void;
 export default function createStateMachine(tagInfoCallback: TagInfoCallback): StateMachineTransition {
   let currentState = PARSE_EMPTY_SPACE_STATE;
 
-  const levels: Map<number, TagInfo | null> = new Map();
+  const levels = new Map<number, TagInfo | null>();
 
   let currentDepth = -1;
   let lastChar: string | null = null;
@@ -152,4 +152,3 @@ export default function createStateMachine(tagInfoCallback: TagInfoCallback): St
     lastChar = char;
   };
 }
-

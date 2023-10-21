@@ -6,7 +6,7 @@ import EventEmitter from '../utils/eventEmitter.ts';
 
 import { Events, EnterPictureInPictureModeEvent, LeavePictureInPictureModeEvent, ErrorEvent } from './events.ts';
 import type { EventToTypeMap } from './events.ts';
-import Pipeline from '@/pipelines/basePipeline.ts';
+import type Pipeline from '@/pipelines/basePipeline.ts';
 import NativePipeline from '@/pipelines/native/nativePipeline.ts';
 import { NoSupportedPipelineError } from '@/player/errors.ts';
 
@@ -39,11 +39,11 @@ interface PlayerVideoTrack {}
 interface PlayerStats {}
 
 export default class Player {
-  private static readonly pipelinesMap: Map<string, Pipeline> = new Map();
+  private static readonly pipelinesMap = new Map<string, Pipeline>();
 
   public static readonly Events = Events;
 
-  public static registerPipeline(mimeType: string, pipeline: Pipeline) {
+  public static registerPipeline(mimeType: string, pipeline: Pipeline): void {
     Player.pipelinesMap.set(mimeType, pipeline);
   }
 
@@ -118,7 +118,7 @@ export default class Player {
     this.videoElement.volume = volumeLevel;
   }
 
-  public seek(seekTarget: number) {
+  public seek(seekTarget: number): void {
     if (this.videoElement === null) {
       return this.warnAttempt('seek');
     }
@@ -210,7 +210,7 @@ export default class Player {
     return this.videoElement.muted;
   }
 
-  public setLoggerLevel(level: LoggerLevel) {
+  public setLoggerLevel(level: LoggerLevel): void {
     return this.logger.setLoggerLevel(level);
   }
 
@@ -228,11 +228,11 @@ export default class Player {
 
   public readonly off = this.removeEventListener;
 
-  private warnAttempt(method: string) {
+  private warnAttempt(method: string): void {
     this.logger.warn(`Attempt to call "${method}", but no video element attached. Call "attach" first.`);
   }
 
-  public play() {
+  public play(): void {
     if (this.videoElement === null) {
       return this.warnAttempt('play');
     }
@@ -243,7 +243,7 @@ export default class Player {
     });
   }
 
-  public pause() {
+  public pause(): void {
     if (this.videoElement === null) {
       return this.warnAttempt('pause');
     }
@@ -251,7 +251,7 @@ export default class Player {
     this.videoElement.pause();
   }
 
-  public requestPictureInPicture() {
+  public requestPictureInPicture(): void {
     if (this.videoElement === null) {
       return this.warnAttempt('requestPictureInPicture');
     }
@@ -285,11 +285,11 @@ export default class Player {
       });
   }
 
-  public getIsInPictureInPictureMode() {
+  public getIsInPictureInPictureMode(): boolean {
     return this.videoElement !== null && window.document.pictureInPictureElement === this.videoElement;
   }
 
-  private readonly handlePictureAndPictureSize = () => {
+  private readonly handlePictureAndPictureSize = (): void => {
     // probably report to abr:
     // this.pictureInPictureWindow.width
     // this.pictureInPictureWindow.height
@@ -338,11 +338,11 @@ export default class Player {
     this.videoElement = null;
   }
 
-  private readonly handleEnterPictureInPicture = () => {
+  private readonly handleEnterPictureInPicture = (): void => {
     this.eventEmitter.emit(Events.EnterPictureInPictureMode, new EnterPictureInPictureModeEvent());
   };
 
-  private readonly handleLevePictureInPicture = () => {
+  private readonly handleLevePictureInPicture = (): void => {
     this.eventEmitter.emit(Events.LeavePictureInPictureMode, new LeavePictureInPictureModeEvent());
   };
 
@@ -389,7 +389,7 @@ export default class Player {
     }
   }
 
-  public resetConfiguration() {
+  public resetConfiguration(): void {
     this.configuration = getDefaultPlayerConfiguration();
   }
 

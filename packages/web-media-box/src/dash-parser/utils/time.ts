@@ -6,8 +6,7 @@ export const parseDuration = (str: string): number => {
   const SECONDS_IN_MIN: number = 60;
 
   // P10Y10M10DT10H10M10.1S
-  const durationRegex =
-    /P(?:(\d*)Y)?(?:(\d*)M)?(?:(\d*)D)?(?:T(?:(\d*)H)?(?:(\d*)M)?(?:([\d.]*)S)?)?/;
+  const durationRegex = /P(?:(\d*)Y)?(?:(\d*)M)?(?:(\d*)D)?(?:T(?:(\d*)H)?(?:(\d*)M)?(?:([\d.]*)S)?)?/;
   const match = durationRegex.exec(str);
 
   if (!match) {
@@ -16,12 +15,14 @@ export const parseDuration = (str: string): number => {
 
   const [year, month, day, hour, minute, second] = match.slice(1);
 
-  return (parseFloat(year || '0') * SECONDS_IN_YEAR +
+  return (
+    parseFloat(year || '0') * SECONDS_IN_YEAR +
     parseFloat(month || '0') * SECONDS_IN_MONTH +
     parseFloat(day || '0') * SECONDS_IN_DAY +
     parseFloat(hour || '0') * SECONDS_IN_HOUR +
     parseFloat(minute || '0') * SECONDS_IN_MIN +
-    parseFloat(second || '0'));
+    parseFloat(second || '0')
+  );
 };
 
 export const parseDate = (str: string): number => {

@@ -43,14 +43,15 @@ import type {
 } from './types/parserOptions';
 import type { Segment, ParsedPlaylist, VariantStream } from './types/parsedPlaylist';
 import type { SharedState } from './types/sharedState';
+import type { EmptyTagProcessor } from './tags/emptyTagProcessors.ts';
 import {
-  EmptyTagProcessor,
   ExtXEndList,
   ExtXIframesOnly,
   ExtXIndependentSegments,
   ExtXDiscontinuity,
   ExtXGap,
 } from './tags/emptyTagProcessors.ts';
+import type { TagWithValueProcessor } from './tags/tagWithValueProcessors.ts';
 import {
   ExtXBitrate,
   ExtXByteRange,
@@ -60,14 +61,13 @@ import {
   ExtXPlaylistType,
   ExtXTargetDuration,
   ExtXVersion,
-  TagWithValueProcessor,
   ExtXProgramDateTime,
 } from './tags/tagWithValueProcessors.ts';
+import type { TagWithAttributesProcessor } from './tags/tagWithAttributesProcessors.ts';
 import {
   ExtXPartInf,
   ExtXServerControl,
   ExtXStart,
-  TagWithAttributesProcessor,
   ExtXKey,
   ExtXMap,
   ExtXPart,
@@ -228,7 +228,7 @@ class Parser {
 
   protected readonly uriInfoCallback = (uri: string): void => {
     if (this.sharedState.isMultivariantPlaylist) {
-      this.handleCurrentVariant(uri)
+      this.handleCurrentVariant(uri);
     } else {
       this.handleCurrentSegment(uri);
     }
@@ -255,7 +255,8 @@ class Parser {
 
     // Extrapolate a program date time value from the previous segment's program date time
     if (!this.sharedState.currentSegment.programDateTime && previousSegment?.programDateTime) {
-      this.sharedState.currentSegment.programDateTime = previousSegment.programDateTime + previousSegment.duration * 1000;
+      this.sharedState.currentSegment.programDateTime =
+        previousSegment.programDateTime + previousSegment.duration * 1000;
     }
 
     this.parsedPlaylist.segments.push(this.sharedState.currentSegment);

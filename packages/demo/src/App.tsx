@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Player } from 'web-media-box/player';
 import PlayerDemo from './PlayerDemo';
 
-function App() {
+function App(): JSX.Element {
   const [playerInstance, setPlayerInstance] = useState<Player | null>(null);
 
   useEffect(() => {

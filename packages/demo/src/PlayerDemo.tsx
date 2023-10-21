@@ -26,7 +26,7 @@ const PlayerDemo: React.FC<PlayerDemoProps> = ({ player }) => {
     };
   }, [player]);
 
-  const handleLoadClick = () => {
+  const handleLoadClick = (): void => {
     const mimeType = manifestUrl.endsWith('.mpd') ? 'application/dash+xml' : 'application/x-mpegURL'; // assuming only DASH and HLS for simplicity
     player.loadRemoteAsset(manifestUrl, mimeType);
   };
@@ -35,10 +35,10 @@ const PlayerDemo: React.FC<PlayerDemoProps> = ({ player }) => {
     <div className="videoContainer">
       <video ref={videoElementRef}></video>
       <div className="controls">
-        <button onClick={() => videoElementRef.current?.play()}>
+        <button onClick={(): void | Promise<void> => videoElementRef.current?.play()}>
           <img src={playIcon} alt="Play" />
         </button>
-        <button onClick={() => videoElementRef.current?.pause()}>
+        <button onClick={(): void => videoElementRef.current?.pause()}>
           <img src={pauseIcon} alt="Pause" />
         </button>
       </div>
@@ -46,7 +46,7 @@ const PlayerDemo: React.FC<PlayerDemoProps> = ({ player }) => {
         <input
           type="text"
           value={manifestUrl}
-          onChange={(e) => setManifestUrl(e.target.value)}
+          onChange={(e): void => setManifestUrl(e.target.value)}
           placeholder="Enter DASH/HLS manifest URL"
         />
         <button onClick={handleLoadClick}>Load</button>

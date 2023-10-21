@@ -1,9 +1,7 @@
 import { parseDivisionValue } from './utils/string';
 import { parseDuration, parseDate } from './utils/time';
 
-type Parsers = {
-  [key: string]: (value: string) => string | number;
-}
+type Parsers = Record<string, (value: string) => string | number>;
 
 // TODO: break out any parsers that are only used on a single tag, and move that to that
 // specific processor in tags/base.js
@@ -227,7 +225,7 @@ const parsers: Parsers = {
    */
   DEFAULT(value: string): string {
     return value;
-  }
+  },
 };
 
 /**
@@ -237,10 +235,8 @@ const parsers: Parsers = {
  * @param attributes The key/value pairs of attributes to parse
  * @return Object with all attributes parsed
  */
-export const parseAttributes = (attributes:  Record<string, unknown>): Record<string, unknown> => {
-  interface Attrs {
-    [key: string]: unknown
-  };
+export const parseAttributes = (attributes: Record<string, unknown>): Record<string, unknown> => {
+  type Attrs = Record<string, unknown>;
 
   const newAttributes: Attrs = {};
 

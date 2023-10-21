@@ -1,4 +1,4 @@
-import PlayerError from '@/player/errors.ts';
+import type PlayerError from '@/player/errors.ts';
 
 export const Events = {
   EnterPictureInPictureMode: 'EnterPictureInPictureMode',

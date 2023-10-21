@@ -1,4 +1,4 @@
-/* eslint-disable no-undef */
+/* eslint-disable */
 import { version } from './package.json';
 
 const createConfig = ({ minify, naming }) => ({

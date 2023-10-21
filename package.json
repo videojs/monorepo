@@ -8,7 +8,8 @@
     "lint": "eslint .",
     "build": "bun run build:web-media-box && bun run build:demo",
     "build:web-media-box": "bun run --cwd packages/web-media-box build",
-    "build:demo": "bun run --cwd packages/demo build"
+    "build:demo": "bun run --cwd packages/demo build",
+    "prepare": "husky install"
   },
   "devDependencies": {
     "@happy-dom/global-registrator": "^12.9.1",
@@ -19,6 +20,8 @@
     "eslint": "^8.50.0",
     "eslint-config-prettier": "^9.0.0",
     "eslint-plugin-prettier": "^5.0.0",
+    "husky": "^8.0.3",
+    "lint-staged": "^15.0.2",
     "prettier": "^3.0.3",
     "typescript": "^5.2.2"
   }

@@ -6,7 +6,7 @@ interface AttemptDiagnosticInfo {
 }
 
 type WrappedWithRetry<T> = {
-  (...args: unknown[]): Promise<T>;
+  (...args: Array<unknown>): Promise<T>;
   attempts: Array<AttemptDiagnosticInfo>;
 };
 
@@ -27,7 +27,7 @@ class MaxAttemptsExceeded extends Error {
   }
 }
 
-const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+const wait = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
 
 export default class RetryWrapper {
   private readonly maxAttempts: number;
@@ -43,8 +43,8 @@ export default class RetryWrapper {
   }
 
   public wrap<T>(
-    fn: (...args: unknown[]) => Promise<T>,
-    shouldRetry: (error: unknown) => boolean = () => true,
+    fn: (...args: Array<unknown>) => Promise<T>,
+    shouldRetry: (error: unknown) => boolean = (): boolean => true,
     hooks: RetryWrapperHooks = {},
     waitFn = wait
   ): WrappedWithRetry<T> {
@@ -54,7 +54,7 @@ export default class RetryWrapper {
 
     const attempts: Array<AttemptDiagnosticInfo> = [];
 
-    const wrapped = async (...args: unknown[]): Promise<T> => {
+    const wrapped = async (...args: Array<unknown>): Promise<T> => {
       if (attemptNumber > this.maxAttempts) {
         if (lastError) {
           throw lastError;

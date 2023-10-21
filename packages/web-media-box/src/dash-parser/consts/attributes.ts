@@ -5,14 +5,12 @@
 // node processors.
 
 export interface Attribute {
-  name: string,
-  required: boolean,
-  default?: unknown
+  name: string;
+  required: boolean;
+  default?: unknown;
 }
 
-export const BaseURLAttributes: Array<Attribute> = [
-  { name: 'id', required: true },
-];
+export const BaseURLAttributes: Array<Attribute> = [{ name: 'id', required: true }];
 
 export const EventStreamAttributes: Array<Attribute> = [
   { name: 'schemeIdUri', required: true },

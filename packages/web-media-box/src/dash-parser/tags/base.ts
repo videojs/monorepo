@@ -9,9 +9,15 @@ import {
   UTC_TIMING,
   EVENT_STREAM,
   EVENT,
-  SEGMENT_TEMPLATE
+  SEGMENT_TEMPLATE,
 } from '@/dash-parser/consts/tags.ts';
-import type { ManifestType, EventScheme, ParsedManifest, UTCTimingScheme, Segment } from '@/dash-parser/types/parsedManifest';
+import type {
+  // ManifestType,
+  EventScheme,
+  ParsedManifest,
+  UTCTimingScheme,
+  Segment,
+} from '@/dash-parser/types/parsedManifest';
 import type { SharedState } from '@/dash-parser/types/sharedState';
 import type { PendingProcessors } from '@/dash-parser/pendingProcessors.ts';
 import { missingRequiredAttributeWarn } from '@/dash-parser/utils/warn.ts';
@@ -29,17 +35,19 @@ export abstract class TagProcessor {
     parentTagInfo: TagInfo | null,
     parsedManifest: ParsedManifest,
     sharedState: SharedState,
-    pendingProcessors: PendingProcessors): void {
+    pendingProcessors: PendingProcessors
+  ): void {
     let isRequiredAttributedMissed = false;
 
-    this.requiredAttributes && this.requiredAttributes.forEach((requiredAttribute) => {
-      const hasRequiredAttribute = requiredAttribute in tagInfo.tagAttributes;
+    this.requiredAttributes &&
+      this.requiredAttributes.forEach((requiredAttribute) => {
+        const hasRequiredAttribute = requiredAttribute in tagInfo.tagAttributes;
 
-      if (!hasRequiredAttribute) {
-        this.warnCallback(missingRequiredAttributeWarn(this.tag, requiredAttribute));
-        isRequiredAttributedMissed = true;
-      }
-    });
+        if (!hasRequiredAttribute) {
+          this.warnCallback(missingRequiredAttributeWarn(this.tag, requiredAttribute));
+          isRequiredAttributedMissed = true;
+        }
+      });
 
     if (isRequiredAttributedMissed) {
       return;
@@ -48,11 +56,10 @@ export abstract class TagProcessor {
     return this.safeProcess(tagInfo, parentTagInfo, parsedManifest, sharedState, pendingProcessors);
   }
 
-  public processPending(
-    tagInfo: TagInfo,
-    parentTagInfo: TagInfo | null,
-    requiredChildren: Map<string, TagInfo | null>
-  ): void {
+  public processPending() // tagInfo: TagInfo,
+  // parentTagInfo: TagInfo | null,
+  // requiredChildren: Map<string, TagInfo | null>
+  : void {
     // specific processor will override
   }
 
@@ -61,7 +68,8 @@ export abstract class TagProcessor {
     parentTagInfo: TagInfo | null,
     parsedManifest: ParsedManifest,
     sharedState: SharedState,
-    pendingProcessors: PendingProcessors): void;
+    pendingProcessors: PendingProcessors
+  ): void;
 
   public constructor(warnCallback: WarnCallback) {
     this.warnCallback = warnCallback;
@@ -84,8 +92,8 @@ export class Mpd extends TagProcessor {
     tagInfo: TagInfo,
     parentTagInfo: TagInfo | null,
     parsedManifest: ParsedManifest,
-    sharedState: SharedState,
-    pendingProcessors: PendingProcessors
+    sharedState: SharedState
+    // pendingProcessors: PendingProcessors
   ): void {
     const attributes = parseAttributes(tagInfo.tagAttributes);
     sharedState.mpdAttributes = {
@@ -106,12 +114,12 @@ export class Period extends TagProcessor {
 
   protected readonly tag = PERIOD;
 
-  safeProcess(
+  protected safeProcess(
     tagInfo: TagInfo,
     parentTagInfo: TagInfo | null,
     parsedManifest: ParsedManifest,
-    sharedState: SharedState,
-    pendingProcessors: PendingProcessors
+    sharedState: SharedState
+    // pendingProcessors: PendingProcessors
   ): void {
     const attributes = parseAttributes(tagInfo.tagAttributes);
     sharedState.periodAttributes = {
@@ -130,12 +138,12 @@ export class AdaptationSet extends TagProcessor {
   protected readonly requiredAttributes = new Set([AdaptationSet.MIME_TYPE, AdaptationSet.CONTENT_TYPE]);
   protected readonly tag = ADAPTATION_SET;
 
-  safeProcess(
+  protected safeProcess(
     tagInfo: TagInfo,
     parentTagInfo: TagInfo | null,
     parsedManifest: ParsedManifest,
-    sharedState: SharedState,
-    pendingProcessors: PendingProcessors
+    sharedState: SharedState
+    // pendingProcessors: PendingProcessors
   ): void {
     const attributes = parseAttributes(tagInfo.tagAttributes);
     sharedState.adaptationSetAttributes = {
@@ -150,13 +158,12 @@ export class BaseUrl extends TagProcessor {
   // TODO
   protected readonly tag = BASE_URL;
 
-  safeProcess(
-    tagInfo: TagInfo,
-    parentTagInfo: TagInfo | null,
-    parsedManifest: ParsedManifest,
-    sharedState: SharedState,
-    pendingProcessors: PendingProcessors
-  ): void {}
+  protected safeProcess() // tagInfo: TagInfo,
+  // parentTagInfo: TagInfo | null,
+  // parsedManifest: ParsedManifest,
+  // sharedState: SharedState,
+  // pendingProcessors: PendingProcessors
+  : void {}
 }
 
 export class Representation extends TagProcessor {
@@ -183,12 +190,12 @@ export class Representation extends TagProcessor {
 
   protected readonly tag = REPRESENTATION;
 
-  safeProcess(
+  protected safeProcess(
     tagInfo: TagInfo,
     parentTagInfo: TagInfo | null,
     parsedManifest: ParsedManifest,
-    sharedState: SharedState,
-    pendingProcessors: PendingProcessors
+    sharedState: SharedState
+    // pendingProcessors: PendingProcessors
   ): void {
     // TODO: Once parent info is passed in, we can check this.
 
@@ -198,22 +205,23 @@ export class Representation extends TagProcessor {
     // }
 
     // TODO: Set pending processors
-    pendingProcessors = [];
+    // pendingProcessors = [];
 
     const attributes = parseAttributes(tagInfo.tagAttributes);
     const previousAttributes = {
       ...sharedState.mpdAttributes,
       ...sharedState.periodAttributes,
-      ...sharedState.adaptationSetAttributes
-    }
+      ...sharedState.adaptationSetAttributes,
+    };
 
     let segments: Array<Segment> = [];
     // TODO: we may want to ensure we are not waiting on any more nodes to process here as well.
     if (sharedState.segmentTemplateAttributes) {
-      segments = segmentsFromTemplate(
-        sharedState.mpdAttributes.type as string,
-        {...previousAttributes, ...attributes, ...sharedState.segmentTemplateAttributes}
-      )
+      segments = segmentsFromTemplate(sharedState.mpdAttributes.type as string, {
+        ...previousAttributes,
+        ...attributes,
+        ...sharedState.segmentTemplateAttributes,
+      });
     }
 
     const rep = {
@@ -240,8 +248,8 @@ export class Representation extends TagProcessor {
       codingDependency: attributes[Representation.CODING_DEPENDENCY],
       selectionPriority: attributes[Representation.SELECTION_PRIORITY],
       tag: attributes[Representation.TAG],
-      segments
-    }
+      segments,
+    };
 
     parsedManifest.representations.push(rep);
   }
@@ -258,12 +266,12 @@ export class SegmentTemplate extends TagProcessor {
 
   protected readonly tag = SEGMENT_TEMPLATE;
 
-  safeProcess(
+  protected safeProcess(
     tagInfo: TagInfo,
     parentTagInfo: TagInfo | null,
     parsedManifest: ParsedManifest,
-    sharedState: SharedState,
-    pendingProcessors: PendingProcessors
+    sharedState: SharedState
+    // pendingProcessors: PendingProcessors
   ): void {
     const attributes = parseAttributes(tagInfo.tagAttributes);
     sharedState.segmentTemplateAttributes = {
@@ -273,8 +281,8 @@ export class SegmentTemplate extends TagProcessor {
       bitstreamSwitching: attributes[SegmentTemplate.BIT_STREAM_SWITCHING],
       duration: attributes[SegmentTemplate.DURATION],
       timescale: attributes[SegmentTemplate.TIME_SCALE],
-      startNumber: attributes[SEGMENT_TEMPLATE.START_NUMBER]
-    }
+      startNumber: attributes[SEGMENT_TEMPLATE.START_NUMBER],
+    };
   }
 }
 
@@ -284,12 +292,12 @@ export class UTCTiming extends TagProcessor {
   protected readonly requiredAttributes = new Set([UTCTiming.SCHEME_ID_URI]);
   protected readonly tag = UTC_TIMING;
 
-  safeProcess(
+  protected safeProcess(
     tagInfo: TagInfo,
     parentTagInfo: TagInfo | null,
-    parsedManifest: ParsedManifest,
-    sharedState: SharedState,
-    pendingProcessors: PendingProcessors
+    parsedManifest: ParsedManifest
+    // sharedState: SharedState,
+    // pendingProcessors: PendingProcessors
   ): void {
     const attributes = parseAttributes(tagInfo.tagAttributes);
 
@@ -303,26 +311,23 @@ export class EventStream extends TagProcessor {
   // TODO
   protected readonly tag = EVENT_STREAM;
 
-  safeProcess(
-    tagInfo: TagInfo,
-    parentTagInfo: TagInfo | null,
-    parsedManifest: ParsedManifest,
-    sharedState: SharedState,
-    pendingProcessors: PendingProcessors
-  ): void {
-    
-  }
+  protected safeProcess() // tagInfo: TagInfo,
+  // parentTagInfo: TagInfo | null,
+  // parsedManifest: ParsedManifest,
+  // sharedState: SharedState,
+  // pendingProcessors: PendingProcessors
+  : void {}
 }
 
 export class Event extends TagProcessor {
   protected readonly tag = EVENT;
 
-  safeProcess(
+  protected safeProcess(
     tagInfo: TagInfo,
     parentTagInfo: TagInfo | null,
-    parsedManifest: ParsedManifest,
-    sharedState: SharedState,
-    pendingProcessors: PendingProcessors
+    parsedManifest: ParsedManifest
+    // sharedState: SharedState
+    // pendingProcessors: PendingProcessors
   ): void {
     const attributes = parseAttributes(tagInfo.tagAttributes);
 
@@ -333,10 +338,10 @@ export class Event extends TagProcessor {
     // TODO: use data from state to finish this.
 
     // const presentationTime = attributes.presentationTime || 0;
-    const presentationTime = 0;
+    // const presentationTime = 0;
     // const timescale = eventStreamAttributes.timescale || 1;
     const timescale = 1;
-    const duration = attributes.duration as number || 0;
+    const duration = (attributes.duration as number) || 0;
     // const start = (presentationTime / timescale) + period.attributes.start;
     const start = 0;
 
@@ -345,9 +350,9 @@ export class Event extends TagProcessor {
       // value: eventStreamAttributes.value,
       id: attributes.id,
       start,
-      end: start + (duration / timescale),
+      end: start + duration / timescale,
       // messageData: getContent(event) || eventAttributes.messageData,
-      messageData: attributes.messageData
+      messageData: attributes.messageData,
       // contentEncoding: eventStreamAttributes.contentEncoding,
       // presentationTimeOffset: eventStreamAttributes.presentationTimeOffset || 0
     };
@@ -355,5 +360,3 @@ export class Event extends TagProcessor {
     parsedManifest.events.push(event as EventScheme);
   }
 }
-
-

@@ -1,4 +1,4 @@
-import { Segment } from "../types/parsedManifest";
+import type { Segment } from '../types/parsedManifest';
 
 const identifierPattern = /\$([A-z]*)(?:(%0)([0-9]+)d)?\$/g;
 
@@ -7,52 +7,54 @@ const identifierPattern = /\$([A-z]*)(?:(%0)([0-9]+)d)?\$/g;
  */
 export const resolveURL = (relativeUrl: string, baseUrl: string): string => {
   try {
-    return new URL(relativeUrl, baseUrl).href
+    return new URL(relativeUrl, baseUrl).href;
   } catch {
     return relativeUrl || '';
   }
-}
+};
 
 /**
  * Returns a function to be used as a callback for String.prototype.replace to replace
  * template identifiers
  */
-export const identifierReplacement = (values: Record<string, unknown>) => (match: string, id: string, format: string, width: string | number): string => {
-  if (match === '$$') {
-    // escape sequence
-    return '$';
-  }
+export const identifierReplacement =
+  (values: Record<string, unknown>) =>
+  (match: string, id: string, format: string, width: string | number): string => {
+    if (match === '$$') {
+      // escape sequence
+      return '$';
+    }
 
-  if (typeof values[id] === 'undefined') {
-    return match;
-  }
+    if (typeof values[id] === 'undefined') {
+      return match;
+    }
 
-  const value = '' + values[id];
+    const value = '' + values[id];
 
-  if (id === 'RepresentationID') {
-    // Format tag shall not be present with RepresentationID
-    return value;
-  }
+    if (id === 'RepresentationID') {
+      // Format tag shall not be present with RepresentationID
+      return value;
+    }
 
-  if (!format) {
-    width = 1;
-  } else {
-    width = parseInt(width as string, 10);
-  }
+    if (!format) {
+      width = 1;
+    } else {
+      width = parseInt(width as string, 10);
+    }
 
-  if (value.length >= width) {
-    return value;
-  }
+    if (value.length >= width) {
+      return value;
+    }
 
-  return `${(new Array(width - value.length + 1)).join('0')}${value}`;
-};
+    return `${new Array(width - value.length + 1).join('0')}${value}`;
+  };
 
 /**
  * Constructs a segment url from a template string
  */
 export const constructTemplateUrl = (url: string, values: Record<string, unknown>): string => {
   return url.replace(identifierPattern, identifierReplacement(values));
-}
+};
 
 /**
  * @returns A number for every segment.
@@ -87,9 +89,7 @@ const parseEndNumber = (endNumber: number | string | null): number | null => {
   return endNumber;
 };
 
-type SegmentRanges = {
-  [key: string]: (attributes: Record<string, unknown>) => { start: number, end: number };
-}
+type SegmentRanges = Record<string, (attributes: Record<string, unknown>) => { start: number; end: number }>;
 
 /**
  * Functions for calculating the range of available segments in static and dynamic
@@ -102,7 +102,7 @@ export const segmentRanges: SegmentRanges = {
    * @param attributes Inheritied MPD attributes
    * @return The start and end numbers for available segments
    */
-  static(attributes: Record<string, unknown>): { start: number, end: number } {
+  static(attributes: Record<string, unknown>): { start: number; end: number } {
     const {
       duration,
       timescale,
@@ -111,7 +111,7 @@ export const segmentRanges: SegmentRanges = {
       // periodDuration
     } = attributes;
     const endNumber = parseEndNumber(attributes.endNumber as string | number | null);
-    const segmentDuration: number = duration as number / timescale;
+    const segmentDuration: number = (duration as number) / timescale;
 
     if (typeof endNumber === 'number') {
       return { start: 0, end: endNumber };
@@ -121,7 +121,7 @@ export const segmentRanges: SegmentRanges = {
     //   return { start: 0, end: periodDuration / segmentDuration };
     // }
 
-    return { start: 0, end: duration as number / segmentDuration };
+    return { start: 0, end: (duration as number) / segmentDuration };
   },
 
   // TODO: Ensure dynamic works
@@ -131,7 +131,7 @@ export const segmentRanges: SegmentRanges = {
    * @param attributes Inheritied MPD attributes
    * @return The start and end numbers for available segments
    */
-  dynamic(attributes: Record<string, unknown>): { start: number, end: number } {
+  dynamic(): { start: number; end: number } {
     // const {
     //   NOW,
     //   clientOffset,
@@ -163,29 +163,26 @@ export const segmentRanges: SegmentRanges = {
     // };
 
     return { start: 0, end: 0 };
-  }
+  },
 };
 
 /**
  * For mapping, pulls necessary data and formats for segments.
  */
-export const toSegments = (attributes: Record<string, unknown>) => (segmentNumber: number): Record<string, unknown> => {
-  const {
-    duration,
-    timescale = 1,
-    start = 0,
-    startNumber = 1
-  } = attributes;
+export const toSegments =
+  (attributes: Record<string, unknown>) =>
+  (segmentNumber: number): Record<string, unknown> => {
+    const { duration, timescale = 1, start = 0, startNumber = 1 } = attributes;
 
-  const segment = {
-    segmentNumber: startNumber as number + segmentNumber,
-    duration: duration as number / timescale as number,
-    timeline: start as number,
-    time: segmentNumber * duration
-  }
+    const segment = {
+      segmentNumber: (startNumber as number) + segmentNumber,
+      duration: ((duration as number) / timescale) as number,
+      timeline: start as number,
+      time: segmentNumber * duration,
+    };
 
-  return segment;
-};
+    return segment;
+  };
 
 /**
  * Returns a list of objects containing segment timing and duration info used for
@@ -218,7 +215,7 @@ export const parseByDuration = (
     //   typeof periodDuration === 'number' ? periodDuration : sourceDuration;
 
     // // final segment may be less than full segment duration
-    segments[index].duration = duration as number - (duration as number / timescale as number * index);
+    segments[index].duration = (duration as number) - (((duration as number) / timescale) as number) * index;
   }
 
   return segments;
@@ -228,21 +225,26 @@ export const parseByDuration = (
  * Generates a list of objects containing timing and duration information about each
  * segment needed to generate segment uris and the complete segment object
  *
- * @param attributes 
+ * @param attributes
  * @returns segments
  */
- export const parseTemplateInfo = (mpdType: string, attributes: Record<string, unknown>): Array<Record<string, unknown>> => {
+export const parseTemplateInfo = (
+  mpdType: string,
+  attributes: Record<string, unknown>
+): Array<Record<string, unknown>> => {
   // TODO: Handle SegmentTimeline and other Segment nodes
   // if (!attributes.duration && !segmentTimeline)
   if (!attributes.duration) {
     // if neither @duration or SegmentTimeline are present, then there shall be exactly
     // one media segment
-    const segments = [{
+    const segments = [
+      {
         segmentNumber: attributes.startNumber || 1,
         duration: attributes.duration,
         time: 0,
         timeline: attributes.start,
-      }];
+      },
+    ];
     return segments;
   }
 
@@ -261,7 +263,7 @@ export const parseByDuration = (
  *        from parent elements with attribute names as keys
  * @return List of segment objects
  */
- export const segmentsFromTemplate = (mpdType: string, attributes: Record<string, unknown>): Array<Segment> => {
+export const segmentsFromTemplate = (mpdType: string, attributes: Record<string, unknown>): Array<Segment> => {
   const templateValues: Record<string, unknown> = {
     RepresentationID: attributes.id,
     Bandwidth: attributes.bandwidth || 0,
@@ -269,22 +271,22 @@ export const parseByDuration = (
 
   const segments = parseTemplateInfo(mpdType, attributes);
 
-  const finalSegments = segments.map(segment => {
+  const finalSegments = segments.map((segment) => {
     templateValues.Number = segment.segmentNumber;
     templateValues.Time = segment.time;
 
-    const uri = constructTemplateUrl(attributes.media as string || '', templateValues);
+    const uri = constructTemplateUrl((attributes.media as string) || '', templateValues);
     // See DASH spec section 5.3.9.2.2
     // - if timescale isn't present on any level, default to 1.
-    const timescale = attributes.timescale as number || 1;
+    const timescale = (attributes.timescale as number) || 1;
 
     // - if presentationTimeOffset isn't present on any level, default to 0
-    const presentationTimeOffset: number = attributes.presentationTimeOffset as number || 0;
-    const periodStart = attributes.start as number || 0;
+    const presentationTimeOffset: number = (attributes.presentationTimeOffset as number) || 0;
+    const periodStart = (attributes.start as number) || 0;
     const presentationTime =
-    //   // Even if the @t attribute is not specified for the segment, segment.time is
-    //   // calculated in mpd-parser prior to this, so it's assumed to be available.
-      periodStart + ((segment.time as number - presentationTimeOffset) / timescale);
+      //   // Even if the @t attribute is not specified for the segment, segment.time is
+      //   // calculated in mpd-parser prior to this, so it's assumed to be available.
+      periodStart + ((segment.time as number) - presentationTimeOffset) / timescale;
 
     const seg: Segment = {
       duration: segment.duration as number,
@@ -292,11 +294,11 @@ export const parseByDuration = (
       uri,
       resolvedUri: uri,
       presentationTime,
-      timeline: segment.timeline as number
-    }
+      timeline: segment.timeline as number,
+    };
 
     return seg;
   });
 
   return finalSegments;
-}
+};

@@ -1,9 +1,9 @@
 export enum LoggerLevel {
-  DEBUG,
-  INFO,
-  WARN,
-  ERROR,
-  OFF,
+  Debug,
+  Info,
+  Warn,
+  Error,
+  Off,
 }
 
 const style = 'background: #333; padding: 3px; color: #bada55';
@@ -12,7 +12,7 @@ export default class Logger {
   private readonly console: Console;
   private readonly label: string;
 
-  private level: LoggerLevel = LoggerLevel.WARN;
+  private level: LoggerLevel = LoggerLevel.Debug;
 
   public constructor(console: Console, label: string) {
     this.console = console;
@@ -31,32 +31,32 @@ export default class Logger {
     return this.level;
   }
 
-  public debug(...args: unknown[]): void {
-    if (this.level > LoggerLevel.DEBUG) {
+  public debug(...args: Array<unknown>): void {
+    if (this.level > LoggerLevel.Debug) {
       return;
     }
 
     this.console.debug(this.label, style, ...args);
   }
 
-  public info(...args: unknown[]): void {
-    if (this.level > LoggerLevel.INFO) {
+  public info(...args: Array<unknown>): void {
+    if (this.level > LoggerLevel.Info) {
       return;
     }
 
     this.console.info(this.label, style, ...args);
   }
 
-  public warn(...args: unknown[]): void {
-    if (this.level > LoggerLevel.WARN) {
+  public warn(...args: Array<unknown>): void {
+    if (this.level > LoggerLevel.Warn) {
       return;
     }
 
     this.console.warn(this.label, style, ...args);
   }
 
-  public error(...args: unknown[]): void {
-    if (this.level > LoggerLevel.ERROR) {
+  public error(...args: Array<unknown>): void {
+    if (this.level > LoggerLevel.Error) {
       return;
     }
 

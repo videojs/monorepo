@@ -1,4 +1,18 @@
-import type { ParsedPlaylist, PartialSegment, Rendition, RenditionType, RenditionGroups, GroupId, Resolution, AllowedCpc, IFramePlaylist, BaseStreamInf, DateRange, Cue, HintType } from '../types/parsedPlaylist';
+import type {
+  ParsedPlaylist,
+  PartialSegment,
+  Rendition,
+  RenditionType,
+  RenditionGroups,
+  GroupId,
+  Resolution,
+  AllowedCpc,
+  IFramePlaylist,
+  BaseStreamInf,
+  DateRange,
+  Cue,
+  HintType,
+} from '../types/parsedPlaylist';
 import type { SharedState } from '../types/sharedState';
 import { TagProcessor } from './base.ts';
 import { missingRequiredAttributeWarn } from '../utils/warn.ts';
@@ -41,7 +55,11 @@ export abstract class TagWithAttributesProcessor extends TagProcessor {
     return this.safeProcess(tagAttributes, playlist, sharedState);
   }
 
-  protected abstract safeProcess(tagAttributes: Record<string, string>, playlist: ParsedPlaylist, sharedState: SharedState): void;
+  protected abstract safeProcess(
+    tagAttributes: Record<string, string>,
+    playlist: ParsedPlaylist,
+    sharedState: SharedState
+  ): void;
 }
 
 export class ExtXStart extends TagWithAttributesProcessor {
@@ -127,7 +145,7 @@ export class ExtXKey extends TagWithAttributesProcessor {
       keyFormat: tagAttributes[ExtXKey.KEYFORMAT] || 'identity',
       keyFormatVersions: tagAttributes[ExtXKey.KEYFORMATVERSIONS]
         ? tagAttributes[ExtXKey.KEYFORMATVERSIONS].split('/').map(Number)
-        : [1]
+        : [1],
     };
   }
 }
@@ -145,12 +163,12 @@ export class ExtXMap extends TagWithAttributesProcessor {
     if (tagAttributes[ExtXMap.BYTERANGE]) {
       const [length, offset] = tagAttributes[ExtXMap.BYTERANGE].split('@').map(Number);
 
-      byteRange = {length, offset};
+      byteRange = { length, offset };
     }
 
     playlist.mediaInitializationSection = {
       uri: tagAttributes[ExtXMap.URI],
-      byteRange
+      byteRange,
     };
   }
 }
@@ -165,7 +183,11 @@ export class ExtXPart extends TagWithAttributesProcessor {
   protected readonly requiredAttributes = new Set([ExtXPart.URI, ExtXPart.DURATION]);
   protected readonly tag = EXT_X_PART;
 
-  protected safeProcess(tagAttributes: Record<string, string>, playlist: ParsedPlaylist, sharedState: SharedState): void {
+  protected safeProcess(
+    tagAttributes: Record<string, string>,
+    playlist: ParsedPlaylist,
+    sharedState: SharedState
+  ): void {
     const part: PartialSegment = {
       uri: tagAttributes[ExtXPart.URI],
       duration: Number(tagAttributes[ExtXPart.DURATION]),
@@ -180,13 +202,15 @@ export class ExtXPart extends TagWithAttributesProcessor {
         const previousPartialSegment = sharedState.currentSegment.parts?.[sharedState.currentSegment.parts.length - 1];
 
         if (!previousPartialSegment || !previousPartialSegment.byteRange) {
-          return this.warnCallback(`Unable to parse ${this.tag}: A BYTERANGE attribute without offset requires a previous partial segment with a byterange`);
+          return this.warnCallback(
+            `Unable to parse ${this.tag}: A BYTERANGE attribute without offset requires a previous partial segment with a byterange`
+          );
         }
 
         offset = previousPartialSegment.byteRange.offset + previousPartialSegment.byteRange.length + 1;
       }
 
-      part.byteRange = {length, offset};
+      part.byteRange = { length, offset };
     }
 
     if (tagAttributes[ExtXPart.INDEPENDENT]) {
@@ -215,7 +239,7 @@ export class ExtXSkip extends TagWithAttributesProcessor {
   protected safeProcess(tagAttributes: Record<string, string>, playlist: ParsedPlaylist): void {
     playlist.skip = {
       skippedSegments: Number(tagAttributes[ExtXSkip.SKIPPED_SEGMENTS]),
-      recentlyRemovedDateranges: tagAttributes[ExtXSkip.RECENTLY_REMOVED_DATERANGES].split('\t')
+      recentlyRemovedDateranges: tagAttributes[ExtXSkip.RECENTLY_REMOVED_DATERANGES].split('\t'),
     };
   }
 }
@@ -234,10 +258,10 @@ export class ExtXMedia extends TagWithAttributesProcessor {
   private static readonly CHARACTERISTICS = 'CHARACTERISTICS';
   private static readonly CHANNELS = 'CHANNELS';
   private static readonly typeToKeyMap: Record<string, keyof RenditionGroups> = {
-    'AUDIO': 'audio',
-    'VIDEO': 'video',
-    'SUBTITLES': 'subtitles',
-    'CLOSED-CAPTIONS': 'closedCaptions'
+    AUDIO: 'audio',
+    VIDEO: 'video',
+    SUBTITLES: 'subtitles',
+    'CLOSED-CAPTIONS': 'closedCaptions',
   };
 
   protected readonly requiredAttributes = new Set([ExtXMedia.TYPE, ExtXMedia.GROUP_ID, ExtXMedia.NAME]);
@@ -255,8 +279,10 @@ export class ExtXMedia extends TagWithAttributesProcessor {
       autoSelect: parseBoolean(tagAttributes[ExtXMedia.AUTOSELECT], false),
       forced: parseBoolean(tagAttributes[ExtXMedia.FORCED], false),
       inStreamId: tagAttributes[ExtXMedia.INSTREAM_ID],
-      characteristics: tagAttributes[ExtXMedia.CHARACTERISTICS] ? tagAttributes[ExtXMedia.CHARACTERISTICS].split(',') : [],
-      channels: tagAttributes[ExtXMedia.CHANNELS] ? tagAttributes[ExtXMedia.CHANNELS].split('/') : []
+      characteristics: tagAttributes[ExtXMedia.CHARACTERISTICS]
+        ? tagAttributes[ExtXMedia.CHARACTERISTICS].split(',')
+        : [],
+      channels: tagAttributes[ExtXMedia.CHANNELS] ? tagAttributes[ExtXMedia.CHANNELS].split('/') : [],
     };
 
     const renditionTypeKey = ExtXMedia.typeToKeyMap[rendition.type];
@@ -287,11 +313,11 @@ abstract class BaseStreamInfProcessor extends TagWithAttributesProcessor {
 
   protected parseResolution(value?: string): Resolution | undefined {
     const parsedResolution = value ? value.split('x').map(Number) : [];
-  
+
     if (parsedResolution.length === 2) {
       return {
         width: parsedResolution[0],
-        height: parsedResolution[1]
+        height: parsedResolution[1],
       };
     }
   }
@@ -315,17 +341,25 @@ abstract class BaseStreamInfProcessor extends TagWithAttributesProcessor {
     return {
       uri: '',
       bandwidth: Number(tagAttributes[BaseStreamInfProcessor.BANDWIDTH]),
-      averageBandwidth: tagAttributes[BaseStreamInfProcessor.AVERAGE_BANDWIDTH] ? Number(tagAttributes[BaseStreamInfProcessor.AVERAGE_BANDWIDTH]) : undefined,
-      score: tagAttributes[BaseStreamInfProcessor.SCORE] ? Number(tagAttributes[BaseStreamInfProcessor.SCORE]) : undefined,
-      codecs: tagAttributes[BaseStreamInfProcessor.CODECS] ? tagAttributes[BaseStreamInfProcessor.CODECS].split(',') : [],
-      supplementalCodecs: tagAttributes[BaseStreamInfProcessor.SUPPLEMENTAL_CODECS] ? tagAttributes[BaseStreamInfProcessor.SUPPLEMENTAL_CODECS].split(',') : [],
+      averageBandwidth: tagAttributes[BaseStreamInfProcessor.AVERAGE_BANDWIDTH]
+        ? Number(tagAttributes[BaseStreamInfProcessor.AVERAGE_BANDWIDTH])
+        : undefined,
+      score: tagAttributes[BaseStreamInfProcessor.SCORE]
+        ? Number(tagAttributes[BaseStreamInfProcessor.SCORE])
+        : undefined,
+      codecs: tagAttributes[BaseStreamInfProcessor.CODECS]
+        ? tagAttributes[BaseStreamInfProcessor.CODECS].split(',')
+        : [],
+      supplementalCodecs: tagAttributes[BaseStreamInfProcessor.SUPPLEMENTAL_CODECS]
+        ? tagAttributes[BaseStreamInfProcessor.SUPPLEMENTAL_CODECS].split(',')
+        : [],
       resolution: this.parseResolution(tagAttributes[BaseStreamInfProcessor.RESOLUTION]),
       hdcpLevel: tagAttributes[BaseStreamInfProcessor.HDCP_LEVEL] as 'NONE' | 'TYPE-0' | 'TYPE-1' | undefined,
       allowedCpc: this.parseAllowedCpc(tagAttributes[BaseStreamInfProcessor.ALLOWED_CPC]),
       videoRange: tagAttributes[BaseStreamInfProcessor.VIDEO_RANGE] as 'SDR' | 'HLG' | 'PQ' | undefined,
       stableVariantId: tagAttributes[BaseStreamInfProcessor.STABLE_VARIANT_ID],
       video: tagAttributes[BaseStreamInfProcessor.VIDEO],
-      pathwayId: tagAttributes[BaseStreamInfProcessor.PATHWAY_ID]
+      pathwayId: tagAttributes[BaseStreamInfProcessor.PATHWAY_ID],
     };
   }
 }
@@ -339,13 +373,17 @@ export class ExtXStreamInf extends BaseStreamInfProcessor {
   protected readonly requiredAttributes = new Set([BaseStreamInfProcessor.BANDWIDTH]);
   protected readonly tag = EXT_X_STREAM_INF;
 
-  protected safeProcess(tagAttributes: Record<string, string>, playlist: ParsedPlaylist, sharedState: SharedState): void {
+  protected safeProcess(
+    tagAttributes: Record<string, string>,
+    playlist: ParsedPlaylist,
+    sharedState: SharedState
+  ): void {
     const variantStream = {
       ...this.parseCommonAttributes(tagAttributes),
       frameRate: tagAttributes[ExtXStreamInf.FRAME_RATE] ? Number(tagAttributes[ExtXStreamInf.FRAME_RATE]) : undefined,
       audio: tagAttributes[ExtXStreamInf.AUDIO],
       subtitles: tagAttributes[ExtXStreamInf.SUBTITLES],
-      closedCaptions: tagAttributes[ExtXStreamInf.CLOSED_CAPTIONS]
+      closedCaptions: tagAttributes[ExtXStreamInf.CLOSED_CAPTIONS],
     };
 
     Object.assign(sharedState.currentVariant, variantStream);
@@ -362,7 +400,7 @@ export class ExtXIFrameStreamInf extends BaseStreamInfProcessor {
   protected safeProcess(tagAttributes: Record<string, string>, playlist: ParsedPlaylist): void {
     const iFrameStreamInf: IFramePlaylist = {
       ...this.parseCommonAttributes(tagAttributes),
-      uri: tagAttributes[ExtXIFrameStreamInf.URI]
+      uri: tagAttributes[ExtXIFrameStreamInf.URI],
     };
 
     if (!playlist.iFramePlaylists) {
@@ -381,7 +419,7 @@ export class ExtXDaterange extends TagWithAttributesProcessor {
   private static readonly END_DATE = 'END-DATE';
   private static readonly DURATION = 'DURATION';
   private static readonly PLANNED_DURATION = 'PLANNED-DURATION';
-  // Client attributes look like X-<client-attribute>, example: X-COM-EXAMPLE-AD-ID="XYZ123" 
+  // Client attributes look like X-<client-attribute>, example: X-COM-EXAMPLE-AD-ID="XYZ123"
   private static readonly CLIENT_ATTRIBUTES = 'X-';
   private static readonly SCTE35_CMD = 'SCTE35-CMD';
   private static readonly SCTE35_OUT = 'SCTE35-OUT';
@@ -396,7 +434,7 @@ export class ExtXDaterange extends TagWithAttributesProcessor {
       id: tagAttributes[ExtXDaterange.ID],
       class: tagAttributes[ExtXDaterange.CLASS],
       startDate: tagAttributes[ExtXDaterange.START_DATE],
-      cue: tagAttributes[ExtXDaterange.CUE].split(',') as Cue[],
+      cue: tagAttributes[ExtXDaterange.CUE].split(',') as Array<Cue>,
       endDate: tagAttributes[ExtXDaterange.END_DATE],
       duration: Number(tagAttributes[ExtXDaterange.DURATION]),
       plannedDuration: Number(tagAttributes[ExtXDaterange.PLANNED_DURATION]),
@@ -404,13 +442,12 @@ export class ExtXDaterange extends TagWithAttributesProcessor {
       scte35Out: Number(tagAttributes[ExtXDaterange.SCTE35_OUT]),
       scte35In: Number(tagAttributes[ExtXDaterange.SCTE35_IN]),
       endOnNext: parseBoolean(tagAttributes[ExtXDaterange.END_ON_NEXT], false),
-      clientAttributes: {}
-    }
+      clientAttributes: {},
+    };
 
-    Object
-      .keys(tagAttributes)
+    Object.keys(tagAttributes)
       .filter((tagKey) => tagKey.startsWith(ExtXDaterange.CLIENT_ATTRIBUTES))
-      .reduce((clientAttributes, tagKey) => { 
+      .reduce((clientAttributes, tagKey) => {
         clientAttributes[tagKey] = tagAttributes[tagKey];
         return clientAttributes;
       }, dateRange.clientAttributes);
@@ -424,7 +461,7 @@ export class ExtXPreloadHint extends TagWithAttributesProcessor {
   private static readonly URI = 'URI';
   private static readonly BYTERANGE_START = 'BYTERANGE-START';
   private static readonly BYTERANGE_LENGTH = 'BYTERANGE-LENGTH';
-  
+
   protected requiredAttributes = new Set([ExtXPreloadHint.TYPE, ExtXPreloadHint.URI]);
   protected tag = EXT_X_PRELOAD_HINT;
 
@@ -433,7 +470,7 @@ export class ExtXPreloadHint extends TagWithAttributesProcessor {
       type: tagAttributes[ExtXPreloadHint.TYPE] as HintType,
       uri: tagAttributes[ExtXPreloadHint.URI],
       byterangeStart: Number(tagAttributes[ExtXPreloadHint.BYTERANGE_START]),
-      byterangeLength: Number(tagAttributes[ExtXPreloadHint.BYTERANGE_LENGTH])
+      byterangeLength: Number(tagAttributes[ExtXPreloadHint.BYTERANGE_LENGTH]),
     };
 
     playlist.preloadHints.push(preloadHint);
@@ -448,11 +485,11 @@ export class ExtXRenditionReport extends TagWithAttributesProcessor {
   protected requiredAttributes = new Set([]);
   protected tag = EXT_X_RENDITION_REPORT;
 
-  protected safeProcess(tagAttributes: Record<string, string>, playlist: ParsedPlaylist, sharedState: SharedState): void {
+  protected safeProcess(tagAttributes: Record<string, string>, playlist: ParsedPlaylist): void {
     const renditionReport = {
       uri: tagAttributes[ExtXRenditionReport.URI],
       lastMsn: Number(tagAttributes[ExtXRenditionReport.LAST_MSN]),
-      lastPart: Number(tagAttributes[ExtXRenditionReport.LAST_PART])
+      lastPart: Number(tagAttributes[ExtXRenditionReport.LAST_PART]),
     };
     playlist.renditionReports.push(renditionReport);
   }
