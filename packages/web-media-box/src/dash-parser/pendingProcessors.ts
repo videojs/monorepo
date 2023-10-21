@@ -1,5 +1,7 @@
 import type { TagInfo } from '@/dash-parser/stateMachine.ts';
 import { TagProcessor } from '@/dash-parser/tags/base.ts';
+import { ParsedManifest } from '@/dash-parser/types/parsedManifest';
+import { SharedState } from '@/dash-parser/types/sharedState';
 
 export class PendingProcessors {
   private readonly pendingMap: Map<TagInfo, PendingProcess> = new Map();
@@ -57,7 +59,7 @@ export class PendingProcess {
     return true;
   }
 
-  public process(): void {
-    this.tagProcessor.processPending(this.tagInfo, this.parentTagInfo, this.waitingForMap);
+  public process(parsedManifest: ParsedManifest, sharedState: SharedState): void {
+    this.tagProcessor.processPending(this.tagInfo, this.parentTagInfo, this.waitingForMap, parsedManifest, sharedState);
   }
 }

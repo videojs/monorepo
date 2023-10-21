@@ -1,5 +1,3 @@
-import { testMPD } from '../../test/dash-parser/examples/mpd';
-
 const PARSE_EMPTY_SPACE_STATE = 1;
 const PARSE_TAG_KEY_STATE = 2;
 const PARSE_ATTRIBUTE_KEY_STATE = 3;
@@ -11,6 +9,7 @@ export interface TagInfo {
   tagKey: string;
   tagValue: string | null;
   tagAttributes: Record<string, string>;
+  hasChildren: boolean;
 }
 
 type TagInfoCallback = (tagInfo: TagInfo, parentTagInfo: TagInfo | null) => void;
@@ -20,48 +19,47 @@ export type StateMachineTransition = (char: string) => void;
 export default function createStateMachine(tagInfoCallback: TagInfoCallback): StateMachineTransition {
   let currentState = PARSE_EMPTY_SPACE_STATE;
 
+  const levels: Map<number, TagInfo | null> = new Map();
+
+  let currentDepth = -1;
+  let lastChar: string | null = null;
   let currentTagKey = '';
   let currentTagValue = '';
   let currentAttributeKey = '';
   let currentAttributeValue = '';
+  let hasChildren = true;
   let currentTagAttributeKeyValueMap: Record<string, string> = {};
 
-  // start = parse-empty-space-state
-  // parse-empty-space-state -> parse-tag-name (if encounter '<')
-  // parse-empty-space-state -> parse-empty-space-state (if encounter any char)
+  const emitTagInfo = (): void => {
+    if (!currentTagKey) {
+      return;
+    }
 
-  // parse-tag-name -> parse-empty-space-state (if encounter '?') // xml declaration
-  // parse-tag-name -> parse-empty-space-state (if encounter '!') // comment
-  // parse-tag-name -> parse-empty-space-state (if encounter '/') // closing tag
-  // parse-tag-name -> parse-tag-attribute-key (if encounter ' ')
-  // parse-tag-name -> parse-tag-body (if encounter '>')
-  // if encounter new tag name and we have previous value, just expose it and clear internal state
+    const tagInfo: TagInfo = {
+      tagKey: currentTagKey,
+      tagValue: currentTagValue || null,
+      tagAttributes: currentTagAttributeKeyValueMap,
+      hasChildren,
+    };
 
-  // parse-tag-attribute-key --> parse-tag-attribute-value (if encounter '=')
+    const parentDepth = hasChildren ? currentDepth - 1 : currentDepth;
 
-  // parse-tag-attribute-value --> parse-tag-attribute-quoted-string-value (if encounter '"')
+    tagInfoCallback(tagInfo, levels.get(parentDepth) || null);
 
-  // parse-tag-attribute-quoted-string-value -> parse-tag-name (if encounter '"')
+    if (hasChildren) {
+      levels.set(currentDepth, tagInfo);
+    }
 
-  // parse-tag-body --> parse-empty-space-state (if encounter ' ')
-  // parse-tag-body --> parse-tag-name (if encounter '<')
+    currentTagKey = '';
+    currentTagValue = '';
+    currentTagAttributeKeyValueMap = {};
+    hasChildren = true;
+  };
 
   const stateMachine: Record<number, (char: string) => void> = {
     [PARSE_EMPTY_SPACE_STATE]: (char) => {
       if (char === '<') {
         currentState = PARSE_TAG_KEY_STATE;
-
-        // TODO: pass in parent node here
-        if (currentTagKey) {
-          tagInfoCallback({
-            tagKey: currentTagKey,
-            tagValue: currentTagValue || null,
-            tagAttributes: currentTagAttributeKeyValueMap
-          }, null);
-          currentTagKey = '';
-          currentTagValue = '';
-          currentTagAttributeKeyValueMap = {};
-        }
       }
     },
     [PARSE_TAG_KEY_STATE]: (char) => {
@@ -77,6 +75,14 @@ export default function createStateMachine(tagInfoCallback: TagInfoCallback): St
 
       if (char === '/') {
         currentState = PARSE_EMPTY_SPACE_STATE;
+        hasChildren = lastChar === '<';
+        if (hasChildren) {
+          emitTagInfo();
+
+          levels.delete(currentDepth);
+          currentDepth--;
+        }
+
         return;
       }
 
@@ -86,8 +92,18 @@ export default function createStateMachine(tagInfoCallback: TagInfoCallback): St
       }
 
       if (char === '>') {
-        currentState = PARSE_TAG_BODY_STATE;
+        currentState = PARSE_EMPTY_SPACE_STATE;
+
+        if (hasChildren) {
+          currentState = PARSE_TAG_BODY_STATE;
+          currentDepth++;
+        }
+
         return;
+      }
+
+      if (lastChar === '<') {
+        emitTagInfo();
       }
 
       currentTagKey += char;
@@ -124,13 +140,6 @@ export default function createStateMachine(tagInfoCallback: TagInfoCallback): St
 
       if (char === '<') {
         currentState = PARSE_TAG_KEY_STATE;
-
-        if (currentTagKey) {
-          tagInfoCallback(currentTagKey, currentTagValue || null, currentTagAttributeKeyValueMap);
-          currentTagKey = '';
-          currentTagValue = '';
-          currentTagAttributeKeyValueMap = {};
-        }
         return;
       }
 
@@ -140,20 +149,7 @@ export default function createStateMachine(tagInfoCallback: TagInfoCallback): St
 
   return (char: string) => {
     stateMachine[currentState](char);
+    lastChar = char;
   };
 }
 
-// TODO: add paren node support
-
-const test = (): void => {
-  const stateMachine = createStateMachine((tagName, tagValue, tagAttributes) => {
-    // eslint-disable-next-line no-console
-    console.log('tagName: ', tagName, ' tagValue: ', tagValue, ' tagAttributes: ', tagAttributes);
-  });
-
-  for (const char of testMPD) {
-    stateMachine(char);
-  }
-};
-
-test();
