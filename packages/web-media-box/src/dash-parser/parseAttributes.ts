@@ -5,6 +5,9 @@ type Parsers = {
   [key: string]: (value: string) => string | number;
 }
 
+// TODO: break out any parsers that are only used on a single tag, and move that to that
+// specific processor in tags/base.js
+
 const parsers: Parsers = {
   /**
    * Specifies the duration of the entire Media Presentation. Format is a duration string

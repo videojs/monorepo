@@ -14,18 +14,6 @@ export const BaseURLAttributes: Array<Attribute> = [
   { name: 'id', required: true },
 ];
 
-export const SegmentTemplateAttributes: Array<Attribute> = [
-  { name: 'media', required: false },
-  { name: 'index', required: false },
-  { name: 'initialization', required: false },
-  { name: 'bitstreamSwitching', required: false },
-];
-
-export const UTCTimingAttributes: Array<Attribute> = [
-  { name: 'schemeIdUri', required: true },
-  { name: 'value', required: false },
-];
-
 export const EventStreamAttributes: Array<Attribute> = [
   { name: 'schemeIdUri', required: true },
   { name: 'value', required: false },

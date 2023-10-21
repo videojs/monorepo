@@ -8,15 +8,16 @@ import {
   REPRESENTATION,
   UTC_TIMING,
   EVENT_STREAM,
-  EVENT }
-from '@/dash-parser/consts/tags.ts';
-import type { ManifestType, ParsedManifest } from '@/dash-parser/types/parsedManifest';
+  EVENT,
+  SEGMENT_TEMPLATE
+} from '@/dash-parser/consts/tags.ts';
+import type { ManifestType, EventScheme, ParsedManifest, UTCTimingScheme, Segment } from '@/dash-parser/types/parsedManifest';
 import type { SharedState } from '@/dash-parser/types/sharedState';
 import type { PendingProcessors } from '@/dash-parser/pendingProcessors.ts';
-import type { EventScheme, ParsedManifest, UTCTimingScheme } from '../types/parsedManifest';
 import { missingRequiredAttributeWarn } from '@/dash-parser/utils/warn.ts';
 import { parseAttributes } from '@/dash-parser/parseAttributes';
 import { parseUTCTimingScheme } from '@/dash-parser/utils/parseUTCTimingScheme';
+import { segmentsFromTemplate } from '../segments/segmentParser';
 
 export abstract class TagProcessor {
   protected readonly warnCallback: WarnCallback;
@@ -159,7 +160,27 @@ export class BaseUrl extends TagProcessor {
 }
 
 export class Representation extends TagProcessor {
-  // TODO
+  private static readonly ID = 'id';
+  private static readonly CODECS = 'codecs';
+  private static readonly BANDWIDTH = 'bandwidth';
+  private static readonly WIDTH = 'width';
+  private static readonly HEIGHT = 'height';
+  private static readonly FRAME_RATE = 'frameRate';
+  private static readonly SAR = 'sar';
+  private static readonly SCAN_TYPE = 'scanType';
+  private static readonly PROFILES = 'profiles';
+  private static readonly AUDIO_SAMPLING_RATE = 'audioSamplingRate';
+  private static readonly MIME_TYPE = 'mimeType';
+  private static readonly SEGMENT_PROFILES = 'segmentProfiles';
+  private static readonly CONTAINER_PROFILES = 'containerProfiles';
+  private static readonly MAXIMUM_SAP_PERIOD = 'maximumSAPPeriod';
+  private static readonly START_WITH_SAP = 'startWithSAP';
+  private static readonly MAX_PLAYOUT_RATE = 'maxPlayoutRate';
+  private static readonly CODING_DEPENDENCY = 'codingDependency';
+  private static readonly SELECTION_PRIORITY = 'selectionPriority';
+  private static readonly TAG = 'tag';
+  private static readonly INITIALIZATION = 'initialization';
+
   protected readonly tag = REPRESENTATION;
 
   safeProcess(
@@ -168,7 +189,93 @@ export class Representation extends TagProcessor {
     parsedManifest: ParsedManifest,
     sharedState: SharedState,
     pendingProcessors: PendingProcessors
-  ): void {}
+  ): void {
+    // TODO: Once parent info is passed in, we can check this.
+
+    // AdaptationSet must be the parent of a Representation node.
+    // if (parentTagInfo.tagKey !== ADAPTATION_SET) {
+    //   return;
+    // }
+
+    // TODO: Set pending processors
+    pendingProcessors = [];
+
+    const attributes = parseAttributes(tagInfo.tagAttributes);
+    const previousAttributes = {
+      ...sharedState.mpdAttributes,
+      ...sharedState.periodAttributes,
+      ...sharedState.adaptationSetAttributes
+    }
+
+    let segments: Array<Segment> = [];
+    // TODO: we may want to ensure we are not waiting on any more nodes to process here as well.
+    if (sharedState.segmentTemplateAttributes) {
+      segments = segmentsFromTemplate(
+        sharedState.mpdAttributes.type as string,
+        {...previousAttributes, ...attributes, ...sharedState.segmentTemplateAttributes}
+      )
+    }
+
+    const rep = {
+      ...previousAttributes,
+      // TODO: ID isn't required, so set this in a better way if it doesn't exit
+      // Maybe use period id.
+      id: attributes[Representation.ID] || 'default-id',
+      codecs: attributes[Representation.CODECS],
+      bandwidth: attributes[Representation.BANDWIDTH],
+      initialization: attributes[Representation.INITIALIZATION],
+      width: attributes[Representation.WIDTH],
+      height: attributes[Representation.HEIGHT],
+      frameRate: attributes[Representation.FRAME_RATE],
+      sar: attributes[Representation.SAR],
+      scanType: attributes[Representation.SCAN_TYPE],
+      profiles: attributes[Representation.PROFILES],
+      audioSamplingRate: attributes[Representation.AUDIO_SAMPLING_RATE],
+      mimeType: attributes[Representation.MIME_TYPE],
+      segmentProfiles: attributes[Representation.SEGMENT_PROFILES],
+      containerProfiles: attributes[Representation.CONTAINER_PROFILES],
+      maximumSAPPeriod: attributes[Representation.MAXIMUM_SAP_PERIOD],
+      startWithSAP: attributes[Representation.START_WITH_SAP],
+      maxPlayoutRate: attributes[Representation.MAX_PLAYOUT_RATE],
+      codingDependency: attributes[Representation.CODING_DEPENDENCY],
+      selectionPriority: attributes[Representation.SELECTION_PRIORITY],
+      tag: attributes[Representation.TAG],
+      segments
+    }
+
+    parsedManifest.representations.push(rep);
+  }
+}
+
+export class SegmentTemplate extends TagProcessor {
+  private static readonly MEDIA = 'media';
+  private static readonly INDEX = 'index';
+  private static readonly INITIALIZATION = 'initialization';
+  private static readonly BIT_STREAM_SWITCHING = 'bitstreamSwitching';
+  private static readonly DURATION = 'duration';
+  private static readonly TIME_SCALE = 'timescale';
+  private static readonly START_NUMBER = 'startNumber';
+
+  protected readonly tag = SEGMENT_TEMPLATE;
+
+  safeProcess(
+    tagInfo: TagInfo,
+    parentTagInfo: TagInfo | null,
+    parsedManifest: ParsedManifest,
+    sharedState: SharedState,
+    pendingProcessors: PendingProcessors
+  ): void {
+    const attributes = parseAttributes(tagInfo.tagAttributes);
+    sharedState.segmentTemplateAttributes = {
+      media: attributes[SegmentTemplate.MEDIA],
+      index: attributes[SegmentTemplate.INDEX],
+      initialization: attributes[SegmentTemplate.INITIALIZATION],
+      bitstreamSwitching: attributes[SegmentTemplate.BIT_STREAM_SWITCHING],
+      duration: attributes[SegmentTemplate.DURATION],
+      timescale: attributes[SegmentTemplate.TIME_SCALE],
+      startNumber: attributes[SEGMENT_TEMPLATE.START_NUMBER]
+    }
+  }
 }
 
 export class UTCTiming extends TagProcessor {

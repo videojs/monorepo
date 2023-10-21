@@ -2,18 +2,21 @@ export type ManifestType = 'static' | 'dynamic';
 
 export type Segment = {
   duration: number;
-  url: string;
+  uri: string;
+  resolvedUri: string,
+  segmentNumber: number,
+  presentationTime: number,
+  timeline: number
 }
 
 export type Attributes = Record<string, unknown>;
 
-export type Representation = {
+export type RepresentationScheme = {
   id?: string,
   codecs?: string,
   bandwidth?: number,
   initialization?: string,
-  segments?: Array<Segment>,
-  attributes: Attributes,
+  segments: Array<Segment>,
   [key: string]: unknown;
 }
 

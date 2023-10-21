@@ -51,6 +51,7 @@ export default function createStateMachine(tagInfoCallback: TagInfoCallback): St
       if (char === '<') {
         currentState = PARSE_TAG_KEY_STATE;
 
+        // TODO: pass in parent node here
         if (currentTagKey) {
           tagInfoCallback({
             tagKey: currentTagKey,

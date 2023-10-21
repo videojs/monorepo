@@ -15,6 +15,7 @@ import {
   PERIOD,
   REPRESENTATION,
   UTC_TIMING,
+  SEGMENT_TEMPLATE,
   EVENT_STREAM,
   EVENT,
   BASE_URL
@@ -24,7 +25,8 @@ import {
   Mpd,
   Period,
   Representation,
-  UTCTiming
+  UTCTiming,
+  SegmentTemplate
 } from '@/dash-parser/tags/base.ts';
 import { TagInfo } from '@/dash-parser/stateMachine.ts';
 import { ignoreTagWarn, unsupportedTagWarn } from '@/dash-parser/utils/warn.ts';
@@ -73,7 +75,8 @@ class Parser {
       [PERIOD]: new Period(this.warnCallback),
       [ADAPTATION_SET]: new AdaptationSet(this.warnCallback),
       [REPRESENTATION]: new Representation(this.warnCallback),
-      [UTC_TIMING]: new UTCTiming(this.warnCallback)
+      [UTC_TIMING]: new UTCTiming(this.warnCallback),
+      [SEGMENT_TEMPLATE]: new SegmentTemplate(this.warnCallback)
     };
   }
 
