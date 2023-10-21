@@ -154,6 +154,12 @@ export interface PreloadHint {
   byterangeLength?: number;
 }
 
+export interface RenditionReport {
+  uri?: string;
+  lastMsn?: number;
+  lastPart?: number;
+}
+
 export type PlaylistType = 'EVENT' | 'VOD';
 
 export interface ParsedPlaylist {
@@ -196,4 +202,6 @@ export interface ParsedPlaylist {
   skip?: Skip;
   // https://datatracker.ietf.org/doc/html/draft-pantos-hls-rfc8216bis#section-4.4.5.3
   preloadHints: PreloadHint[];
+  // https://datatracker.ietf.org/doc/html/draft-pantos-hls-rfc8216bis#section-4.4.5.4
+  renditionReports: RenditionReport[];
 }

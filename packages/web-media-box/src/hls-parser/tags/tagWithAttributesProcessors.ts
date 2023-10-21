@@ -15,6 +15,7 @@ import {
   EXT_X_I_FRAME_STREAM_INF,
   EXT_X_DATERANGE,
   EXT_X_PRELOAD_HINT,
+  EXT_X_RENDITION_REPORT,
 } from '../consts/tags.ts';
 import { parseBoolean } from '../utils/parse.ts';
 
@@ -436,5 +437,23 @@ export class ExtXPreloadHint extends TagWithAttributesProcessor {
     };
 
     playlist.preloadHints.push(preloadHint);
+  }
+}
+
+export class ExtXRenditionReport extends TagWithAttributesProcessor {
+  private static readonly URI = 'URI';
+  private static readonly LAST_MSN = 'LAST-MSN';
+  private static readonly LAST_PART = 'LAST-PART';
+
+  protected requiredAttributes = new Set([]);
+  protected tag = EXT_X_RENDITION_REPORT;
+
+  protected safeProcess(tagAttributes: Record<string, string>, playlist: ParsedPlaylist, sharedState: SharedState): void {
+    const renditionReport = {
+      uri: tagAttributes[ExtXRenditionReport.URI],
+      lastMsn: Number(tagAttributes[ExtXRenditionReport.LAST_MSN]),
+      lastPart: Number(tagAttributes[ExtXRenditionReport.LAST_PART])
+    };
+    playlist.renditionReports.push(renditionReport);
   }
 }
