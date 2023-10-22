@@ -92,7 +92,7 @@ export default class MseManager {
     if (bufferWrapper.queue.length > 0) {
       const bufferOperation = bufferWrapper.queue.shift();
       if (bufferOperation) {
-        bufferOperation.operation().then(() => {
+        bufferOperation().then(() => {
           this.processQueue(bufferWrapper);
         });
       }

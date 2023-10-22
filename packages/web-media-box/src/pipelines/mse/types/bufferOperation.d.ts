@@ -5,5 +5,5 @@ export enum OperationType {
 
 export interface SourceBufferWrapper {
   buffer: SourceBuffer;
-  queue: Array<SourceBufferOperation>;
+  queue: Array<() => Promise<void>>;
 }
