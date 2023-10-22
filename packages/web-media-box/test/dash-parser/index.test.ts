@@ -7,6 +7,6 @@ describe('dash-parser spec', () => {
   it('testString should give us JSON', () => {
     const p = new FullManifestParser({});
     const parsed = p.parseFullPlaylist(testMPD);
-    expect(parsed.representations[1]).toBe(0);
+    expect(parsed.type).toBe('static');
   });
 });

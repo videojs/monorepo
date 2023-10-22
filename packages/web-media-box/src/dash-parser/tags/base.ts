@@ -114,6 +114,9 @@ export class Period extends TagProcessor {
 
   protected readonly tag = PERIOD;
 
+  // TODO:
+  protected readonly requiredAttributes = new Set<string>();
+
   protected safeProcess(
     tagInfo: TagInfo,
     parentTagInfo: TagInfo | null,
@@ -158,6 +161,9 @@ export class BaseUrl extends TagProcessor {
   // TODO
   protected readonly tag = BASE_URL;
 
+  // TODO
+  protected readonly requiredAttributes = new Set<string>();
+
   protected safeProcess() // tagInfo: TagInfo,
   // parentTagInfo: TagInfo | null,
   // parsedManifest: ParsedManifest,
@@ -189,6 +195,8 @@ export class Representation extends TagProcessor {
   private static readonly INITIALIZATION = 'initialization';
 
   protected readonly tag = REPRESENTATION;
+  // TODO
+  protected readonly requiredAttributes = new Set<string>();
 
   protected safeProcess(
     tagInfo: TagInfo,
@@ -265,6 +273,8 @@ export class SegmentTemplate extends TagProcessor {
   private static readonly START_NUMBER = 'startNumber';
 
   protected readonly tag = SEGMENT_TEMPLATE;
+  // TODO
+  protected readonly requiredAttributes = new Set<string>();
 
   protected safeProcess(
     tagInfo: TagInfo,
@@ -281,7 +291,7 @@ export class SegmentTemplate extends TagProcessor {
       bitstreamSwitching: attributes[SegmentTemplate.BIT_STREAM_SWITCHING],
       duration: attributes[SegmentTemplate.DURATION],
       timescale: attributes[SegmentTemplate.TIME_SCALE],
-      startNumber: attributes[SEGMENT_TEMPLATE.START_NUMBER],
+      startNumber: attributes[SegmentTemplate.START_NUMBER],
     };
   }
 }
@@ -310,6 +320,8 @@ export class UTCTiming extends TagProcessor {
 export class EventStream extends TagProcessor {
   // TODO
   protected readonly tag = EVENT_STREAM;
+  // TODO
+  protected readonly requiredAttributes = new Set<string>();
 
   protected safeProcess() // tagInfo: TagInfo,
   // parentTagInfo: TagInfo | null,
@@ -321,6 +333,8 @@ export class EventStream extends TagProcessor {
 
 export class Event extends TagProcessor {
   protected readonly tag = EVENT;
+  // TODO
+  protected readonly requiredAttributes = new Set<string>();
 
   protected safeProcess(
     tagInfo: TagInfo,

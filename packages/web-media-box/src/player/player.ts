@@ -9,6 +9,7 @@ import type { EventToTypeMap } from './events.ts';
 import type Pipeline from '@/pipelines/basePipeline.ts';
 import NativePipeline from '@/pipelines/native/nativePipeline.ts';
 import { NoSupportedPipelineError } from '@/player/errors.ts';
+import NetworkManager from '@/player/networkManager.ts';
 
 enum PlaybackState {
   Playing = 'Playing',
@@ -54,6 +55,11 @@ export default class Player {
 
   private readonly logger = new Logger(console, 'Player');
   private readonly eventEmitter = new EventEmitter<EventToTypeMap>();
+  private readonly networkManager: NetworkManager = new NetworkManager(this.logger);
+
+  public getNetworkManager(): NetworkManager {
+    return this.networkManager;
+  }
 
   public getVideoElement(): HTMLVideoElement | null {
     return this.videoElement;

@@ -2,7 +2,7 @@
 import { version } from './package.json';
 
 const createConfig = ({ minify, naming }) => ({
-  entrypoints: ['./src/index.tsx'],
+  entrypoints: ['./src/index.ts'],
   outdir: './dist',
   target: 'browser',
   format: 'esm',

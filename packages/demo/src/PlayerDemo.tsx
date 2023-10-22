@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { Player } from 'web-media-box/player';
-import playIcon from './play.svg';
-import pauseIcon from './pause.svg';
+// import playIcon from './play.svg';
+// import pauseIcon from './pause.svg';
 
 interface PlayerDemoProps {
   player: Player;
@@ -36,10 +36,10 @@ const PlayerDemo: React.FC<PlayerDemoProps> = ({ player }) => {
       <video ref={videoElementRef}></video>
       <div className="controls">
         <button onClick={(): void | Promise<void> => videoElementRef.current?.play()}>
-          <img src={playIcon} alt="Play" />
+          {/*<img src={playIcon} alt="Play" />*/}
         </button>
         <button onClick={(): void => videoElementRef.current?.pause()}>
-          <img src={pauseIcon} alt="Pause" />
+          {/*<img src={pauseIcon} alt="Pause" />*/}
         </button>
       </div>
       <div className="manifestLoader">

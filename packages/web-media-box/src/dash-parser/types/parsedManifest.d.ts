@@ -38,6 +38,9 @@ export type UTCTimingScheme = {
   [key: string]: unknown;
 };
 
+// TODO:
+interface Representation {}
+
 export interface ParsedManifest {
   representations: Array<Representation>;
   id?: number;

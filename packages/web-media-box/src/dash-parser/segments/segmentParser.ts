@@ -111,7 +111,7 @@ export const segmentRanges: SegmentRanges = {
       // periodDuration
     } = attributes;
     const endNumber = parseEndNumber(attributes.endNumber as string | number | null);
-    const segmentDuration: number = (duration as number) / timescale;
+    const segmentDuration: number = (duration as number) / (timescale as number);
 
     if (typeof endNumber === 'number') {
       return { start: 0, end: endNumber };
@@ -176,9 +176,9 @@ export const toSegments =
 
     const segment = {
       segmentNumber: (startNumber as number) + segmentNumber,
-      duration: ((duration as number) / timescale) as number,
+      duration: ((duration as number) / (timescale as number)) as number,
       timeline: start as number,
-      time: segmentNumber * duration,
+      time: segmentNumber * (duration as number),
     };
 
     return segment;
@@ -215,7 +215,8 @@ export const parseByDuration = (
     //   typeof periodDuration === 'number' ? periodDuration : sourceDuration;
 
     // // final segment may be less than full segment duration
-    segments[index].duration = (duration as number) - (((duration as number) / timescale) as number) * index;
+    segments[index].duration =
+      (duration as number) - (((duration as number) / (timescale as number)) as number) * index;
   }
 
   return segments;
@@ -253,6 +254,7 @@ export const parseTemplateInfo = (
   }
 
   // return parseByTimeline(attributes, segmentTimeline);
+  return [];
 };
 
 /**
