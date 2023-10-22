@@ -160,6 +160,14 @@ export interface RenditionReport {
   lastPart?: number;
 }
 
+export interface SessionData {
+  dataId: string;
+  value?: string;
+  uri?: string;
+  format?: 'JSON' | 'RAW';
+  language?: string;
+}
+
 export type PlaylistType = 'EVENT' | 'VOD';
 
 export interface ParsedPlaylist {
@@ -204,4 +212,6 @@ export interface ParsedPlaylist {
   preloadHints: Array<PreloadHint>;
   // https://datatracker.ietf.org/doc/html/draft-pantos-hls-rfc8216bis#section-4.4.5.4
   renditionReports: Array<RenditionReport>;
+  // https://datatracker.ietf.org/doc/html/draft-pantos-hls-rfc8216bis#section-4.4.6.4
+  sessionDataTags: Array<SessionData>;
 }

@@ -32,6 +32,7 @@ import {
   EXT_X_DATERANGE,
   EXT_X_PRELOAD_HINT,
   EXT_X_RENDITION_REPORT,
+  EXT_X_SESSION_DATA,
 } from './consts/tags.ts';
 import type {
   CustomTagMap,
@@ -78,6 +79,7 @@ import {
   ExtXDaterange,
   ExtXPreloadHint,
   ExtXRenditionReport,
+  ExtXSessionData,
 } from './tags/tagWithAttributesProcessors.ts';
 
 const defaultSegment: Segment = {
@@ -133,6 +135,7 @@ class Parser {
       dateRanges: [],
       preloadHints: [],
       renditionReports: [],
+      sessionDataTags: [],
     };
 
     this.sharedState = {
@@ -175,6 +178,7 @@ class Parser {
       [EXT_X_DATERANGE]: new ExtXDaterange(this.warnCallback),
       [EXT_X_PRELOAD_HINT]: new ExtXPreloadHint(this.warnCallback),
       [EXT_X_RENDITION_REPORT]: new ExtXRenditionReport(this.warnCallback),
+      [EXT_X_SESSION_DATA]: new ExtXSessionData(this.warnCallback),
     };
   }
 

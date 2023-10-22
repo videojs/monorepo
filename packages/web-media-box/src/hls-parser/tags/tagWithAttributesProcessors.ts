@@ -30,6 +30,7 @@ import {
   EXT_X_DATERANGE,
   EXT_X_PRELOAD_HINT,
   EXT_X_RENDITION_REPORT,
+  EXT_X_SESSION_DATA,
 } from '../consts/tags.ts';
 import { parseBoolean } from '../utils/parse.ts';
 
@@ -491,6 +492,30 @@ export class ExtXRenditionReport extends TagWithAttributesProcessor {
       lastMsn: Number(tagAttributes[ExtXRenditionReport.LAST_MSN]),
       lastPart: Number(tagAttributes[ExtXRenditionReport.LAST_PART]),
     };
+
     playlist.renditionReports.push(renditionReport);
+  }
+}
+
+export class ExtXSessionData extends TagWithAttributesProcessor {
+  private static readonly DATA_ID = 'DATA-ID';
+  private static readonly VALUE = 'VALUE';
+  private static readonly URI = 'URI';
+  private static readonly FORMAT = 'FORMAT';
+  private static readonly LANGUAGE = 'LANGUAGE';
+
+  protected requiredAttributes = new Set([ExtXSessionData.DATA_ID]);
+  protected tag = EXT_X_SESSION_DATA;
+
+  protected safeProcess(tagAttributes: Record<string, string>, playlist: ParsedPlaylist): void {
+    const sessionData = {
+      dataId: tagAttributes[ExtXSessionData.DATA_ID],
+      value: tagAttributes[ExtXSessionData.VALUE],
+      uri: tagAttributes[ExtXSessionData.URI],
+      format: tagAttributes[ExtXSessionData.FORMAT] as 'JSON' | 'RAW' | undefined,
+      language: tagAttributes[ExtXSessionData.LANGUAGE],
+    };
+
+    playlist.sessionDataTags.push(sessionData);
   }
 }
