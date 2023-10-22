@@ -1,5 +1,5 @@
 import type { PlayerConfiguration } from './configuration.ts';
-import type { LoggerLevel } from '../utils/logger.ts';
+import { LoggerLevel } from '../utils/logger.ts';
 import Logger from '../utils/logger.ts';
 import { getDefaultPlayerConfiguration } from './configuration.ts';
 import EventEmitter from '../utils/eventEmitter.ts';
@@ -9,7 +9,7 @@ import type { EventToTypeMap } from './events.ts';
 import type Pipeline from '@/pipelines/basePipeline.ts';
 import NativePipeline from '@/pipelines/native/nativePipeline.ts';
 import { NoSupportedPipelineError } from '@/player/errors.ts';
-import NetworkManager from '@/player/networkManager.ts';
+import NetworkManager, { RequestType } from '@/player/networkManager.ts';
 
 enum PlaybackState {
   Playing = 'Playing',
@@ -43,6 +43,10 @@ export default class Player {
   private static readonly pipelinesMap = new Map<string, Pipeline>();
 
   public static readonly Events = Events;
+
+  public static readonly RequestType = RequestType;
+
+  public static readonly LoggerLevel = LoggerLevel;
 
   public static registerPipeline(mimeType: string, pipeline: Pipeline): void {
     Player.pipelinesMap.set(mimeType, pipeline);

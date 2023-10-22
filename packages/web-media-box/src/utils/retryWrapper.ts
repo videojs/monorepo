@@ -112,8 +112,8 @@ export default class RetryWrapper {
     delay: number,
     lastError: unknown | undefined
   ): AttemptDiagnosticInfo {
-    const fuzzedDelayFrom = delay - delay * this.fuzzFactor;
-    const fuzzedDelayTo = delay + delay * this.fuzzFactor;
+    const fuzzedDelayFrom = (1 - this.fuzzFactor) * delay;
+    const fuzzedDelayTo = (1 + this.fuzzFactor) * delay;
 
     return {
       attemptNumber,

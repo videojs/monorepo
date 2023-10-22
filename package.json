@@ -6,7 +6,7 @@
   "scripts": {
     "test": "bun test",
     "lint": "eslint .",
-    "build": "bun run build:web-media-box",
+    "build": "bun run build:web-media-box && bun run build:demo",
     "build:web-media-box": "bun run --cwd packages/web-media-box build",
     "build:demo": "bun run --cwd packages/demo build",
     "prepare": "husky install"

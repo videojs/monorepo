@@ -435,7 +435,7 @@ export class ExtXDaterange extends TagWithAttributesProcessor {
       id: tagAttributes[ExtXDaterange.ID],
       class: tagAttributes[ExtXDaterange.CLASS],
       startDate: tagAttributes[ExtXDaterange.START_DATE],
-      cue: tagAttributes[ExtXDaterange.CUE].split(',') as Array<Cue>,
+      cue: (tagAttributes[ExtXDaterange.CUE] || '').split(',') as Array<Cue>,
       endDate: tagAttributes[ExtXDaterange.END_DATE],
       duration: Number(tagAttributes[ExtXDaterange.DURATION]),
       plannedDuration: Number(tagAttributes[ExtXDaterange.PLANNED_DURATION]),

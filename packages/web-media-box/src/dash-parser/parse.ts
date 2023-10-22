@@ -28,6 +28,12 @@ import type { StateMachineTransition } from '@/dash-parser/stateMachine.ts';
 import { PendingProcessors } from '@/dash-parser/pendingProcessors.ts';
 import type { SharedState } from '@/dash-parser/types/sharedState';
 
+const defaultParsedManifest: ParsedManifest = {
+  representations: [],
+  type: 'static', //default value, could be updated after parsing
+  custom: {},
+};
+
 class Parser {
   private readonly warnCallback: WarnCallback;
   private readonly debugCallback: DebugCallback;
@@ -37,7 +43,7 @@ class Parser {
   private readonly transformTagAttributes: TransformTagAttributes;
   private readonly tagProcessorMap: Record<string, TagProcessor>;
 
-  protected readonly parsedManifest: ParsedManifest;
+  protected parsedManifest: ParsedManifest;
   protected readonly sharedState: SharedState;
   protected readonly pendingProcessors: PendingProcessors;
 
@@ -50,11 +56,7 @@ class Parser {
     this.transformTagAttributes =
       options.transformTagAttributes || ((tagKey, tagAttributes): Record<string, string> => tagAttributes);
 
-    this.parsedManifest = {
-      representations: [],
-      type: 'static', //default value, could be updated after parsing
-      custom: {},
-    };
+    this.parsedManifest = structuredClone(defaultParsedManifest);
 
     this.sharedState = {
       mpdAttributes: {},
@@ -102,25 +104,53 @@ class Parser {
 
     this.warnCallback(unsupportedTagWarn(tagInfo.tagKey));
   };
+
+  protected clean(): ParsedManifest {
+    const copy = { ...this.parsedManifest };
+    this.parsedManifest = structuredClone(defaultParsedManifest);
+
+    return copy;
+  }
 }
 
 export class FullManifestParser extends Parser {
-  public parseFullPlaylist(playlist: string): ParsedManifest {
+  public parseFullManifestString(manifest: string): ParsedManifest {
     const stateMachine = createStateMachine(this.tagInfoCallback);
-    const length = playlist.length;
+    const length = manifest.length;
 
     for (let i = 0; i < length; i++) {
-      stateMachine(playlist[i]);
+      stateMachine(manifest[i]);
     }
 
-    return this.parsedManifest;
+    return this.clean();
+  }
+
+  public parseFullManifestBuffer(manifest: Uint8Array): ParsedManifest {
+    const stateMachine = createStateMachine(this.tagInfoCallback);
+    const length = manifest.length;
+
+    for (let i = 0; i < length; i++) {
+      stateMachine(String.fromCharCode(manifest[i]));
+    }
+
+    return this.clean();
   }
 }
 
 export class ProgressiveParser extends Parser {
   private stateMachine: StateMachineTransition | null = null;
 
-  public push(chunk: Uint8Array): void {
+  public pushString(chunk: string): void {
+    if (this.stateMachine === null) {
+      this.stateMachine = createStateMachine(this.tagInfoCallback);
+    }
+
+    for (let i = 0; i < chunk.length; i++) {
+      this.stateMachine(chunk[i]);
+    }
+  }
+
+  public pushBuffer(chunk: Uint8Array): void {
     if (this.stateMachine === null) {
       this.stateMachine = createStateMachine(this.tagInfoCallback);
     }
@@ -133,6 +163,6 @@ export class ProgressiveParser extends Parser {
   public done(): ParsedManifest {
     this.stateMachine = null;
 
-    return this.parsedManifest;
+    return this.clean();
   }
 }
