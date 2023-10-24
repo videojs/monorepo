@@ -15,3 +15,12 @@ export const unsupportedEnumValue = (tag: string, actual: string, required: Set<
   skipProcessing(tag, `received unsupported tag value: ${actual}. Possible values: ${Array.from(required).toString()}`);
 
 export const ignoreTagWarn = (tag: string): string => skipProcessing(tag, 'Tag is included in the ignore list');
+
+export const segmentDurationExceededTargetDuration = (
+  segmentUri: string,
+  segmentDuration: number,
+  targetDuration: number
+): string =>
+  `Segment duration is more than target duration. Difference is ${
+    segmentDuration - targetDuration
+  }. Uri is ${segmentUri}`;

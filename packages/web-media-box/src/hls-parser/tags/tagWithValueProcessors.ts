@@ -81,14 +81,15 @@ export class ExtXMediaSequence extends TagWithNumberValueProcessor {
 export class ExtXDiscontinuitySequence extends TagWithNumberValueProcessor {
   protected readonly tag = EXT_X_DISCONTINUITY_SEQUENCE;
 
-  protected processNumberValue(value: number, playlist: ParsedPlaylist): void {
+  protected processNumberValue(value: number, playlist: ParsedPlaylist, sharedState: SharedState): void {
     playlist.discontinuitySequence = value;
+    sharedState.currentSegment.discontinuitySequence = value;
   }
 }
 
 export class ExtXPlaylistType extends TagWithEnumValueProcessor<PlaylistType> {
   protected readonly tag = EXT_X_PLAYLIST_TYPE;
-  protected readonly enum = new Set(['EVENT', 'LIVE']);
+  protected readonly enum = new Set(['EVENT', 'VOD']);
 
   protected processEnumValue(value: PlaylistType, playlist: ParsedPlaylist): void {
     playlist.playlistType = value;

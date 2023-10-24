@@ -1,7 +1,12 @@
 import createStateMachine from './stateMachine.ts';
 import type { StateMachineTransition } from './stateMachine.ts';
 import { noop } from '../utils/fn.ts';
-import { ignoreTagWarn, missingTagValueWarn, unsupportedTagWarn } from './utils/warn.ts';
+import {
+  ignoreTagWarn,
+  missingTagValueWarn,
+  segmentDurationExceededTargetDuration,
+  unsupportedTagWarn,
+} from './utils/warn.ts';
 
 import {
   // EXT_X_DEFINE,
@@ -87,6 +92,7 @@ import {
 const defaultSegment: Segment = {
   duration: 0,
   mediaSequence: 0,
+  discontinuitySequence: 0,
   isDiscontinuity: false,
   isGap: false,
   uri: '',
@@ -251,12 +257,31 @@ class Parser {
   }
 
   private handleCurrentSegment(uri: string): void {
+    if (
+      this.parsedPlaylist.targetDuration !== undefined &&
+      this.sharedState.currentSegment.duration > this.parsedPlaylist.targetDuration
+    ) {
+      this.warnCallback(
+        segmentDurationExceededTargetDuration(
+          uri,
+          this.sharedState.currentSegment.duration,
+          this.parsedPlaylist.targetDuration
+        )
+      );
+    }
+
     const previousSegment = this.parsedPlaylist.segments[this.parsedPlaylist.segments.length - 1];
 
     this.sharedState.currentSegment.uri = uri;
 
     if (previousSegment) {
       this.sharedState.currentSegment.mediaSequence = previousSegment.mediaSequence + 1;
+
+      if (this.sharedState.currentSegment.isDiscontinuity) {
+        this.sharedState.currentSegment.discontinuitySequence = previousSegment.discontinuitySequence + 1;
+      } else {
+        this.sharedState.currentSegment.discontinuitySequence = previousSegment.discontinuitySequence;
+      }
     }
 
     // TODO: consider using shared private object instead of polluting parsed playlist object, since it is public interface
