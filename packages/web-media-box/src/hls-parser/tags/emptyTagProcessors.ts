@@ -7,10 +7,19 @@ import {
   EXT_X_INDEPENDENT_SEGMENTS,
   EXT_X_DISCONTINUITY,
   EXT_X_GAP,
+  EXTM3U,
 } from '../consts/tags.ts';
 
 export abstract class EmptyTagProcessor extends TagProcessor {
   public abstract process(playlist: ParsedPlaylist, sharedState: SharedState): void;
+}
+
+export class ExtM3u extends EmptyTagProcessor {
+  protected readonly tag = EXTM3U;
+
+  public process(): void {
+    //do nothing
+  }
 }
 
 export class ExtXIndependentSegments extends EmptyTagProcessor {

@@ -42,6 +42,7 @@ export interface PartialSegment {
 }
 
 export interface Segment {
+  mediaSequence: number;
   duration: number;
   title?: string;
   programDateTime?: number;

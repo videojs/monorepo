@@ -33,6 +33,7 @@ import {
   EXT_X_PRELOAD_HINT,
   EXT_X_RENDITION_REPORT,
   EXT_X_SESSION_DATA,
+  EXTM3U,
 } from './consts/tags.ts';
 import type {
   CustomTagMap,
@@ -51,6 +52,7 @@ import {
   ExtXIndependentSegments,
   ExtXDiscontinuity,
   ExtXGap,
+  ExtM3u,
 } from './tags/emptyTagProcessors.ts';
 import type { TagWithValueProcessor } from './tags/tagWithValueProcessors.ts';
 import {
@@ -84,6 +86,7 @@ import {
 
 const defaultSegment: Segment = {
   duration: 0,
+  mediaSequence: 0,
   isDiscontinuity: false,
   isGap: false,
   uri: '',
@@ -147,6 +150,7 @@ class Parser {
     };
 
     this.emptyTagMap = {
+      [EXTM3U]: new ExtM3u(this.warnCallback),
       [EXT_X_INDEPENDENT_SEGMENTS]: new ExtXIndependentSegments(this.warnCallback),
       [EXT_X_ENDLIST]: new ExtXEndList(this.warnCallback),
       [EXT_X_I_FRAMES_ONLY]: new ExtXIframesOnly(this.warnCallback),
@@ -251,6 +255,10 @@ class Parser {
 
     this.sharedState.currentSegment.uri = uri;
 
+    if (previousSegment) {
+      this.sharedState.currentSegment.mediaSequence = previousSegment.mediaSequence + 1;
+    }
+
     // TODO: consider using shared private object instead of polluting parsed playlist object, since it is public interface
     // Apply the EXT-X-BITRATE value from previous segments to this segment as well,
     // as long as it doesn't have an EXT-X-BYTERANGE tag applied to it.
@@ -275,6 +283,10 @@ class Parser {
 
     return copy;
   }
+
+  protected transitionToNewLine(stateMachine: StateMachineTransition): void {
+    stateMachine('\n');
+  }
 }
 
 export class FullPlaylistParser extends Parser {
@@ -286,6 +298,8 @@ export class FullPlaylistParser extends Parser {
       stateMachine(playlist[i]);
     }
 
+    this.transitionToNewLine(stateMachine);
+
     return this.clean();
   }
 
@@ -296,6 +310,8 @@ export class FullPlaylistParser extends Parser {
     for (let i = 0; i < length; i++) {
       stateMachine(String.fromCharCode(playlist[i]));
     }
+
+    this.transitionToNewLine(stateMachine);
 
     return this.clean();
   }
@@ -325,6 +341,10 @@ export class ProgressiveParser extends Parser {
   }
 
   public done(): ParsedPlaylist {
+    if (this.stateMachine) {
+      this.transitionToNewLine(this.stateMachine);
+    }
+
     this.stateMachine = null;
 
     return this.clean();

@@ -72,8 +72,9 @@ export class ExtXTargetDuration extends TagWithNumberValueProcessor {
 export class ExtXMediaSequence extends TagWithNumberValueProcessor {
   protected readonly tag = EXT_X_MEDIA_SEQUENCE;
 
-  protected processNumberValue(value: number, playlist: ParsedPlaylist): void {
+  protected processNumberValue(value: number, playlist: ParsedPlaylist, sharedState: SharedState): void {
     playlist.mediaSequence = value;
+    sharedState.currentSegment.mediaSequence = value;
   }
 }
 
