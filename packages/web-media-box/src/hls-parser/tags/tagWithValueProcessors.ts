@@ -101,7 +101,7 @@ export class ExtInf extends TagWithValueProcessor {
 
   public process(tagValue: string, playlist: ParsedPlaylist, sharedState: SharedState): void {
     const parts = tagValue.split(',');
-    const duration = parseInt(parts[0]);
+    const duration = Number(parts[0]);
 
     if (Number.isNaN(duration)) {
       return this.warnCallback(unableToParseValueWarn(this.tag));

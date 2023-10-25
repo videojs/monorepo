@@ -357,4 +357,102 @@ main.ts
       });
     });
   });
+
+  describe('#EXT-X-PART-INF', () => {
+    it('should be undefined by default', () => {
+      const playlist = `#EXTM3U`;
+
+      testAllCombinations(playlist, (parsed) => {
+        expect(parsed.partInf).toBeUndefined();
+      });
+    });
+
+    it('should not parse infor from a playlist if required attributes are not presented', () => {
+      const playlist = `#EXTM3U\n#EXT-X-PART-INF`;
+
+      testAllCombinations(playlist, (parsed) => {
+        expect(parsed.partInf).toBeUndefined();
+      });
+
+      expect(warnCallback).toHaveBeenCalledTimes(4);
+    });
+
+    it('should parse info from a playlist', () => {
+      const playlist = `#EXTM3U\n#EXT-X-PART-INF:PART-TARGET=3`;
+
+      testAllCombinations(playlist, (parsed) => {
+        expect(parsed.partInf?.partTarget).toBe(3);
+      });
+    });
+  });
+
+  describe('#EXT-X-SERVER-CONTROL', () => {
+    it('should be undefined by default', () => {
+      const playlist = `#EXTM3U`;
+
+      testAllCombinations(playlist, (parsed) => {
+        expect(parsed.serverControl).toBeUndefined();
+      });
+    });
+
+    it('should parse info from a playlist', () => {
+      let playlist = `#EXTM3U\n#EXT-X-SERVER-CONTROL`;
+
+      testAllCombinations(playlist, (parsed) => {
+        expect(parsed.serverControl?.holdBack).toBeUndefined();
+        expect(parsed.serverControl?.canSkipUntil).toBeUndefined();
+        expect(parsed.serverControl?.partHoldBack).toBeUndefined();
+        expect(parsed.serverControl?.canBlockReload).toBe(false);
+        expect(parsed.serverControl?.canSkipDateRanges).toBe(false);
+      });
+
+      playlist = `#EXTM3U\n#EXT-X-SERVER-CONTROL:HOLD-BACK=5,PART-HOLD-BACK=5,CAN-SKIP-UNTIL=10,CAN-BLOCK-RELOAD=YES,CAN-SKIP-DATERANGES=YES`;
+
+      testAllCombinations(playlist, (parsed) => {
+        expect(parsed.serverControl?.holdBack).toBe(5);
+        expect(parsed.serverControl?.canSkipUntil).toBe(10);
+        expect(parsed.serverControl?.partHoldBack).toBe(5);
+        expect(parsed.serverControl?.canBlockReload).toBe(true);
+        expect(parsed.serverControl?.canSkipDateRanges).toBe(true);
+      });
+    });
+
+    it('should fallback holdBack and partHoldBack if target durations are presented', () => {
+      const playlist = `#EXTM3U\n#EXT-X-TARGETDURATION:5\n#EXT-X-PART-INF:PART-TARGET=3\n#EXT-X-SERVER-CONTROL:CAN-BLOCK-RELOAD=YES`;
+
+      testAllCombinations(playlist, (parsed) => {
+        expect(parsed.serverControl?.holdBack).toBe(15);
+        expect(parsed.serverControl?.canSkipUntil).toBeUndefined();
+        expect(parsed.serverControl?.partHoldBack).toBe(9);
+        expect(parsed.serverControl?.canBlockReload).toBe(true);
+        expect(parsed.serverControl?.canSkipDateRanges).toBe(false);
+      });
+    });
+  });
+
+  describe('#EXTINF', () => {
+    it('should parse value from a playlist', () => {
+      const playlist = `#EXTM3U
+#EXTINF:9.9766,segment-title
+main.ts
+`;
+
+      testAllCombinations(playlist, (parsed) => {
+        expect(parsed.segments[0]?.title).toBe('segment-title');
+        expect(parsed.segments[0]?.duration).toBe(9.9766);
+      });
+    });
+    it('should fallback to 0, if value is invalid', () => {
+      const playlist = `#EXTM3U
+#EXTINF:X
+main.ts
+`;
+
+      testAllCombinations(playlist, (parsed) => {
+        expect(parsed.segments[0].duration).toBe(0);
+      });
+
+      expect(warnCallback).toHaveBeenCalledTimes(4);
+    });
+  });
 });

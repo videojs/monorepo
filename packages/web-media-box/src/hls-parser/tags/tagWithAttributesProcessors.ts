@@ -103,6 +103,7 @@ export class ExtXServerControl extends TagWithAttributesProcessor {
 
   protected safeProcess(tagAttributes: Record<string, string>, playlist: ParsedPlaylist): void {
     let holdBack;
+    let partHoldBack;
 
     if (tagAttributes[ExtXServerControl.HOLD_BACK]) {
       holdBack = Number(tagAttributes[ExtXServerControl.HOLD_BACK]);
@@ -110,12 +111,20 @@ export class ExtXServerControl extends TagWithAttributesProcessor {
       holdBack = playlist.targetDuration * 3;
     }
 
+    if (tagAttributes[ExtXServerControl.PART_HOLD_BACK]) {
+      partHoldBack = Number(tagAttributes[ExtXServerControl.PART_HOLD_BACK]);
+    } else if (playlist.partInf?.partTarget) {
+      partHoldBack = playlist.partInf.partTarget * 3;
+    }
+
     playlist.serverControl = {
-      canSkipUntil: Number(tagAttributes[ExtXServerControl.CAN_SKIP_UNTIL]),
-      partHoldBack: Number(tagAttributes[ExtXServerControl.PART_HOLD_BACK]),
+      canSkipUntil: tagAttributes[ExtXServerControl.CAN_SKIP_UNTIL]
+        ? Number(tagAttributes[ExtXServerControl.CAN_SKIP_UNTIL])
+        : undefined,
       canBlockReload: parseBoolean(tagAttributes[ExtXServerControl.CAN_BLOCK_RELOAD], false),
       canSkipDateRanges: parseBoolean(tagAttributes[ExtXServerControl.CAN_SKIP_DATERANGES], false),
       holdBack,
+      partHoldBack,
     };
   }
 }
