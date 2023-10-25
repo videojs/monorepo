@@ -429,4 +429,30 @@ main.ts
       });
     });
   });
+
+  describe('#EXTINF', () => {
+    it('should parse value from a playlist', () => {
+      const playlist = `#EXTM3U
+#EXTINF:9.9766,segment-title
+main.ts
+`;
+
+      testAllCombinations(playlist, (parsed) => {
+        expect(parsed.segments[0]?.title).toBe('segment-title');
+        expect(parsed.segments[0]?.duration).toBe(9.9766);
+      });
+    });
+    it('should fallback to 0, if value is invalid', () => {
+      const playlist = `#EXTM3U
+#EXTINF:X
+main.ts
+`;
+
+      testAllCombinations(playlist, (parsed) => {
+        expect(parsed.segments[0].duration).toBe(0);
+      });
+
+      expect(warnCallback).toHaveBeenCalledTimes(4);
+    });
+  });
 });
