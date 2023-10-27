@@ -532,4 +532,107 @@ main.ts
       });
     });
   });
+
+  describe('#EXT-X-DISCONTINUITY', () => {
+    it('timeline should be 0 by default', () => {
+      const playlist = `#EXTM3U
+#EXT-X-TARGETDURATION:11
+#EXT-X-VERSION:4
+#EXT-X-MEDIA-SEQUENCE:0
+#EXT-X-PLAYLIST-TYPE:VOD
+#EXTINF:9.9766,\t
+#EXT-X-BYTERANGE:5@0
+main.ts
+#EXTINF:9.9433,\t
+#EXT-X-BYTERANGE:10
+main.ts
+#EXTINF:10.01,\t
+#EXT-X-BYTERANGE:15
+main.ts
+`;
+
+      testAllCombinations(playlist, (parsed) => {
+        expect(parsed.segments[0]?.discontinuitySequence).toBe(0);
+        expect(parsed.segments[0]?.isDiscontinuity).toBe(false);
+        expect(parsed.segments[1]?.discontinuitySequence).toBe(0);
+        expect(parsed.segments[1]?.isDiscontinuity).toBe(false);
+        expect(parsed.segments[2]?.discontinuitySequence).toBe(0);
+        expect(parsed.segments[2]?.isDiscontinuity).toBe(false);
+      });
+    });
+
+    it('should parse from a playlist', () => {
+      const playlist = `#EXTM3U
+#EXT-X-TARGETDURATION:11
+#EXT-X-VERSION:4
+#EXT-X-MEDIA-SEQUENCE:0
+#EXT-X-PLAYLIST-TYPE:VOD
+#EXTINF:9.9766,\t
+main.ts
+#EXTINF:9.9433,\t
+main.ts
+#EXTINF:10.01,\t
+main.ts
+#EXT-X-DISCONTINUITY
+#EXTINF:9.9766,\t
+main.ts
+#EXTINF:9.9433,\t
+main.ts
+#EXTINF:10.01,\t
+main.ts
+#EXT-X-DISCONTINUITY
+#EXTINF:9.9766,\t
+main.ts
+#EXTINF:9.9433,\t
+main.ts
+#EXTINF:10.01,\t
+main.ts
+#EXT-X-DISCONTINUITY
+#EXTINF:9.9766,\t
+main.ts
+#EXTINF:9.9433,\t
+main.ts
+#EXTINF:10.01,\t
+main.ts
+`;
+
+      testAllCombinations(playlist, (parsed) => {
+        expect(parsed.segments[0]?.discontinuitySequence).toBe(0);
+        expect(parsed.segments[0]?.isDiscontinuity).toBe(false);
+
+        expect(parsed.segments[1]?.discontinuitySequence).toBe(0);
+        expect(parsed.segments[1]?.isDiscontinuity).toBe(false);
+
+        expect(parsed.segments[2]?.discontinuitySequence).toBe(0);
+        expect(parsed.segments[2]?.isDiscontinuity).toBe(false);
+
+        expect(parsed.segments[3]?.discontinuitySequence).toBe(1);
+        expect(parsed.segments[3]?.isDiscontinuity).toBe(true);
+
+        expect(parsed.segments[4]?.discontinuitySequence).toBe(1);
+        expect(parsed.segments[4]?.isDiscontinuity).toBe(false);
+
+        expect(parsed.segments[5]?.discontinuitySequence).toBe(1);
+        expect(parsed.segments[5]?.isDiscontinuity).toBe(false);
+
+        expect(parsed.segments[6]?.discontinuitySequence).toBe(2);
+        expect(parsed.segments[6]?.isDiscontinuity).toBe(true);
+
+        expect(parsed.segments[7]?.discontinuitySequence).toBe(2);
+        expect(parsed.segments[7]?.isDiscontinuity).toBe(false);
+
+        expect(parsed.segments[8]?.discontinuitySequence).toBe(2);
+        expect(parsed.segments[8]?.isDiscontinuity).toBe(false);
+
+        expect(parsed.segments[9]?.discontinuitySequence).toBe(3);
+        expect(parsed.segments[9]?.isDiscontinuity).toBe(true);
+
+        expect(parsed.segments[10]?.discontinuitySequence).toBe(3);
+        expect(parsed.segments[10]?.isDiscontinuity).toBe(false);
+
+        expect(parsed.segments[11]?.discontinuitySequence).toBe(3);
+        expect(parsed.segments[11]?.isDiscontinuity).toBe(false);
+      });
+    });
+  });
 });
