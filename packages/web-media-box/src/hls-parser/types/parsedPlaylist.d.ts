@@ -29,8 +29,8 @@ export interface MediaInitializationSection {
 }
 
 export interface ByteRange {
-  length: number;
-  offset: number;
+  start: number;
+  end: number;
 }
 
 export interface PartialSegment {

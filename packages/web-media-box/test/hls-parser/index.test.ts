@@ -455,4 +455,81 @@ main.ts
       expect(warnCallback).toHaveBeenCalledTimes(4);
     });
   });
+
+  describe('#EXT-X-BYTERANGE', () => {
+    it('should be undefined by default', () => {
+      const playlist = `#EXTM3U
+#EXT-X-TARGETDURATION:11
+#EXT-X-VERSION:4
+#EXT-X-MEDIA-SEQUENCE:0
+#EXT-X-PLAYLIST-TYPE:VOD
+#EXTINF:9.9766,\t
+main.ts
+#EXTINF:9.9433,\t
+main.ts
+#EXTINF:10.01,\t
+main.ts
+`;
+
+      testAllCombinations(playlist, (parsed) => {
+        expect(parsed.segments[0]?.byteRange).toBeUndefined();
+        expect(parsed.segments[1]?.byteRange).toBeUndefined();
+        expect(parsed.segments[2]?.byteRange).toBeUndefined();
+      });
+    });
+
+    it('should parse values from a playlist', () => {
+      const playlist = `#EXTM3U
+#EXT-X-TARGETDURATION:11
+#EXT-X-VERSION:4
+#EXT-X-MEDIA-SEQUENCE:0
+#EXT-X-PLAYLIST-TYPE:VOD
+#EXTINF:9.9766,\t
+#EXT-X-BYTERANGE:5@5
+main.ts
+#EXTINF:9.9433,\t
+#EXT-X-BYTERANGE:10@10
+main.ts
+#EXTINF:10.01,\t
+#EXT-X-BYTERANGE:15@20
+main.ts
+`;
+
+      testAllCombinations(playlist, (parsed) => {
+        expect(parsed.segments[0]?.byteRange?.start).toBe(5);
+        expect(parsed.segments[0]?.byteRange?.end).toBe(9);
+        expect(parsed.segments[1]?.byteRange?.start).toBe(10);
+        expect(parsed.segments[1]?.byteRange?.end).toBe(19);
+        expect(parsed.segments[2]?.byteRange?.start).toBe(20);
+        expect(parsed.segments[2]?.byteRange?.end).toBe(34);
+      });
+    });
+
+    it(`If o is not present, the sub-range begins at the next byte following the sub-range of the previous Media Segment`, () => {
+      const playlist = `#EXTM3U
+#EXT-X-TARGETDURATION:11
+#EXT-X-VERSION:4
+#EXT-X-MEDIA-SEQUENCE:0
+#EXT-X-PLAYLIST-TYPE:VOD
+#EXTINF:9.9766,\t
+#EXT-X-BYTERANGE:5@0
+main.ts
+#EXTINF:9.9433,\t
+#EXT-X-BYTERANGE:10
+main.ts
+#EXTINF:10.01,\t
+#EXT-X-BYTERANGE:15
+main.ts
+`;
+
+      testAllCombinations(playlist, (parsed) => {
+        expect(parsed.segments[0]?.byteRange?.start).toBe(0);
+        expect(parsed.segments[0]?.byteRange?.end).toBe(4);
+        expect(parsed.segments[1]?.byteRange?.start).toBe(5);
+        expect(parsed.segments[1]?.byteRange?.end).toBe(14);
+        expect(parsed.segments[2]?.byteRange?.start).toBe(15);
+        expect(parsed.segments[2]?.byteRange?.end).toBe(29);
+      });
+    });
+  });
 });
