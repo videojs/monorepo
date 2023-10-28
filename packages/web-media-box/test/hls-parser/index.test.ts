@@ -839,4 +839,78 @@ segment-3.ts
       });
     });
   });
+
+  describe('#EXT-X-GAP', () => {
+    it('should be false by default', () => {
+      const playlist = `#EXTM3U
+#EXTINF:4
+segment-1.ts
+#EXTINF:4
+segment-2.ts
+#EXTINF:4
+segment-3.ts
+`;
+      testAllCombinations(playlist, (parsed) => {
+        expect(parsed.segments[0].isGap).toBe(false);
+        expect(parsed.segments[1].isGap).toBe(false);
+        expect(parsed.segments[2].isGap).toBe(false);
+      });
+    });
+
+    it('should parse data from a playlist', () => {
+      const playlist = `#EXTM3U
+#EXT-X-GAP
+#EXTINF:4
+segment-1.ts
+#EXTINF:4
+segment-2.ts
+#EXT-X-GAP
+#EXTINF:4
+segment-3.ts
+`;
+      testAllCombinations(playlist, (parsed) => {
+        expect(parsed.segments[0].isGap).toBe(true);
+        expect(parsed.segments[1].isGap).toBe(false);
+        expect(parsed.segments[2].isGap).toBe(true);
+      });
+    });
+  });
+
+  describe('#EXT-X-BITRATE', () => {
+    it('should be undefined by default', () => {
+      const playlist = `#EXTM3U
+#EXT-X-GAP
+#EXTINF:4
+segment-1.ts
+#EXTINF:4
+segment-2.ts
+#EXT-X-GAP
+#EXTINF:4
+segment-3.ts
+`;
+      testAllCombinations(playlist, (parsed) => {
+        expect(parsed.segments[0].bitrate).toBeUndefined();
+        expect(parsed.segments[1].bitrate).toBeUndefined();
+        expect(parsed.segments[2].bitrate).toBeUndefined();
+      });
+    });
+
+    it('should apply bitrate to a segment, unless it has byte-range', () => {
+      const playlist = `#EXTM3U
+#EXT-X-BITRATE:111111
+#EXTINF:4
+segment-1.ts
+#EXTINF:4
+segment-2.ts
+#EXT-X-BYTERANGE:5@0
+#EXTINF:4
+segment-3.ts
+`;
+      testAllCombinations(playlist, (parsed) => {
+        expect(parsed.segments[0].bitrate).toBe(111111);
+        expect(parsed.segments[1].bitrate).toBe(111111);
+        expect(parsed.segments[2].bitrate).toBeUndefined();
+      });
+    });
+  });
 });

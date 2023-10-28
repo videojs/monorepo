@@ -286,7 +286,6 @@ class Parser {
       }
     }
 
-    // TODO: consider using shared private object instead of polluting parsed playlist object, since it is public interface
     // Apply the EXT-X-BITRATE value from previous segments to this segment as well,
     // as long as it doesn't have an EXT-X-BYTERANGE tag applied to it.
     // https://datatracker.ietf.org/doc/html/draft-pantos-hls-rfc8216bis#section-4.4.4.8
