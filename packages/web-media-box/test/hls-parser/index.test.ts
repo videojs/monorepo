@@ -704,5 +704,81 @@ segment-3.ts
         expect(parsed.segments[2].encryption?.iv).toBe('0x00000000000000000000000000000000');
       });
     });
+
+    it('should add encryption for media initialization', () => {
+      const playlist = `#EXTM3U
+#EXT-X-KEY:METHOD=AES-128,URI="https://my-key.com",IV=0x00000000000000000000000000000000
+#EXT-X-MAP:URI="init-segment.mp4",BYTERANGE=5@0
+#EXTINF:4.0107,
+segment-1.ts
+#EXT-X-MAP:URI="init-segment.mp4",BYTERANGE=5@5
+#EXTINF:4.0107,
+segment-2.ts
+#EXT-X-MAP:URI="init-segment.mp4",BYTERANGE=5@10
+#EXTINF:4.0107,
+segment-3.ts
+`;
+
+      testAllCombinations(playlist, (parsed) => {
+        expect(parsed.segments[0].map?.encryption?.uri).toBe('https://my-key.com');
+        expect(parsed.segments[0].map?.encryption?.method).toBe('AES-128');
+        expect(parsed.segments[0].map?.encryption?.iv).toBe('0x00000000000000000000000000000000');
+
+        expect(parsed.segments[1].map?.encryption?.uri).toBe('https://my-key.com');
+        expect(parsed.segments[1].map?.encryption?.method).toBe('AES-128');
+        expect(parsed.segments[1].map?.encryption?.iv).toBe('0x00000000000000000000000000000000');
+
+        expect(parsed.segments[2].map?.encryption?.uri).toBe('https://my-key.com');
+        expect(parsed.segments[2].map?.encryption?.method).toBe('AES-128');
+        expect(parsed.segments[2].map?.encryption?.iv).toBe('0x00000000000000000000000000000000');
+      });
+    });
+  });
+
+  describe('#EXT-X-MAP', () => {
+    it('should be undefined by default', () => {
+      const playlist = `#EXTM3U
+#EXT-X-KEY:METHOD=AES-128,URI="https://my-key.com",IV=0x00000000000000000000000000000000
+#EXTINF:4.0107,
+segment-1.ts
+#EXTINF:4.0107,
+segment-2.ts
+#EXTINF:4.0107,
+segment-3.ts
+`;
+      testAllCombinations(playlist, (parsed) => {
+        expect(parsed.segments[0].map).toBeUndefined();
+        expect(parsed.segments[1].map).toBeUndefined();
+        expect(parsed.segments[2].map).toBeUndefined();
+      });
+    });
+
+    it('should parse data from a playlist', () => {
+      const playlist = `#EXTM3U
+#EXT-X-KEY:METHOD=AES-128,URI="https://my-key.com",IV=0x00000000000000000000000000000000
+#EXT-X-MAP:URI="init-segment.mp4",BYTERANGE=5@0
+#EXTINF:4.0107,
+segment-1.ts
+#EXT-X-MAP:URI="init-segment.mp4",BYTERANGE=5@5
+#EXTINF:4.0107,
+segment-2.ts
+#EXT-X-MAP:URI="init-segment.mp4",BYTERANGE=5@10
+#EXTINF:4.0107,
+segment-3.ts
+`;
+      testAllCombinations(playlist, (parsed) => {
+        expect(parsed.segments[0].map?.uri).toBe('init-segment.mp4');
+        expect(parsed.segments[0].map?.byteRange?.start).toBe(0);
+        expect(parsed.segments[0].map?.byteRange?.end).toBe(4);
+
+        expect(parsed.segments[1].map?.uri).toBe('init-segment.mp4');
+        expect(parsed.segments[1].map?.byteRange?.start).toBe(5);
+        expect(parsed.segments[1].map?.byteRange?.end).toBe(9);
+
+        expect(parsed.segments[2].map?.uri).toBe('init-segment.mp4');
+        expect(parsed.segments[2].map?.byteRange?.start).toBe(10);
+        expect(parsed.segments[2].map?.byteRange?.end).toBe(14);
+      });
+    });
   });
 });

@@ -273,6 +273,7 @@ class Parser {
     const previousSegment = this.parsedPlaylist.segments[this.parsedPlaylist.segments.length - 1];
 
     this.sharedState.currentSegment.encryption = this.sharedState.currentEncryption;
+    this.sharedState.currentSegment.map = this.sharedState.currentMap;
     this.sharedState.currentSegment.uri = uri;
 
     if (previousSegment) {

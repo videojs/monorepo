@@ -26,6 +26,7 @@ export interface Encryption {
 export interface MediaInitializationSection {
   uri: string;
   byteRange?: ByteRange;
+  encryption?: Encryption;
 }
 
 export interface ByteRange {
@@ -53,6 +54,7 @@ export interface Segment {
   isDiscontinuity: boolean;
   isGap: boolean;
   encryption?: Encryption;
+  map?: MediaInitializationSection;
   parts?: Array<PartialSegment>;
 }
 
@@ -200,7 +202,6 @@ export interface ParsedPlaylist {
   partInf?: PartInf;
   // https://datatracker.ietf.org/doc/html/draft-pantos-hls-rfc8216bis#section-4.4.3.8
   serverControl?: ServerControl;
-  mediaInitializationSection?: MediaInitializationSection;
   segments: Array<Segment>;
   custom: Record<string, unknown>;
   renditionGroups: RenditionGroups;

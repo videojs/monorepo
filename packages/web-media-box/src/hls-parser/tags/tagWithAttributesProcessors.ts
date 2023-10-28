@@ -171,7 +171,11 @@ export class ExtXMap extends TagWithAttributesProcessor {
   protected readonly requiredAttributes = new Set([ExtXMap.URI]);
   protected readonly tag = EXT_X_MAP;
 
-  protected safeProcess(tagAttributes: Record<string, string>, playlist: ParsedPlaylist): void {
+  protected safeProcess(
+    tagAttributes: Record<string, string>,
+    playlist: ParsedPlaylist,
+    sharedState: SharedState
+  ): void {
     let byteRange;
 
     if (tagAttributes[ExtXMap.BYTERANGE]) {
@@ -180,9 +184,10 @@ export class ExtXMap extends TagWithAttributesProcessor {
       byteRange = { start: offset, end: offset + length - 1 };
     }
 
-    playlist.mediaInitializationSection = {
+    sharedState.currentMap = {
       uri: tagAttributes[ExtXMap.URI],
       byteRange,
+      encryption: sharedState.currentEncryption,
     };
   }
 }
