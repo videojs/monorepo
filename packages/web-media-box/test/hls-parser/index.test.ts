@@ -781,4 +781,62 @@ segment-3.ts
       });
     });
   });
+
+  describe('#EXT-X-PROGRAM-DATE-TIME', () => {
+    it('should be undefined by default', () => {
+      const playlist = `#EXTM3U
+#EXT-X-KEY:METHOD=AES-128,URI="https://my-key.com",IV=0x00000000000000000000000000000000
+#EXT-X-MAP:URI="init-segment.mp4",BYTERANGE=5@0
+#EXTINF:4.0107,
+segment-1.ts
+#EXT-X-MAP:URI="init-segment.mp4",BYTERANGE=5@5
+#EXTINF:4.0107,
+segment-2.ts
+#EXT-X-MAP:URI="init-segment.mp4",BYTERANGE=5@10
+#EXTINF:4.0107,
+segment-3.ts
+`;
+
+      testAllCombinations(playlist, (parsed) => {
+        expect(parsed.segments[0].programDateTime).toBeUndefined();
+        expect(parsed.segments[1].programDateTime).toBeUndefined();
+        expect(parsed.segments[2].programDateTime).toBeUndefined();
+      });
+    });
+
+    it('should extrapolate program date time forward', () => {
+      const playlist = `#EXTM3U
+#EXT-X-PROGRAM-DATE-TIME:2023-10-28T18:11:24.010Z
+#EXTINF:4
+segment-1.ts
+#EXTINF:4
+segment-2.ts
+#EXTINF:4
+segment-3.ts
+`;
+      testAllCombinations(playlist, (parsed) => {
+        expect(parsed.segments[0].programDateTime).toBe(1698516684010);
+        expect(parsed.segments[1].programDateTime).toBe(1698516684010 + 4000);
+        expect(parsed.segments[2].programDateTime).toBe(1698516684010 + 4000 + 4000);
+      });
+    });
+
+    it('should extrapolate program date time backward', () => {
+      const playlist = `#EXTM3U
+#EXTINF:4
+segment-1.ts
+#EXTINF:4
+segment-2.ts
+#EXT-X-PROGRAM-DATE-TIME:2023-10-28T18:11:24.010Z
+#EXTINF:4
+segment-3.ts
+`;
+
+      testAllCombinations(playlist, (parsed) => {
+        expect(parsed.segments[0].programDateTime).toBe(1698516684010 - 4000 - 4000);
+        expect(parsed.segments[1].programDateTime).toBe(1698516684010 - 4000);
+        expect(parsed.segments[2].programDateTime).toBe(1698516684010);
+      });
+    });
+  });
 });

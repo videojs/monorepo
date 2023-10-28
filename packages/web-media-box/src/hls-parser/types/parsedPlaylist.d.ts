@@ -25,11 +25,11 @@ export interface Encryption {
 
 export interface MediaInitializationSection {
   uri: string;
-  byteRange?: ByteRange;
+  byteRange?: Range;
   encryption?: Encryption;
 }
 
-export interface ByteRange {
+export interface Range {
   start: number;
   end: number;
 }
@@ -37,7 +37,7 @@ export interface ByteRange {
 export interface PartialSegment {
   uri: string;
   duration: number;
-  byteRange?: ByteRange;
+  byteRange?: Range;
   independent?: boolean;
   isGap?: boolean;
 }
@@ -48,7 +48,7 @@ export interface Segment {
   duration: number;
   title?: string;
   programDateTime?: number;
-  byteRange?: ByteRange;
+  byteRange?: Range;
   bitrate?: number;
   uri: string;
   isDiscontinuity: boolean;
