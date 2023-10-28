@@ -52,6 +52,7 @@ export interface Segment {
   uri: string;
   isDiscontinuity: boolean;
   isGap: boolean;
+  encryption?: Encryption;
   parts?: Array<PartialSegment>;
 }
 
@@ -199,7 +200,6 @@ export interface ParsedPlaylist {
   partInf?: PartInf;
   // https://datatracker.ietf.org/doc/html/draft-pantos-hls-rfc8216bis#section-4.4.3.8
   serverControl?: ServerControl;
-  encryption?: Encryption;
   mediaInitializationSection?: MediaInitializationSection;
   segments: Array<Segment>;
   custom: Record<string, unknown>;

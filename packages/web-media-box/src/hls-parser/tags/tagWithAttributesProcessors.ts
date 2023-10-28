@@ -139,7 +139,11 @@ export class ExtXKey extends TagWithAttributesProcessor {
   protected readonly requiredAttributes = new Set([ExtXKey.METHOD]);
   protected readonly tag = EXT_X_KEY;
 
-  protected safeProcess(tagAttributes: Record<string, string>, playlist: ParsedPlaylist): void {
+  protected safeProcess(
+    tagAttributes: Record<string, string>,
+    playlist: ParsedPlaylist,
+    sharedState: SharedState
+  ): void {
     const method = tagAttributes[ExtXKey.METHOD];
     const uri = tagAttributes[ExtXKey.URI];
 
@@ -148,7 +152,7 @@ export class ExtXKey extends TagWithAttributesProcessor {
       return this.warnCallback(missingRequiredAttributeWarn(this.tag, ExtXKey.URI));
     }
 
-    playlist.encryption = {
+    sharedState.currentEncryption = {
       method: method as 'NONE' | 'AES-128' | 'SAMPLE-AES',
       uri: uri,
       iv: tagAttributes[ExtXKey.IV],

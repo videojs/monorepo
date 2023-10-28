@@ -635,4 +635,74 @@ main.ts
       });
     });
   });
+
+  describe('#EXT-X-KEY', () => {
+    it('should be undefined by default', () => {
+      const playlist = `#EXTM3U
+#EXTINF:4.0107,
+segment-1.ts
+#EXTINF:4.0107,
+segment-2.ts
+#EXTINF:4.0107,
+segment-3.ts
+`;
+
+      testAllCombinations(playlist, (parsed) => {
+        expect(parsed.segments[0].encryption).toBeUndefined();
+        expect(parsed.segments[1].encryption).toBeUndefined();
+        expect(parsed.segments[2].encryption).toBeUndefined();
+      });
+    });
+
+    it('should parse from a playlist', () => {
+      let playlist = `#EXTM3U
+#EXT-X-KEY:METHOD=AES-128,URI="https://my-key.com",IV=0x00000000000000000000000000000000
+#EXTINF:4.0107,
+segment-1.ts
+#EXT-X-KEY:METHOD=AES-128,URI="https://my-key.com",IV=0x00000000000000000000000000000001
+#EXTINF:4.0107,
+segment-2.ts
+#EXT-X-KEY:METHOD=AES-128,URI="https://my-key.com",IV=0x00000000000000000000000000000002
+#EXTINF:4.0107,
+segment-3.ts
+`;
+
+      testAllCombinations(playlist, (parsed) => {
+        expect(parsed.segments[0].encryption?.method).toBe('AES-128');
+        expect(parsed.segments[0].encryption?.uri).toBe('https://my-key.com');
+        expect(parsed.segments[0].encryption?.iv).toBe('0x00000000000000000000000000000000');
+
+        expect(parsed.segments[1].encryption?.method).toBe('AES-128');
+        expect(parsed.segments[1].encryption?.uri).toBe('https://my-key.com');
+        expect(parsed.segments[1].encryption?.iv).toBe('0x00000000000000000000000000000001');
+
+        expect(parsed.segments[2].encryption?.method).toBe('AES-128');
+        expect(parsed.segments[2].encryption?.uri).toBe('https://my-key.com');
+        expect(parsed.segments[2].encryption?.iv).toBe('0x00000000000000000000000000000002');
+      });
+
+      playlist = `#EXTM3U
+#EXT-X-KEY:METHOD=AES-128,URI="https://my-key.com",IV=0x00000000000000000000000000000000
+#EXTINF:4.0107,
+segment-1.ts
+#EXTINF:4.0107,
+segment-2.ts
+#EXTINF:4.0107,
+segment-3.ts
+`;
+      testAllCombinations(playlist, (parsed) => {
+        expect(parsed.segments[0].encryption?.method).toBe('AES-128');
+        expect(parsed.segments[0].encryption?.uri).toBe('https://my-key.com');
+        expect(parsed.segments[0].encryption?.iv).toBe('0x00000000000000000000000000000000');
+
+        expect(parsed.segments[1].encryption?.method).toBe('AES-128');
+        expect(parsed.segments[1].encryption?.uri).toBe('https://my-key.com');
+        expect(parsed.segments[1].encryption?.iv).toBe('0x00000000000000000000000000000000');
+
+        expect(parsed.segments[2].encryption?.method).toBe('AES-128');
+        expect(parsed.segments[2].encryption?.uri).toBe('https://my-key.com');
+        expect(parsed.segments[2].encryption?.iv).toBe('0x00000000000000000000000000000000');
+      });
+    });
+  });
 });
