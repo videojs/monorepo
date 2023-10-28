@@ -135,10 +135,10 @@ export class ExtXByteRange extends TagWithValueProcessor {
         );
       }
 
-      offset = previousSegment.byteRange.offset + previousSegment.byteRange.length + 1;
+      offset = previousSegment.byteRange.end + 1;
     }
 
-    sharedState.currentSegment.byteRange = { length, offset };
+    sharedState.currentSegment.byteRange = { start: offset, end: offset + length - 1 };
   }
 }
 

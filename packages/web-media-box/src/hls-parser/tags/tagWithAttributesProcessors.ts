@@ -173,7 +173,7 @@ export class ExtXMap extends TagWithAttributesProcessor {
     if (tagAttributes[ExtXMap.BYTERANGE]) {
       const [length, offset] = tagAttributes[ExtXMap.BYTERANGE].split('@').map(Number);
 
-      byteRange = { length, offset };
+      byteRange = { start: offset, end: offset + length - 1 };
     }
 
     playlist.mediaInitializationSection = {
@@ -217,10 +217,10 @@ export class ExtXPart extends TagWithAttributesProcessor {
           );
         }
 
-        offset = previousPartialSegment.byteRange.offset + previousPartialSegment.byteRange.length + 1;
+        offset = previousPartialSegment.byteRange.end + 1;
       }
 
-      part.byteRange = { length, offset };
+      part.byteRange = { start: offset, end: offset + length - 1 };
     }
 
     if (tagAttributes[ExtXPart.INDEPENDENT]) {
