@@ -38,8 +38,8 @@ export interface PartialSegment {
   uri: string;
   duration: number;
   byteRange?: Range;
-  independent?: boolean;
-  isGap?: boolean;
+  independent: boolean;
+  isGap: boolean;
 }
 
 export interface Segment {
@@ -55,7 +55,7 @@ export interface Segment {
   isGap: boolean;
   encryption?: Encryption;
   map?: MediaInitializationSection;
-  parts?: Array<PartialSegment>;
+  parts: Array<PartialSegment>;
 }
 
 export type RenditionType = 'AUDIO' | 'VIDEO' | 'SUBTITLES' | 'CLOSED-CAPTIONS';

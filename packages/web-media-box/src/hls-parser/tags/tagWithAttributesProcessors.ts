@@ -210,6 +210,8 @@ export class ExtXPart extends TagWithAttributesProcessor {
     const part: PartialSegment = {
       uri: tagAttributes[ExtXPart.URI],
       duration: Number(tagAttributes[ExtXPart.DURATION]),
+      isGap: parseBoolean(tagAttributes[ExtXPart.GAP], false),
+      independent: parseBoolean(tagAttributes[ExtXPart.INDEPENDENT], false),
     };
 
     if (tagAttributes[ExtXPart.BYTERANGE]) {
@@ -230,18 +232,6 @@ export class ExtXPart extends TagWithAttributesProcessor {
       }
 
       part.byteRange = { start: offset, end: offset + length - 1 };
-    }
-
-    if (tagAttributes[ExtXPart.INDEPENDENT]) {
-      part.independent = parseBoolean(tagAttributes[ExtXPart.INDEPENDENT], false);
-    }
-
-    if (tagAttributes[ExtXPart.GAP]) {
-      part.isGap = parseBoolean(tagAttributes[ExtXPart.GAP], false);
-    }
-
-    if (!sharedState.currentSegment.parts) {
-      sharedState.currentSegment.parts = [];
     }
 
     sharedState.currentSegment.parts.push(part);

@@ -96,6 +96,7 @@ const defaultSegment: Segment = {
   isDiscontinuity: false,
   isGap: false,
   uri: '',
+  parts: [],
 };
 
 const defaultVariantStream: VariantStream = {
@@ -151,8 +152,8 @@ class Parser {
 
     this.sharedState = {
       isMultivariantPlaylist: false,
-      currentSegment: { ...defaultSegment },
-      currentVariant: { ...defaultVariantStream },
+      currentSegment: structuredClone(defaultSegment),
+      currentVariant: structuredClone(defaultVariantStream),
     };
 
     this.emptyTagMap = {
@@ -253,7 +254,7 @@ class Parser {
   private handleCurrentVariant(uri: string): void {
     this.sharedState.currentVariant.uri = uri;
     this.parsedPlaylist.variantStreams.push(this.sharedState.currentVariant);
-    this.sharedState.currentVariant = { ...defaultVariantStream };
+    this.sharedState.currentVariant = structuredClone(defaultVariantStream);
   }
 
   private handleCurrentSegment(uri: string): void {
@@ -300,7 +301,7 @@ class Parser {
     }
 
     this.parsedPlaylist.segments.push(this.sharedState.currentSegment);
-    this.sharedState.currentSegment = { ...defaultSegment };
+    this.sharedState.currentSegment = structuredClone(defaultSegment);
   }
 
   protected clean(): ParsedPlaylist {

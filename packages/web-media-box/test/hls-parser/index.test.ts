@@ -913,4 +913,71 @@ segment-3.ts
       });
     });
   });
+
+  describe('#EXT-X-PART', () => {
+    it('should be emty list by default', () => {
+      const playlist = `#EXTM3U
+#EXT-X-BITRATE:111111
+#EXTINF:4
+segment-1.ts
+#EXTINF:4
+segment-2.ts
+#EXT-X-BYTERANGE:5@0
+#EXTINF:4
+segment-3.ts
+`;
+      testAllCombinations(playlist, (parsed) => {
+        expect(parsed.segments[0].parts.length).toBe(0);
+        expect(parsed.segments[1].parts.length).toBe(0);
+        expect(parsed.segments[2].parts.length).toBe(0);
+      });
+    });
+
+    it('should parse data from a playlist', () => {
+      const playlist = `#EXTM3U
+#EXT-X-PART:DURATION=2,INDEPENDENT=YES,URI="part-1.0.mp4"
+#EXT-X-PART:DURATION=2,URI="part-1.1.mp4"
+#EXTINF:4
+segment-1.mp4
+#EXT-X-PART:DURATION=2,INDEPENDENT=YES,URI="part-2.0.mp4"
+#EXT-X-PART:DURATION=2,URI="part-2.1.mp4"
+#EXTINF:4
+segment-2.mp4
+#EXT-X-BYTERANGE:5@0
+#EXTINF:4
+segment-3.mp4
+`;
+      testAllCombinations(playlist, (parsed) => {
+        expect(parsed.segments[0].parts.length).toBe(2);
+
+        expect(parsed.segments[0].parts[0].isGap).toBe(false);
+        expect(parsed.segments[0].parts[0].independent).toBe(true);
+        expect(parsed.segments[0].parts[0].uri).toBe('part-1.0.mp4');
+        expect(parsed.segments[0].parts[0].duration).toBe(2);
+        expect(parsed.segments[0].parts[0].byteRange).toBeUndefined();
+
+        expect(parsed.segments[0].parts[1].isGap).toBe(false);
+        expect(parsed.segments[0].parts[1].independent).toBe(false);
+        expect(parsed.segments[0].parts[1].uri).toBe('part-1.1.mp4');
+        expect(parsed.segments[0].parts[1].duration).toBe(2);
+        expect(parsed.segments[0].parts[1].byteRange).toBeUndefined();
+
+        expect(parsed.segments[1].parts.length).toBe(2);
+
+        expect(parsed.segments[1].parts[0].isGap).toBe(false);
+        expect(parsed.segments[1].parts[0].independent).toBe(true);
+        expect(parsed.segments[1].parts[0].uri).toBe('part-2.0.mp4');
+        expect(parsed.segments[1].parts[0].duration).toBe(2);
+        expect(parsed.segments[1].parts[0].byteRange).toBeUndefined();
+
+        expect(parsed.segments[1].parts[1].isGap).toBe(false);
+        expect(parsed.segments[1].parts[1].independent).toBe(false);
+        expect(parsed.segments[1].parts[1].uri).toBe('part-2.1.mp4');
+        expect(parsed.segments[1].parts[1].duration).toBe(2);
+        expect(parsed.segments[1].parts[1].byteRange).toBeUndefined();
+
+        expect(parsed.segments[2].parts.length).toBe(0);
+      });
+    });
+  });
 });
