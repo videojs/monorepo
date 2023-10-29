@@ -2,6 +2,7 @@ import { FullPlaylistParser, ProgressiveParser } from '@/hls-parser';
 import type { Mock } from 'bun:test';
 import { describe, it, expect, beforeEach, mock } from 'bun:test';
 import type { ParsedPlaylist } from '@/hls-parser/types/parsedPlaylist';
+import { parseHex } from '@/hls-parser/utils/parse.ts';
 
 describe('hls-parser spec', () => {
   let fullPlaylistParser: FullPlaylistParser;
@@ -977,6 +978,59 @@ segment-3.mp4
         expect(parsed.segments[1].parts[1].byteRange).toBeUndefined();
 
         expect(parsed.segments[2].parts.length).toBe(0);
+      });
+    });
+  });
+
+  describe('#EXT-X-DATERANGE', () => {
+    it('should be empty list by default', () => {
+      const playlist = `#EXTM3U
+#EXTINF:4
+segment-1.mp4
+#EXTINF:4
+segment-2.mp4
+#EXTINF:4
+segment-3.mp4
+`;
+      testAllCombinations(playlist, (parsed) => {
+        expect(parsed.dateRanges.length).toBe(0);
+      });
+    });
+
+    it('should be empty list by default', () => {
+      const playlist = `#EXTM3U
+#EXT-X-DATERANGE:ID="splice-6FFFFFF0",START-DATE="2014-03-05T11:15:00Z",PLANNED-DURATION=59.993,SCTE35-OUT=0xFC002F000000000000FF000014056FFFFFF000E081622DCAFF000052636200000000000A0008029896F50000008700000000
+#EXTINF:4
+segment-1.mp4
+#EXTINF:4
+segment-2.mp4
+#EXT-X-BYTERANGE:5@0
+#EXTINF:4
+segment-3.mp4
+#EXT-X-DATERANGE:ID="splice-6FFFFFF1",START-DATE="2014-03-05T11:15:00Z",PLANNED-DURATION=59.993,SCTE35-OUT=0xFC002F000000000000FF000014056FFFFFF000E081622DCAFF000052636200000000000A0008029896F50000008700000000
+`;
+      testAllCombinations(playlist, (parsed) => {
+        expect(parsed.dateRanges.length).toBe(2);
+
+        expect(parsed.dateRanges[0].id).toBe('splice-6FFFFFF0');
+        expect(parsed.dateRanges[0].startDate).toBe(1394018100000);
+        expect(parsed.dateRanges[0].plannedDuration).toBe(59.993);
+
+        expect(parsed.dateRanges[0].scte35Out).toEqual(
+          parseHex(
+            '0xFC002F000000000000FF000014056FFFFFF000E081622DCAFF000052636200000000000A0008029896F50000008700000000'
+          ) as ArrayBuffer
+        );
+
+        expect(parsed.dateRanges[1].id).toBe('splice-6FFFFFF1');
+        expect(parsed.dateRanges[1].startDate).toBe(1394018100000);
+        expect(parsed.dateRanges[1].plannedDuration).toBe(59.993);
+
+        expect(parsed.dateRanges[1].scte35Out).toEqual(
+          parseHex(
+            '0xFC002F000000000000FF000014056FFFFFF000E081622DCAFF000052636200000000000A0008029896F50000008700000000'
+          ) as ArrayBuffer
+        );
       });
     });
   });

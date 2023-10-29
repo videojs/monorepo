@@ -9,3 +9,13 @@ export const parseBoolean = (val: string, fallback: boolean): boolean => {
 
   return fallback;
 };
+
+export const parseHex = (val: string): ArrayBuffer | undefined => {
+  const hexes = val.match(/[\da-f]{2}/gi);
+
+  if (!hexes) {
+    return;
+  }
+
+  return new Uint8Array(hexes as unknown as ArrayLike<number>).buffer as ArrayBuffer;
+};

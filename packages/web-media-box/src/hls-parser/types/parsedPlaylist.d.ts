@@ -86,24 +86,20 @@ export interface RenditionGroups {
   closedCaptions: Record<GroupId, RenditionGroup>;
 }
 
-export enum Cue {
-  PRE = 'PRE',
-  POST = 'POST',
-  ONCE = 'ONCE',
-}
+export type DateRangeCue = 'PRE' | 'POST' | 'ONCE';
 
 export interface DateRange {
   id: string;
   class?: string;
-  startDate: string;
-  cue?: Array<Cue>;
+  startDate: number;
+  cues: Array<DateRangeCue>;
   endDate?: string;
   duration?: number;
   plannedDuration?: number;
   clientAttributes: Record<string, string | number>;
-  scte35Cmd?: number;
-  scte35Out?: number;
-  scte35In?: number;
+  scte35Cmd?: ArrayBuffer;
+  scte35Out?: ArrayBuffer;
+  scte35In?: ArrayBuffer;
   endOnNext: boolean;
 }
 

@@ -10,7 +10,7 @@ import type {
   IFramePlaylist,
   BaseStreamInf,
   DateRange,
-  Cue,
+  DateRangeCue,
   HintType,
 } from '../types/parsedPlaylist';
 import type { SharedState } from '../types/sharedState';
@@ -32,7 +32,7 @@ import {
   EXT_X_RENDITION_REPORT,
   EXT_X_SESSION_DATA,
 } from '../consts/tags.ts';
-import { parseBoolean } from '../utils/parse.ts';
+import { parseBoolean, parseHex } from '../utils/parse.ts';
 
 export abstract class TagWithAttributesProcessor extends TagProcessor {
   protected abstract readonly requiredAttributes: Set<string>;
@@ -420,7 +420,7 @@ export class ExtXIFrameStreamInf extends BaseStreamInfProcessor {
   }
 }
 
-export class ExtXDaterange extends TagWithAttributesProcessor {
+export class ExtXDateRange extends TagWithAttributesProcessor {
   private static readonly ID = 'ID';
   private static readonly CLASS = 'CLASS';
   private static readonly START_DATE = 'START-DATE';
@@ -435,27 +435,35 @@ export class ExtXDaterange extends TagWithAttributesProcessor {
   private static readonly SCTE35_IN = 'SCTE35-IN';
   private static readonly END_ON_NEXT = 'END-ON-NEXT';
 
-  protected requiredAttributes = new Set([ExtXDaterange.ID, ExtXDaterange.START_DATE]);
-  protected tag = EXT_X_DATERANGE;
+  protected readonly requiredAttributes = new Set([ExtXDateRange.ID, ExtXDateRange.START_DATE]);
+  protected readonly tag = EXT_X_DATERANGE;
 
   protected safeProcess(tagAttributes: Record<string, string>, playlist: ParsedPlaylist): void {
     const dateRange: DateRange = {
-      id: tagAttributes[ExtXDaterange.ID],
-      class: tagAttributes[ExtXDaterange.CLASS],
-      startDate: tagAttributes[ExtXDaterange.START_DATE],
-      cue: (tagAttributes[ExtXDaterange.CUE] || '').split(',') as Array<Cue>,
-      endDate: tagAttributes[ExtXDaterange.END_DATE],
-      duration: Number(tagAttributes[ExtXDaterange.DURATION]),
-      plannedDuration: Number(tagAttributes[ExtXDaterange.PLANNED_DURATION]),
-      scte35Cmd: Number(tagAttributes[ExtXDaterange.SCTE35_CMD]),
-      scte35Out: Number(tagAttributes[ExtXDaterange.SCTE35_OUT]),
-      scte35In: Number(tagAttributes[ExtXDaterange.SCTE35_IN]),
-      endOnNext: parseBoolean(tagAttributes[ExtXDaterange.END_ON_NEXT], false),
+      id: tagAttributes[ExtXDateRange.ID],
+      class: tagAttributes[ExtXDateRange.CLASS],
+      startDate: Date.parse(tagAttributes[ExtXDateRange.START_DATE]),
+      cues: tagAttributes[ExtXDateRange.CUE]
+        ? (tagAttributes[ExtXDateRange.CUE].split(',') as Array<DateRangeCue>)
+        : [],
+      endDate: tagAttributes[ExtXDateRange.END_DATE],
+      duration: tagAttributes[ExtXDateRange.DURATION] ? Number(tagAttributes[ExtXDateRange.DURATION]) : undefined,
+      plannedDuration: tagAttributes[ExtXDateRange.PLANNED_DURATION]
+        ? Number(tagAttributes[ExtXDateRange.PLANNED_DURATION])
+        : undefined,
+      scte35Cmd: tagAttributes[ExtXDateRange.SCTE35_CMD]
+        ? parseHex(tagAttributes[ExtXDateRange.SCTE35_CMD])
+        : undefined,
+      scte35Out: tagAttributes[ExtXDateRange.SCTE35_OUT]
+        ? parseHex(tagAttributes[ExtXDateRange.SCTE35_OUT])
+        : undefined,
+      scte35In: tagAttributes[ExtXDateRange.SCTE35_IN] ? parseHex(tagAttributes[ExtXDateRange.SCTE35_IN]) : undefined,
+      endOnNext: parseBoolean(tagAttributes[ExtXDateRange.END_ON_NEXT], false),
       clientAttributes: {},
     };
 
     Object.keys(tagAttributes)
-      .filter((tagKey) => tagKey.startsWith(ExtXDaterange.CLIENT_ATTRIBUTES))
+      .filter((tagKey) => tagKey.startsWith(ExtXDateRange.CLIENT_ATTRIBUTES))
       .reduce((clientAttributes, tagKey) => {
         clientAttributes[tagKey] = tagAttributes[tagKey];
         return clientAttributes;
