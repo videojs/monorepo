@@ -152,8 +152,6 @@ export class ExtXBitrate extends TagWithValueProcessor {
       return this.warnCallback(unableToParseValueWarn(this.tag));
     }
 
-    sharedState.currentSegment.bitrate = bitrate;
-
     // Store the bitrate value so it can be applied to subsequent segments
     sharedState.currentBitrate = bitrate;
   }

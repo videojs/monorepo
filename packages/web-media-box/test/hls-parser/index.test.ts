@@ -2,6 +2,7 @@ import { FullPlaylistParser, ProgressiveParser } from '@/hls-parser';
 import type { Mock } from 'bun:test';
 import { describe, it, expect, beforeEach, mock } from 'bun:test';
 import type { ParsedPlaylist } from '@/hls-parser/types/parsedPlaylist';
+import { parseHex } from '@/hls-parser/utils/parse.ts';
 
 describe('hls-parser spec', () => {
   let fullPlaylistParser: FullPlaylistParser;
@@ -632,6 +633,404 @@ main.ts
 
         expect(parsed.segments[11]?.discontinuitySequence).toBe(3);
         expect(parsed.segments[11]?.isDiscontinuity).toBe(false);
+      });
+    });
+  });
+
+  describe('#EXT-X-KEY', () => {
+    it('should be undefined by default', () => {
+      const playlist = `#EXTM3U
+#EXTINF:4.0107,
+segment-1.ts
+#EXTINF:4.0107,
+segment-2.ts
+#EXTINF:4.0107,
+segment-3.ts
+`;
+
+      testAllCombinations(playlist, (parsed) => {
+        expect(parsed.segments[0].encryption).toBeUndefined();
+        expect(parsed.segments[1].encryption).toBeUndefined();
+        expect(parsed.segments[2].encryption).toBeUndefined();
+      });
+    });
+
+    it('should parse from a playlist', () => {
+      let playlist = `#EXTM3U
+#EXT-X-KEY:METHOD=AES-128,URI="https://my-key.com",IV=0x00000000000000000000000000000000
+#EXTINF:4.0107,
+segment-1.ts
+#EXT-X-KEY:METHOD=AES-128,URI="https://my-key.com",IV=0x00000000000000000000000000000001
+#EXTINF:4.0107,
+segment-2.ts
+#EXT-X-KEY:METHOD=AES-128,URI="https://my-key.com",IV=0x00000000000000000000000000000002
+#EXTINF:4.0107,
+segment-3.ts
+`;
+
+      testAllCombinations(playlist, (parsed) => {
+        expect(parsed.segments[0].encryption?.method).toBe('AES-128');
+        expect(parsed.segments[0].encryption?.uri).toBe('https://my-key.com');
+        expect(parsed.segments[0].encryption?.iv).toBe('0x00000000000000000000000000000000');
+
+        expect(parsed.segments[1].encryption?.method).toBe('AES-128');
+        expect(parsed.segments[1].encryption?.uri).toBe('https://my-key.com');
+        expect(parsed.segments[1].encryption?.iv).toBe('0x00000000000000000000000000000001');
+
+        expect(parsed.segments[2].encryption?.method).toBe('AES-128');
+        expect(parsed.segments[2].encryption?.uri).toBe('https://my-key.com');
+        expect(parsed.segments[2].encryption?.iv).toBe('0x00000000000000000000000000000002');
+      });
+
+      playlist = `#EXTM3U
+#EXT-X-KEY:METHOD=AES-128,URI="https://my-key.com",IV=0x00000000000000000000000000000000
+#EXTINF:4.0107,
+segment-1.ts
+#EXTINF:4.0107,
+segment-2.ts
+#EXTINF:4.0107,
+segment-3.ts
+`;
+      testAllCombinations(playlist, (parsed) => {
+        expect(parsed.segments[0].encryption?.method).toBe('AES-128');
+        expect(parsed.segments[0].encryption?.uri).toBe('https://my-key.com');
+        expect(parsed.segments[0].encryption?.iv).toBe('0x00000000000000000000000000000000');
+
+        expect(parsed.segments[1].encryption?.method).toBe('AES-128');
+        expect(parsed.segments[1].encryption?.uri).toBe('https://my-key.com');
+        expect(parsed.segments[1].encryption?.iv).toBe('0x00000000000000000000000000000000');
+
+        expect(parsed.segments[2].encryption?.method).toBe('AES-128');
+        expect(parsed.segments[2].encryption?.uri).toBe('https://my-key.com');
+        expect(parsed.segments[2].encryption?.iv).toBe('0x00000000000000000000000000000000');
+      });
+    });
+
+    it('should add encryption for media initialization', () => {
+      const playlist = `#EXTM3U
+#EXT-X-KEY:METHOD=AES-128,URI="https://my-key.com",IV=0x00000000000000000000000000000000
+#EXT-X-MAP:URI="init-segment.mp4",BYTERANGE=5@0
+#EXTINF:4.0107,
+segment-1.ts
+#EXT-X-MAP:URI="init-segment.mp4",BYTERANGE=5@5
+#EXTINF:4.0107,
+segment-2.ts
+#EXT-X-MAP:URI="init-segment.mp4",BYTERANGE=5@10
+#EXTINF:4.0107,
+segment-3.ts
+`;
+
+      testAllCombinations(playlist, (parsed) => {
+        expect(parsed.segments[0].map?.encryption?.uri).toBe('https://my-key.com');
+        expect(parsed.segments[0].map?.encryption?.method).toBe('AES-128');
+        expect(parsed.segments[0].map?.encryption?.iv).toBe('0x00000000000000000000000000000000');
+
+        expect(parsed.segments[1].map?.encryption?.uri).toBe('https://my-key.com');
+        expect(parsed.segments[1].map?.encryption?.method).toBe('AES-128');
+        expect(parsed.segments[1].map?.encryption?.iv).toBe('0x00000000000000000000000000000000');
+
+        expect(parsed.segments[2].map?.encryption?.uri).toBe('https://my-key.com');
+        expect(parsed.segments[2].map?.encryption?.method).toBe('AES-128');
+        expect(parsed.segments[2].map?.encryption?.iv).toBe('0x00000000000000000000000000000000');
+      });
+    });
+  });
+
+  describe('#EXT-X-MAP', () => {
+    it('should be undefined by default', () => {
+      const playlist = `#EXTM3U
+#EXT-X-KEY:METHOD=AES-128,URI="https://my-key.com",IV=0x00000000000000000000000000000000
+#EXTINF:4.0107,
+segment-1.ts
+#EXTINF:4.0107,
+segment-2.ts
+#EXTINF:4.0107,
+segment-3.ts
+`;
+      testAllCombinations(playlist, (parsed) => {
+        expect(parsed.segments[0].map).toBeUndefined();
+        expect(parsed.segments[1].map).toBeUndefined();
+        expect(parsed.segments[2].map).toBeUndefined();
+      });
+    });
+
+    it('should parse data from a playlist', () => {
+      const playlist = `#EXTM3U
+#EXT-X-KEY:METHOD=AES-128,URI="https://my-key.com",IV=0x00000000000000000000000000000000
+#EXT-X-MAP:URI="init-segment.mp4",BYTERANGE=5@0
+#EXTINF:4.0107,
+segment-1.ts
+#EXT-X-MAP:URI="init-segment.mp4",BYTERANGE=5@5
+#EXTINF:4.0107,
+segment-2.ts
+#EXT-X-MAP:URI="init-segment.mp4",BYTERANGE=5@10
+#EXTINF:4.0107,
+segment-3.ts
+`;
+      testAllCombinations(playlist, (parsed) => {
+        expect(parsed.segments[0].map?.uri).toBe('init-segment.mp4');
+        expect(parsed.segments[0].map?.byteRange?.start).toBe(0);
+        expect(parsed.segments[0].map?.byteRange?.end).toBe(4);
+
+        expect(parsed.segments[1].map?.uri).toBe('init-segment.mp4');
+        expect(parsed.segments[1].map?.byteRange?.start).toBe(5);
+        expect(parsed.segments[1].map?.byteRange?.end).toBe(9);
+
+        expect(parsed.segments[2].map?.uri).toBe('init-segment.mp4');
+        expect(parsed.segments[2].map?.byteRange?.start).toBe(10);
+        expect(parsed.segments[2].map?.byteRange?.end).toBe(14);
+      });
+    });
+  });
+
+  describe('#EXT-X-PROGRAM-DATE-TIME', () => {
+    it('should be undefined by default', () => {
+      const playlist = `#EXTM3U
+#EXT-X-KEY:METHOD=AES-128,URI="https://my-key.com",IV=0x00000000000000000000000000000000
+#EXT-X-MAP:URI="init-segment.mp4",BYTERANGE=5@0
+#EXTINF:4.0107,
+segment-1.ts
+#EXT-X-MAP:URI="init-segment.mp4",BYTERANGE=5@5
+#EXTINF:4.0107,
+segment-2.ts
+#EXT-X-MAP:URI="init-segment.mp4",BYTERANGE=5@10
+#EXTINF:4.0107,
+segment-3.ts
+`;
+
+      testAllCombinations(playlist, (parsed) => {
+        expect(parsed.segments[0].programDateTime).toBeUndefined();
+        expect(parsed.segments[1].programDateTime).toBeUndefined();
+        expect(parsed.segments[2].programDateTime).toBeUndefined();
+      });
+    });
+
+    it('should extrapolate program date time forward', () => {
+      const playlist = `#EXTM3U
+#EXT-X-PROGRAM-DATE-TIME:2023-10-28T18:11:24.010Z
+#EXTINF:4
+segment-1.ts
+#EXTINF:4
+segment-2.ts
+#EXTINF:4
+segment-3.ts
+`;
+      testAllCombinations(playlist, (parsed) => {
+        expect(parsed.segments[0].programDateTime).toBe(1698516684010);
+        expect(parsed.segments[1].programDateTime).toBe(1698516684010 + 4000);
+        expect(parsed.segments[2].programDateTime).toBe(1698516684010 + 4000 + 4000);
+      });
+    });
+
+    it('should extrapolate program date time backward', () => {
+      const playlist = `#EXTM3U
+#EXTINF:4
+segment-1.ts
+#EXTINF:4
+segment-2.ts
+#EXT-X-PROGRAM-DATE-TIME:2023-10-28T18:11:24.010Z
+#EXTINF:4
+segment-3.ts
+`;
+
+      testAllCombinations(playlist, (parsed) => {
+        expect(parsed.segments[0].programDateTime).toBe(1698516684010 - 4000 - 4000);
+        expect(parsed.segments[1].programDateTime).toBe(1698516684010 - 4000);
+        expect(parsed.segments[2].programDateTime).toBe(1698516684010);
+      });
+    });
+  });
+
+  describe('#EXT-X-GAP', () => {
+    it('should be false by default', () => {
+      const playlist = `#EXTM3U
+#EXTINF:4
+segment-1.ts
+#EXTINF:4
+segment-2.ts
+#EXTINF:4
+segment-3.ts
+`;
+      testAllCombinations(playlist, (parsed) => {
+        expect(parsed.segments[0].isGap).toBe(false);
+        expect(parsed.segments[1].isGap).toBe(false);
+        expect(parsed.segments[2].isGap).toBe(false);
+      });
+    });
+
+    it('should parse data from a playlist', () => {
+      const playlist = `#EXTM3U
+#EXT-X-GAP
+#EXTINF:4
+segment-1.ts
+#EXTINF:4
+segment-2.ts
+#EXT-X-GAP
+#EXTINF:4
+segment-3.ts
+`;
+      testAllCombinations(playlist, (parsed) => {
+        expect(parsed.segments[0].isGap).toBe(true);
+        expect(parsed.segments[1].isGap).toBe(false);
+        expect(parsed.segments[2].isGap).toBe(true);
+      });
+    });
+  });
+
+  describe('#EXT-X-BITRATE', () => {
+    it('should be undefined by default', () => {
+      const playlist = `#EXTM3U
+#EXT-X-GAP
+#EXTINF:4
+segment-1.ts
+#EXTINF:4
+segment-2.ts
+#EXT-X-GAP
+#EXTINF:4
+segment-3.ts
+`;
+      testAllCombinations(playlist, (parsed) => {
+        expect(parsed.segments[0].bitrate).toBeUndefined();
+        expect(parsed.segments[1].bitrate).toBeUndefined();
+        expect(parsed.segments[2].bitrate).toBeUndefined();
+      });
+    });
+
+    it('should apply bitrate to a segment, unless it has byte-range', () => {
+      const playlist = `#EXTM3U
+#EXT-X-BITRATE:111111
+#EXTINF:4
+segment-1.ts
+#EXTINF:4
+segment-2.ts
+#EXT-X-BYTERANGE:5@0
+#EXTINF:4
+segment-3.ts
+`;
+      testAllCombinations(playlist, (parsed) => {
+        expect(parsed.segments[0].bitrate).toBe(111111);
+        expect(parsed.segments[1].bitrate).toBe(111111);
+        expect(parsed.segments[2].bitrate).toBeUndefined();
+      });
+    });
+  });
+
+  describe('#EXT-X-PART', () => {
+    it('should be emty list by default', () => {
+      const playlist = `#EXTM3U
+#EXT-X-BITRATE:111111
+#EXTINF:4
+segment-1.ts
+#EXTINF:4
+segment-2.ts
+#EXT-X-BYTERANGE:5@0
+#EXTINF:4
+segment-3.ts
+`;
+      testAllCombinations(playlist, (parsed) => {
+        expect(parsed.segments[0].parts.length).toBe(0);
+        expect(parsed.segments[1].parts.length).toBe(0);
+        expect(parsed.segments[2].parts.length).toBe(0);
+      });
+    });
+
+    it('should parse data from a playlist', () => {
+      const playlist = `#EXTM3U
+#EXT-X-PART:DURATION=2,INDEPENDENT=YES,URI="part-1.0.mp4"
+#EXT-X-PART:DURATION=2,URI="part-1.1.mp4"
+#EXTINF:4
+segment-1.mp4
+#EXT-X-PART:DURATION=2,INDEPENDENT=YES,URI="part-2.0.mp4"
+#EXT-X-PART:DURATION=2,URI="part-2.1.mp4"
+#EXTINF:4
+segment-2.mp4
+#EXT-X-BYTERANGE:5@0
+#EXTINF:4
+segment-3.mp4
+`;
+      testAllCombinations(playlist, (parsed) => {
+        expect(parsed.segments[0].parts.length).toBe(2);
+
+        expect(parsed.segments[0].parts[0].isGap).toBe(false);
+        expect(parsed.segments[0].parts[0].independent).toBe(true);
+        expect(parsed.segments[0].parts[0].uri).toBe('part-1.0.mp4');
+        expect(parsed.segments[0].parts[0].duration).toBe(2);
+        expect(parsed.segments[0].parts[0].byteRange).toBeUndefined();
+
+        expect(parsed.segments[0].parts[1].isGap).toBe(false);
+        expect(parsed.segments[0].parts[1].independent).toBe(false);
+        expect(parsed.segments[0].parts[1].uri).toBe('part-1.1.mp4');
+        expect(parsed.segments[0].parts[1].duration).toBe(2);
+        expect(parsed.segments[0].parts[1].byteRange).toBeUndefined();
+
+        expect(parsed.segments[1].parts.length).toBe(2);
+
+        expect(parsed.segments[1].parts[0].isGap).toBe(false);
+        expect(parsed.segments[1].parts[0].independent).toBe(true);
+        expect(parsed.segments[1].parts[0].uri).toBe('part-2.0.mp4');
+        expect(parsed.segments[1].parts[0].duration).toBe(2);
+        expect(parsed.segments[1].parts[0].byteRange).toBeUndefined();
+
+        expect(parsed.segments[1].parts[1].isGap).toBe(false);
+        expect(parsed.segments[1].parts[1].independent).toBe(false);
+        expect(parsed.segments[1].parts[1].uri).toBe('part-2.1.mp4');
+        expect(parsed.segments[1].parts[1].duration).toBe(2);
+        expect(parsed.segments[1].parts[1].byteRange).toBeUndefined();
+
+        expect(parsed.segments[2].parts.length).toBe(0);
+      });
+    });
+  });
+
+  describe('#EXT-X-DATERANGE', () => {
+    it('should be empty list by default', () => {
+      const playlist = `#EXTM3U
+#EXTINF:4
+segment-1.mp4
+#EXTINF:4
+segment-2.mp4
+#EXTINF:4
+segment-3.mp4
+`;
+      testAllCombinations(playlist, (parsed) => {
+        expect(parsed.dateRanges.length).toBe(0);
+      });
+    });
+
+    it('should be empty list by default', () => {
+      const playlist = `#EXTM3U
+#EXT-X-DATERANGE:ID="splice-6FFFFFF0",START-DATE="2014-03-05T11:15:00Z",PLANNED-DURATION=59.993,SCTE35-OUT=0xFC002F000000000000FF000014056FFFFFF000E081622DCAFF000052636200000000000A0008029896F50000008700000000
+#EXTINF:4
+segment-1.mp4
+#EXTINF:4
+segment-2.mp4
+#EXT-X-BYTERANGE:5@0
+#EXTINF:4
+segment-3.mp4
+#EXT-X-DATERANGE:ID="splice-6FFFFFF1",START-DATE="2014-03-05T11:15:00Z",PLANNED-DURATION=59.993,SCTE35-OUT=0xFC002F000000000000FF000014056FFFFFF000E081622DCAFF000052636200000000000A0008029896F50000008700000000
+`;
+      testAllCombinations(playlist, (parsed) => {
+        expect(parsed.dateRanges.length).toBe(2);
+
+        expect(parsed.dateRanges[0].id).toBe('splice-6FFFFFF0');
+        expect(parsed.dateRanges[0].startDate).toBe(1394018100000);
+        expect(parsed.dateRanges[0].plannedDuration).toBe(59.993);
+
+        expect(parsed.dateRanges[0].scte35Out).toEqual(
+          parseHex(
+            '0xFC002F000000000000FF000014056FFFFFF000E081622DCAFF000052636200000000000A0008029896F50000008700000000'
+          ) as ArrayBuffer
+        );
+
+        expect(parsed.dateRanges[1].id).toBe('splice-6FFFFFF1');
+        expect(parsed.dateRanges[1].startDate).toBe(1394018100000);
+        expect(parsed.dateRanges[1].plannedDuration).toBe(59.993);
+
+        expect(parsed.dateRanges[1].scte35Out).toEqual(
+          parseHex(
+            '0xFC002F000000000000FF000014056FFFFFF000E081622DCAFF000052636200000000000A0008029896F50000008700000000'
+          ) as ArrayBuffer
+        );
       });
     });
   });

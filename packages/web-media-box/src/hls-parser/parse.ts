@@ -83,7 +83,7 @@ import {
   ExtXStreamInf,
   ExtXSkip,
   ExtXIFrameStreamInf,
-  ExtXDaterange,
+  ExtXDateRange,
   ExtXPreloadHint,
   ExtXRenditionReport,
   ExtXSessionData,
@@ -96,6 +96,7 @@ const defaultSegment: Segment = {
   isDiscontinuity: false,
   isGap: false,
   uri: '',
+  parts: [],
 };
 
 const defaultVariantStream: VariantStream = {
@@ -151,8 +152,8 @@ class Parser {
 
     this.sharedState = {
       isMultivariantPlaylist: false,
-      currentSegment: { ...defaultSegment },
-      currentVariant: { ...defaultVariantStream },
+      currentSegment: structuredClone(defaultSegment),
+      currentVariant: structuredClone(defaultVariantStream),
     };
 
     this.emptyTagMap = {
@@ -187,7 +188,7 @@ class Parser {
       [EXT_X_STREAM_INF]: new ExtXStreamInf(this.warnCallback),
       [EXT_X_SKIP]: new ExtXSkip(this.warnCallback),
       [EXT_X_I_FRAME_STREAM_INF]: new ExtXIFrameStreamInf(this.warnCallback),
-      [EXT_X_DATERANGE]: new ExtXDaterange(this.warnCallback),
+      [EXT_X_DATERANGE]: new ExtXDateRange(this.warnCallback),
       [EXT_X_PRELOAD_HINT]: new ExtXPreloadHint(this.warnCallback),
       [EXT_X_RENDITION_REPORT]: new ExtXRenditionReport(this.warnCallback),
       [EXT_X_SESSION_DATA]: new ExtXSessionData(this.warnCallback),
@@ -253,7 +254,7 @@ class Parser {
   private handleCurrentVariant(uri: string): void {
     this.sharedState.currentVariant.uri = uri;
     this.parsedPlaylist.variantStreams.push(this.sharedState.currentVariant);
-    this.sharedState.currentVariant = { ...defaultVariantStream };
+    this.sharedState.currentVariant = structuredClone(defaultVariantStream);
   }
 
   private handleCurrentSegment(uri: string): void {
@@ -272,6 +273,8 @@ class Parser {
 
     const previousSegment = this.parsedPlaylist.segments[this.parsedPlaylist.segments.length - 1];
 
+    this.sharedState.currentSegment.encryption = this.sharedState.currentEncryption;
+    this.sharedState.currentSegment.map = this.sharedState.currentMap;
     this.sharedState.currentSegment.uri = uri;
 
     if (previousSegment) {
@@ -284,7 +287,6 @@ class Parser {
       }
     }
 
-    // TODO: consider using shared private object instead of polluting parsed playlist object, since it is public interface
     // Apply the EXT-X-BITRATE value from previous segments to this segment as well,
     // as long as it doesn't have an EXT-X-BYTERANGE tag applied to it.
     // https://datatracker.ietf.org/doc/html/draft-pantos-hls-rfc8216bis#section-4.4.4.8
@@ -299,7 +301,7 @@ class Parser {
     }
 
     this.parsedPlaylist.segments.push(this.sharedState.currentSegment);
-    this.sharedState.currentSegment = { ...defaultSegment };
+    this.sharedState.currentSegment = structuredClone(defaultSegment);
   }
 
   protected clean(): ParsedPlaylist {

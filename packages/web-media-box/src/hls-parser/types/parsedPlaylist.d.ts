@@ -25,10 +25,11 @@ export interface Encryption {
 
 export interface MediaInitializationSection {
   uri: string;
-  byteRange?: ByteRange;
+  byteRange?: Range;
+  encryption?: Encryption;
 }
 
-export interface ByteRange {
+export interface Range {
   start: number;
   end: number;
 }
@@ -36,9 +37,9 @@ export interface ByteRange {
 export interface PartialSegment {
   uri: string;
   duration: number;
-  byteRange?: ByteRange;
-  independent?: boolean;
-  isGap?: boolean;
+  byteRange?: Range;
+  independent: boolean;
+  isGap: boolean;
 }
 
 export interface Segment {
@@ -47,12 +48,14 @@ export interface Segment {
   duration: number;
   title?: string;
   programDateTime?: number;
-  byteRange?: ByteRange;
+  byteRange?: Range;
   bitrate?: number;
   uri: string;
   isDiscontinuity: boolean;
   isGap: boolean;
-  parts?: Array<PartialSegment>;
+  encryption?: Encryption;
+  map?: MediaInitializationSection;
+  parts: Array<PartialSegment>;
 }
 
 export type RenditionType = 'AUDIO' | 'VIDEO' | 'SUBTITLES' | 'CLOSED-CAPTIONS';
@@ -83,24 +86,20 @@ export interface RenditionGroups {
   closedCaptions: Record<GroupId, RenditionGroup>;
 }
 
-export enum Cue {
-  PRE = 'PRE',
-  POST = 'POST',
-  ONCE = 'ONCE',
-}
+export type DateRangeCue = 'PRE' | 'POST' | 'ONCE';
 
 export interface DateRange {
   id: string;
   class?: string;
-  startDate: string;
-  cue?: Array<Cue>;
+  startDate: number;
+  cues: Array<DateRangeCue>;
   endDate?: string;
   duration?: number;
   plannedDuration?: number;
   clientAttributes: Record<string, string | number>;
-  scte35Cmd?: number;
-  scte35Out?: number;
-  scte35In?: number;
+  scte35Cmd?: ArrayBuffer;
+  scte35Out?: ArrayBuffer;
+  scte35In?: ArrayBuffer;
   endOnNext: boolean;
 }
 
@@ -199,8 +198,6 @@ export interface ParsedPlaylist {
   partInf?: PartInf;
   // https://datatracker.ietf.org/doc/html/draft-pantos-hls-rfc8216bis#section-4.4.3.8
   serverControl?: ServerControl;
-  encryption?: Encryption;
-  mediaInitializationSection?: MediaInitializationSection;
   segments: Array<Segment>;
   custom: Record<string, unknown>;
   renditionGroups: RenditionGroups;
