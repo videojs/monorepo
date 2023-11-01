@@ -35,8 +35,7 @@ import {
   EXT_X_SESSION_DATA,
   EXT_X_SESSION_KEY,
 } from '../consts/tags.ts';
-import { parseBoolean, parseEncryptionTag, parseHex } from '../utils/parse.ts';
-import type { WarnCallback } from '../types/parserOptions';
+import { parseBoolean, parseHex } from '../utils/parse.ts';
 
 export abstract class TagWithAttributesProcessor extends TagProcessor {
   protected abstract readonly requiredAttributes: Set<string>;
@@ -133,22 +132,36 @@ export class ExtXServerControl extends TagWithAttributesProcessor {
   }
 }
 
-export class ExtXKey extends TagWithAttributesProcessor {
-  private static readonly METHOD = 'METHOD';
-  private static readonly URI = 'URI';
-  private static readonly IV = 'IV';
-  private static readonly KEYFORMAT = 'KEYFORMAT';
-  private static readonly KEYFORMATVERSIONS = 'KEYFORMATVERSIONS';
+abstract class EncryptionTag extends TagWithAttributesProcessor {
+  protected static readonly METHOD = 'METHOD';
+  protected static readonly URI = 'URI';
+  protected static readonly IV = 'IV';
+  protected static readonly KEYFORMAT = 'KEYFORMAT';
+  protected static readonly KEYFORMATVERSIONS = 'KEYFORMATVERSIONS';
+  protected readonly requiredAttributes = new Set([EncryptionTag.METHOD]);
 
-  protected readonly requiredAttributes = new Set([ExtXKey.METHOD]);
-  protected tag = EXT_X_KEY;
+  protected parseEncryptionTag(tagAttributes: Record<string, string>): Encryption | SessionKey {
+    return {
+      method: tagAttributes[EncryptionTag.METHOD] as 'NONE' | 'AES-128' | 'SAMPLE-AES',
+      uri: tagAttributes[EncryptionTag.URI],
+      iv: tagAttributes[EncryptionTag.IV],
+      keyFormat: tagAttributes[EncryptionTag.KEYFORMAT] || 'identity',
+      keyFormatVersions: tagAttributes[EncryptionTag.KEYFORMATVERSIONS]
+        ? tagAttributes[EncryptionTag.KEYFORMATVERSIONS].split('/').map(Number)
+        : [1],
+    };
+  }
+}
+
+export class ExtXKey extends EncryptionTag {
+  protected readonly tag = EXT_X_KEY;
 
   protected safeProcess(
     tagAttributes: Record<string, string>,
     playlist: ParsedPlaylist,
     sharedState: SharedState
   ): void {
-    const encryption = parseEncryptionTag(tagAttributes) as Encryption;
+    const encryption = this.parseEncryptionTag(tagAttributes) as Encryption;
 
     // URI attribute is required unless the METHOD is 'NONE'
     if (encryption.method !== 'NONE' && !encryption.uri) {
@@ -531,14 +544,11 @@ export class ExtXSessionData extends TagWithAttributesProcessor {
   }
 }
 
-export class ExtXSessionKey extends ExtXKey {
-  public constructor(warnCallback: WarnCallback) {
-    super(warnCallback);
-    this.tag = EXT_X_SESSION_KEY;
-  }
+export class ExtXSessionKey extends EncryptionTag {
+  protected readonly tag = EXT_X_SESSION_KEY;
 
   protected safeProcess(tagAttributes: Record<string, string>, playlist: ParsedPlaylist): void {
-    const sessionKey = parseEncryptionTag(tagAttributes) as SessionKey;
+    const sessionKey = this.parseEncryptionTag(tagAttributes) as SessionKey;
     playlist.sessionKey = sessionKey;
   }
 }
