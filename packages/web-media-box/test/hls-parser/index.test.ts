@@ -1034,4 +1034,23 @@ segment-3.mp4
       });
     });
   });
+
+  describe('#EXT-X-SESSION-KEY', () => {
+    it('should be undefined by default', () => {
+      const playlist = `#EXTM3U`;
+
+      testAllCombinations(playlist, (parsed) => {
+        expect(parsed.sessionKey).toBeUndefined();
+      });
+    });
+
+    it('should parse from a playlist', () => {
+      const playlist = `#EXTM3U\n#EXT-X-SESSION-KEY:METHOD=AES-128,URI="https://my-key.com",IV=0x00000000000000000000000000000000`;
+      testAllCombinations(playlist, (parsed) => {
+        expect(parsed.sessionKey?.method).toBe('AES-128');
+        expect(parsed.sessionKey?.uri).toBe('https://my-key.com');
+        expect(parsed.sessionKey?.iv).toBe('0x00000000000000000000000000000000');
+      });
+    });
+  });
 });
