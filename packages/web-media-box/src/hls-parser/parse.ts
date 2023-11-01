@@ -39,6 +39,7 @@ import {
   EXT_X_RENDITION_REPORT,
   EXT_X_SESSION_DATA,
   EXTM3U,
+  EXT_X_SESSION_KEY,
 } from './consts/tags.ts';
 import type {
   CustomTagMap,
@@ -87,6 +88,7 @@ import {
   ExtXPreloadHint,
   ExtXRenditionReport,
   ExtXSessionData,
+  ExtXSessionKey,
 } from './tags/tagWithAttributesProcessors.ts';
 
 const defaultSegment: Segment = {
@@ -192,6 +194,7 @@ class Parser {
       [EXT_X_PRELOAD_HINT]: new ExtXPreloadHint(this.warnCallback),
       [EXT_X_RENDITION_REPORT]: new ExtXRenditionReport(this.warnCallback),
       [EXT_X_SESSION_DATA]: new ExtXSessionData(this.warnCallback),
+      [EXT_X_SESSION_KEY]: new ExtXSessionKey(this.warnCallback),
     };
   }
 

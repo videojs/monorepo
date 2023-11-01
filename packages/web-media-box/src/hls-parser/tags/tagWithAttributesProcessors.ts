@@ -12,6 +12,8 @@ import type {
   DateRange,
   DateRangeCue,
   HintType,
+  SessionKey,
+  Encryption,
 } from '../types/parsedPlaylist';
 import type { SharedState } from '../types/sharedState';
 import { TagProcessor } from './base.ts';
@@ -31,8 +33,10 @@ import {
   EXT_X_PRELOAD_HINT,
   EXT_X_RENDITION_REPORT,
   EXT_X_SESSION_DATA,
+  EXT_X_SESSION_KEY,
 } from '../consts/tags.ts';
-import { parseBoolean, parseHex } from '../utils/parse.ts';
+import { parseBoolean, parseEncryptionTag, parseHex } from '../utils/parse.ts';
+import type { WarnCallback } from '../types/parserOptions';
 
 export abstract class TagWithAttributesProcessor extends TagProcessor {
   protected abstract readonly requiredAttributes: Set<string>;
@@ -137,30 +141,21 @@ export class ExtXKey extends TagWithAttributesProcessor {
   private static readonly KEYFORMATVERSIONS = 'KEYFORMATVERSIONS';
 
   protected readonly requiredAttributes = new Set([ExtXKey.METHOD]);
-  protected readonly tag = EXT_X_KEY;
+  protected tag = EXT_X_KEY;
 
   protected safeProcess(
     tagAttributes: Record<string, string>,
     playlist: ParsedPlaylist,
     sharedState: SharedState
   ): void {
-    const method = tagAttributes[ExtXKey.METHOD];
-    const uri = tagAttributes[ExtXKey.URI];
+    const encryption = parseEncryptionTag(tagAttributes) as Encryption;
 
     // URI attribute is required unless the METHOD is 'NONE'
-    if (method !== 'NONE' && !uri) {
+    if (encryption.method !== 'NONE' && !encryption.uri) {
       return this.warnCallback(missingRequiredAttributeWarn(this.tag, ExtXKey.URI));
     }
 
-    sharedState.currentEncryption = {
-      method: method as 'NONE' | 'AES-128' | 'SAMPLE-AES',
-      uri: uri,
-      iv: tagAttributes[ExtXKey.IV],
-      keyFormat: tagAttributes[ExtXKey.KEYFORMAT] || 'identity',
-      keyFormatVersions: tagAttributes[ExtXKey.KEYFORMATVERSIONS]
-        ? tagAttributes[ExtXKey.KEYFORMATVERSIONS].split('/').map(Number)
-        : [1],
-    };
+    sharedState.currentEncryption = encryption;
   }
 }
 
@@ -533,5 +528,17 @@ export class ExtXSessionData extends TagWithAttributesProcessor {
     };
 
     playlist.sessionDataTags.push(sessionData);
+  }
+}
+
+export class ExtXSessionKey extends ExtXKey {
+  public constructor(warnCallback: WarnCallback) {
+    super(warnCallback);
+    this.tag = EXT_X_SESSION_KEY;
+  }
+
+  protected safeProcess(tagAttributes: Record<string, string>, playlist: ParsedPlaylist): void {
+    const sessionKey = parseEncryptionTag(tagAttributes) as SessionKey;
+    playlist.sessionKey = sessionKey;
   }
 }
