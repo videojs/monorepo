@@ -18,9 +18,17 @@ import {
   SEGMENT_TEMPLATE,
   // EVENT_STREAM,
   // EVENT,
-  // BASE_URL,
+  BASE_URL,
 } from '@/dash-parser/consts/tags.ts';
-import { AdaptationSet, Mpd, Period, Representation, UTCTiming, SegmentTemplate } from '@/dash-parser/tags/base.ts';
+import {
+  AdaptationSet,
+  Mpd,
+  Period,
+  Representation,
+  UTCTiming,
+  SegmentTemplate,
+  BaseUrl,
+} from '@/dash-parser/tags/base.ts';
 import type { TagInfo } from '@/dash-parser/stateMachine.ts';
 import { ignoreTagWarn, unsupportedTagWarn } from '@/dash-parser/utils/warn.ts';
 import createStateMachine from '@/dash-parser/stateMachine.ts';
@@ -59,9 +67,18 @@ class Parser {
     this.parsedManifest = structuredClone(defaultParsedManifest);
 
     this.sharedState = {
+      baseUrls: [],
       mpdAttributes: {},
       adaptationSetAttributes: {},
     };
+
+    // If the manifest URI is inteded to be used as the initial baseURL, set it here
+    if (options.uri) {
+      this.sharedState.baseUrls.push({
+        uri: options.uri,
+        attributes: {},
+      });
+    }
 
     this.pendingProcessors = new PendingProcessors();
 
@@ -72,6 +89,7 @@ class Parser {
       [REPRESENTATION]: new Representation(this.warnCallback),
       [UTC_TIMING]: new UTCTiming(this.warnCallback),
       [SEGMENT_TEMPLATE]: new SegmentTemplate(this.warnCallback),
+      [BASE_URL]: new BaseUrl(this.warnCallback),
     };
   }
 
