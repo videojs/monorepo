@@ -224,5 +224,6 @@ export interface ParsedPlaylist {
   sessionDataTags: Array<SessionData>;
   // https://datatracker.ietf.org/doc/html/draft-pantos-hls-rfc8216bis#section-4.4.6.5
   sessionKey?: SessionKey;
+  // https://datatracker.ietf.org/doc/html/draft-pantos-hls-rfc8216bis#section-4.4.6.6
   contentSteering?: ContentSteering;
 }
