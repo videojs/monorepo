@@ -132,28 +132,28 @@ export class ExtXServerControl extends TagWithAttributesProcessor {
   }
 }
 
-abstract class EncryptionTag extends TagWithAttributesProcessor {
+abstract class EncryptionTagProcessor extends TagWithAttributesProcessor {
   protected static readonly METHOD = 'METHOD';
   protected static readonly URI = 'URI';
   protected static readonly IV = 'IV';
   protected static readonly KEYFORMAT = 'KEYFORMAT';
   protected static readonly KEYFORMATVERSIONS = 'KEYFORMATVERSIONS';
-  protected readonly requiredAttributes = new Set([EncryptionTag.METHOD]);
+  protected readonly requiredAttributes = new Set([EncryptionTagProcessor.METHOD]);
 
   protected parseEncryptionTag(tagAttributes: Record<string, string>): Encryption | SessionKey {
     return {
-      method: tagAttributes[EncryptionTag.METHOD] as 'NONE' | 'AES-128' | 'SAMPLE-AES',
-      uri: tagAttributes[EncryptionTag.URI],
-      iv: tagAttributes[EncryptionTag.IV],
-      keyFormat: tagAttributes[EncryptionTag.KEYFORMAT] || 'identity',
-      keyFormatVersions: tagAttributes[EncryptionTag.KEYFORMATVERSIONS]
-        ? tagAttributes[EncryptionTag.KEYFORMATVERSIONS].split('/').map(Number)
+      method: tagAttributes[EncryptionTagProcessor.METHOD] as 'NONE' | 'AES-128' | 'SAMPLE-AES',
+      uri: tagAttributes[EncryptionTagProcessor.URI],
+      iv: tagAttributes[EncryptionTagProcessor.IV],
+      keyFormat: tagAttributes[EncryptionTagProcessor.KEYFORMAT] || 'identity',
+      keyFormatVersions: tagAttributes[EncryptionTagProcessor.KEYFORMATVERSIONS]
+        ? tagAttributes[EncryptionTagProcessor.KEYFORMATVERSIONS].split('/').map(Number)
         : [1],
     };
   }
 }
 
-export class ExtXKey extends EncryptionTag {
+export class ExtXKey extends EncryptionTagProcessor {
   protected readonly tag = EXT_X_KEY;
 
   protected safeProcess(
@@ -544,7 +544,7 @@ export class ExtXSessionData extends TagWithAttributesProcessor {
   }
 }
 
-export class ExtXSessionKey extends EncryptionTag {
+export class ExtXSessionKey extends EncryptionTagProcessor {
   protected readonly tag = EXT_X_SESSION_KEY;
 
   protected safeProcess(tagAttributes: Record<string, string>, playlist: ParsedPlaylist): void {
