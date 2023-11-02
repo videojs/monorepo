@@ -548,7 +548,6 @@ export class ExtXSessionKey extends EncryptionTagProcessor {
   protected readonly tag = EXT_X_SESSION_KEY;
 
   protected safeProcess(tagAttributes: Record<string, string>, playlist: ParsedPlaylist): void {
-    const sessionKey = this.parseEncryptionTag(tagAttributes) as SessionKey;
-    playlist.sessionKey = sessionKey;
+    playlist.sessionKey = this.parseEncryptionTag(tagAttributes) as SessionKey;
   }
 }
