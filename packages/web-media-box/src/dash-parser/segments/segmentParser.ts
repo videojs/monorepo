@@ -1,17 +1,7 @@
 import type { Segment } from '../types/parsedManifest';
+import { resolveURL } from './resolveUrl';
 
 const identifierPattern = /\$([A-z]*)(?:(%0)([0-9]+)d)?\$/g;
-
-/**
- * TODO: Implement correctly for BaseURL
- */
-export const resolveURL = (relativeUrl: string, baseUrl: string): string => {
-  try {
-    return new URL(relativeUrl, baseUrl).href;
-  } catch {
-    return relativeUrl || '';
-  }
-};
 
 /**
  * Returns a function to be used as a callback for String.prototype.replace to replace
@@ -294,7 +284,7 @@ export const segmentsFromTemplate = (mpdType: string, attributes: Record<string,
       duration: segment.duration as number,
       segmentNumber: segment.segmentNumber as number,
       uri,
-      resolvedUri: uri,
+      resolvedUri: resolveURL(uri, (attributes.baseUrl as string) || ''),
       presentationTime,
       timeline: segment.timeline as number,
     };

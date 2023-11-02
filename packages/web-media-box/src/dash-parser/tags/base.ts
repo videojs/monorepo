@@ -24,6 +24,7 @@ import { missingRequiredAttributeWarn } from '@/dash-parser/utils/warn.ts';
 import { parseAttributes } from '@/dash-parser/parseAttributes';
 import { parseUTCTimingScheme } from '@/dash-parser/utils/parseUTCTimingScheme';
 import { segmentsFromTemplate } from '../segments/segmentParser';
+import { resolveURL } from '../segments/resolveUrl';
 
 export abstract class TagProcessor {
   protected readonly warnCallback: WarnCallback;
@@ -158,18 +159,67 @@ export class AdaptationSet extends TagProcessor {
 }
 
 export class BaseUrl extends TagProcessor {
-  // TODO
+  private static readonly SERVICE_LOCATION = 'serviceLocation';
+  private static readonly BYTE_RANGE = 'byteRange';
+  private static readonly AVAILABILITY_TIME_OFFSET = 'availabilityTimeOffset';
+  private static readonly AVAILABILITY_TIME_COMPLETE = 'availabilityTimeComplete';
+  private static readonly TIMESHIFT_BUFFER_DEPTH = 'timeShiftBufferDepth';
+  private static readonly RANGE_ACCESS = 'rangeAccess';
+
+  protected readonly requiredAttributes = new Set<string>();
   protected readonly tag = BASE_URL;
 
-  // TODO
-  protected readonly requiredAttributes = new Set<string>();
+  protected safeProcess(
+    tagInfo: TagInfo,
+    parentTagInfo: TagInfo | null,
+    parsedManifest: ParsedManifest,
+    sharedState: SharedState
+    // pendingProcessors: PendingProcessors
+  ): void {
+    const uri = tagInfo.tagValue;
+    const attributes = tagInfo.tagAttributes;
+    const prevBaseURLs = sharedState.baseUrls || [];
+    const newBaseURLs = [];
 
-  protected safeProcess() // tagInfo: TagInfo,
-  // parentTagInfo: TagInfo | null,
-  // parsedManifest: ParsedManifest,
-  // sharedState: SharedState,
-  // pendingProcessors: PendingProcessors
-  : void {}
+    // First Base URL
+    if (!prevBaseURLs.length) {
+      sharedState.baseUrls.push({ uri, attributes, parentKey: parentTagInfo.tagKey });
+    } else {
+      for (const base of prevBaseURLs) {
+        const resolved = resolveURL(uri, base.uri);
+
+        // URI is absolute
+        if (resolved === uri) {
+          // add new absolute baseURL to preexisting list
+
+          sharedState.baseUrls.push({ uri, attributes, parentKey: parentTagInfo.tagKey });
+
+          break;
+        } else {
+          // URL is relative
+          // concat to all other URLs
+          if (parentTagInfo.tagKey !== base.parentKey) {
+            // We only want to concat if they are not children of the same node
+            newBaseURLs.push({
+              uri: resolved,
+              attributes: { ...base.attributes, ...attributes },
+              parentKey: parentTagInfo.tagKey,
+            });
+          }
+        }
+      }
+
+      if (newBaseURLs.length) {
+        sharedState.baseUrls = newBaseURLs;
+      }
+    }
+
+    // TODO: Do we need to handle use case where there are multiple
+    // relative url segments on the same level?
+    // This seems like an extremely uncommon use case, but may be worth thinking about
+
+    // TODO: Handle child BaseURL of Representation
+  }
 }
 
 export class Representation extends TagProcessor {
@@ -224,42 +274,47 @@ export class Representation extends TagProcessor {
 
     let segments: Array<Segment> = [];
     // TODO: we may want to ensure we are not waiting on any more nodes to process here as well.
-    if (sharedState.segmentTemplateAttributes) {
-      segments = segmentsFromTemplate(sharedState.mpdAttributes.type as string, {
+
+    for (const base of sharedState.baseUrls) {
+      if (sharedState.segmentTemplateAttributes) {
+        segments = segmentsFromTemplate(sharedState.mpdAttributes.type as string, {
+          ...previousAttributes,
+          ...attributes,
+          ...sharedState.segmentTemplateAttributes,
+          baseUrl: base.uri,
+        });
+      }
+
+      const rep = {
         ...previousAttributes,
-        ...attributes,
-        ...sharedState.segmentTemplateAttributes,
-      });
+        // TODO: ID isn't required, so set this in a better way if it doesn't exit
+        // Maybe use period id.
+        id: attributes[Representation.ID] || 'default-id',
+        codecs: attributes[Representation.CODECS],
+        bandwidth: attributes[Representation.BANDWIDTH],
+        initialization: attributes[Representation.INITIALIZATION],
+        width: attributes[Representation.WIDTH],
+        height: attributes[Representation.HEIGHT],
+        frameRate: attributes[Representation.FRAME_RATE],
+        sar: attributes[Representation.SAR],
+        scanType: attributes[Representation.SCAN_TYPE],
+        profiles: attributes[Representation.PROFILES],
+        audioSamplingRate: attributes[Representation.AUDIO_SAMPLING_RATE],
+        mimeType: attributes[Representation.MIME_TYPE],
+        segmentProfiles: attributes[Representation.SEGMENT_PROFILES],
+        containerProfiles: attributes[Representation.CONTAINER_PROFILES],
+        maximumSAPPeriod: attributes[Representation.MAXIMUM_SAP_PERIOD],
+        startWithSAP: attributes[Representation.START_WITH_SAP],
+        maxPlayoutRate: attributes[Representation.MAX_PLAYOUT_RATE],
+        codingDependency: attributes[Representation.CODING_DEPENDENCY],
+        selectionPriority: attributes[Representation.SELECTION_PRIORITY],
+        tag: attributes[Representation.TAG],
+        segments,
+        baseUrl: base.uri,
+      };
+
+      parsedManifest.representations.push(rep);
     }
-
-    const rep = {
-      ...previousAttributes,
-      // TODO: ID isn't required, so set this in a better way if it doesn't exit
-      // Maybe use period id.
-      id: attributes[Representation.ID] || 'default-id',
-      codecs: attributes[Representation.CODECS],
-      bandwidth: attributes[Representation.BANDWIDTH],
-      initialization: attributes[Representation.INITIALIZATION],
-      width: attributes[Representation.WIDTH],
-      height: attributes[Representation.HEIGHT],
-      frameRate: attributes[Representation.FRAME_RATE],
-      sar: attributes[Representation.SAR],
-      scanType: attributes[Representation.SCAN_TYPE],
-      profiles: attributes[Representation.PROFILES],
-      audioSamplingRate: attributes[Representation.AUDIO_SAMPLING_RATE],
-      mimeType: attributes[Representation.MIME_TYPE],
-      segmentProfiles: attributes[Representation.SEGMENT_PROFILES],
-      containerProfiles: attributes[Representation.CONTAINER_PROFILES],
-      maximumSAPPeriod: attributes[Representation.MAXIMUM_SAP_PERIOD],
-      startWithSAP: attributes[Representation.START_WITH_SAP],
-      maxPlayoutRate: attributes[Representation.MAX_PLAYOUT_RATE],
-      codingDependency: attributes[Representation.CODING_DEPENDENCY],
-      selectionPriority: attributes[Representation.SELECTION_PRIORITY],
-      tag: attributes[Representation.TAG],
-      segments,
-    };
-
-    parsedManifest.representations.push(rep);
   }
 }
 
