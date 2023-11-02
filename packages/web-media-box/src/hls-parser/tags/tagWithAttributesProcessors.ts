@@ -34,6 +34,7 @@ import {
   EXT_X_RENDITION_REPORT,
   EXT_X_SESSION_DATA,
   EXT_X_SESSION_KEY,
+  EXT_X_CONTENT_STEERING,
 } from '../consts/tags.ts';
 import { parseBoolean, parseHex } from '../utils/parse.ts';
 
@@ -549,5 +550,20 @@ export class ExtXSessionKey extends EncryptionTagProcessor {
 
   protected safeProcess(tagAttributes: Record<string, string>, playlist: ParsedPlaylist): void {
     playlist.sessionKey = this.parseEncryptionTag(tagAttributes) as SessionKey;
+  }
+}
+
+export class ExtXContentSteering extends TagWithAttributesProcessor {
+  private static readonly SERVER_URI = 'SERVER-URI';
+  private static readonly PATHWAY_ID = 'PATHWAY-ID';
+
+  protected requiredAttributes = new Set([ExtXContentSteering.SERVER_URI]);
+  protected tag = EXT_X_CONTENT_STEERING;
+
+  protected safeProcess(tagAttributes: Record<string, string>, playlist: ParsedPlaylist): void {
+    playlist.contentSteering = {
+      serverUri: tagAttributes[ExtXContentSteering.SERVER_URI],
+      pathwayId: tagAttributes[ExtXContentSteering.PATHWAY_ID],
+    };
   }
 }
