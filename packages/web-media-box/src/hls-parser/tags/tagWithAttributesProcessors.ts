@@ -34,6 +34,7 @@ import {
   EXT_X_RENDITION_REPORT,
   EXT_X_SESSION_DATA,
   EXT_X_SESSION_KEY,
+  EXT_X_CONTENT_STEERING,
 } from '../consts/tags.ts';
 import { parseBoolean, parseHex } from '../utils/parse.ts';
 
@@ -487,8 +488,8 @@ export class ExtXPreloadHint extends TagWithAttributesProcessor {
   private static readonly BYTERANGE_START = 'BYTERANGE-START';
   private static readonly BYTERANGE_LENGTH = 'BYTERANGE-LENGTH';
 
-  protected requiredAttributes = new Set([ExtXPreloadHint.TYPE, ExtXPreloadHint.URI]);
-  protected tag = EXT_X_PRELOAD_HINT;
+  protected readonly requiredAttributes = new Set([ExtXPreloadHint.TYPE, ExtXPreloadHint.URI]);
+  protected readonly tag = EXT_X_PRELOAD_HINT;
 
   protected safeProcess(tagAttributes: Record<string, string>, playlist: ParsedPlaylist): void {
     const preloadHint = {
@@ -507,8 +508,8 @@ export class ExtXRenditionReport extends TagWithAttributesProcessor {
   private static readonly LAST_MSN = 'LAST-MSN';
   private static readonly LAST_PART = 'LAST-PART';
 
-  protected requiredAttributes = new Set([]);
-  protected tag = EXT_X_RENDITION_REPORT;
+  protected readonly requiredAttributes = new Set([]);
+  protected readonly tag = EXT_X_RENDITION_REPORT;
 
   protected safeProcess(tagAttributes: Record<string, string>, playlist: ParsedPlaylist): void {
     const renditionReport = {
@@ -528,8 +529,8 @@ export class ExtXSessionData extends TagWithAttributesProcessor {
   private static readonly FORMAT = 'FORMAT';
   private static readonly LANGUAGE = 'LANGUAGE';
 
-  protected requiredAttributes = new Set([ExtXSessionData.DATA_ID]);
-  protected tag = EXT_X_SESSION_DATA;
+  protected readonly requiredAttributes = new Set([ExtXSessionData.DATA_ID]);
+  protected readonly tag = EXT_X_SESSION_DATA;
 
   protected safeProcess(tagAttributes: Record<string, string>, playlist: ParsedPlaylist): void {
     const sessionData = {
@@ -549,5 +550,20 @@ export class ExtXSessionKey extends EncryptionTagProcessor {
 
   protected safeProcess(tagAttributes: Record<string, string>, playlist: ParsedPlaylist): void {
     playlist.sessionKey = this.parseEncryptionTag(tagAttributes) as SessionKey;
+  }
+}
+
+export class ExtXContentSteering extends TagWithAttributesProcessor {
+  private static readonly SERVER_URI = 'SERVER-URI';
+  private static readonly PATHWAY_ID = 'PATHWAY-ID';
+
+  protected readonly requiredAttributes = new Set([ExtXContentSteering.SERVER_URI]);
+  protected readonly tag = EXT_X_CONTENT_STEERING;
+
+  protected safeProcess(tagAttributes: Record<string, string>, playlist: ParsedPlaylist): void {
+    playlist.contentSteering = {
+      serverUri: tagAttributes[ExtXContentSteering.SERVER_URI],
+      pathwayId: tagAttributes[ExtXContentSteering.PATHWAY_ID],
+    };
   }
 }

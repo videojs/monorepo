@@ -173,6 +173,11 @@ export interface SessionKey extends Encryption {
   method: 'AES-128' | 'SAMPLE-AES';
 }
 
+export interface ContentSteering {
+  serverUri: string;
+  pathwayId?: string;
+}
+
 export type PlaylistType = 'EVENT' | 'VOD';
 
 export interface ParsedPlaylist {
@@ -219,4 +224,6 @@ export interface ParsedPlaylist {
   sessionDataTags: Array<SessionData>;
   // https://datatracker.ietf.org/doc/html/draft-pantos-hls-rfc8216bis#section-4.4.6.5
   sessionKey?: SessionKey;
+  // https://datatracker.ietf.org/doc/html/draft-pantos-hls-rfc8216bis#section-4.4.6.6
+  contentSteering?: ContentSteering;
 }
