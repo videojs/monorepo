@@ -9,7 +9,7 @@ import {
 } from './utils/warn.ts';
 
 import {
-  // EXT_X_DEFINE,
+  EXT_X_DEFINE,
   EXT_X_DISCONTINUITY_SEQUENCE,
   EXT_X_ENDLIST,
   EXT_X_I_FRAMES_ONLY,
@@ -87,6 +87,7 @@ import {
   ExtXPreloadHint,
   ExtXRenditionReport,
   ExtXSessionData,
+  ExtXDefine,
 } from './tags/tagWithAttributesProcessors.ts';
 
 const defaultSegment: Segment = {
@@ -192,6 +193,7 @@ class Parser {
       [EXT_X_PRELOAD_HINT]: new ExtXPreloadHint(this.warnCallback),
       [EXT_X_RENDITION_REPORT]: new ExtXRenditionReport(this.warnCallback),
       [EXT_X_SESSION_DATA]: new ExtXSessionData(this.warnCallback),
+      [EXT_X_DEFINE]: new ExtXDefine(this.warnCallback),
     };
   }
 

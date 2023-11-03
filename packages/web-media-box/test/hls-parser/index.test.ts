@@ -1034,4 +1034,22 @@ segment-3.mp4
       });
     });
   });
+
+  describe('#EXT-X-DEFINE', () => {
+    it('should be undefined by default', () => {
+      const playlist = `#EXTM3U`;
+      testAllCombinations(playlist, (parsed) => {
+        expect(parsed.define).toBe(undefined);
+      });
+    });
+
+    it('should have some stuff', () => {
+      const playlist = `#EXTM3U\n#EXT-X-DEFINE:NAME="hello",QUERYPARAM="",IMPORT="import"`;
+
+      testAllCombinations(playlist, (parsed) => {
+        // console.log(parsed.define);
+        expect(parsed.define?.name).toBe(undefined);
+      });
+    });
+  });
 });

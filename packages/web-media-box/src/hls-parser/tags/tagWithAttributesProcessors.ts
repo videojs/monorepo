@@ -31,6 +31,7 @@ import {
   EXT_X_PRELOAD_HINT,
   EXT_X_RENDITION_REPORT,
   EXT_X_SESSION_DATA,
+  EXT_X_DEFINE,
 } from '../consts/tags.ts';
 import { parseBoolean, parseHex } from '../utils/parse.ts';
 
@@ -533,5 +534,31 @@ export class ExtXSessionData extends TagWithAttributesProcessor {
     };
 
     playlist.sessionDataTags.push(sessionData);
+  }
+}
+
+export class ExtXDefine extends TagWithAttributesProcessor {
+  private static readonly NAME = 'NAME';
+  private static readonly VALUE = 'VALUE';
+  private static readonly IMPORT = 'IMPORT';
+  private static readonly QUERYPARAM = 'QUERYPARAM';
+
+  protected requiredAttributes = new Set([]);
+  protected tag = EXT_X_DEFINE;
+
+  protected safeProcess(tagAttributes: Record<string, string>, playlist: ParsedPlaylist): void {
+    // const regex = /^[A-Za-z0-9_-]+$/;
+    //can only contain EITHER a name OR an import OR a queryparam
+
+    // if (tagAttributes[ExtXDefine.QUERYPARAM]) {
+    //   console.log("queryparam")
+    // }
+
+    playlist.define = {
+      name: tagAttributes[ExtXDefine.NAME],
+      value: tagAttributes[ExtXDefine.VALUE],
+      import: tagAttributes[ExtXDefine.IMPORT],
+      queryParam: tagAttributes[ExtXDefine.QUERYPARAM],
+    };
   }
 }

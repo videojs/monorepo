@@ -3,6 +3,13 @@ export interface Start {
   precise: boolean;
 }
 
+export interface Define {
+  name: string;
+  value: string;
+  import: string;
+  queryParam: string;
+}
+
 export interface PartInf {
   partTarget: number;
 }
@@ -181,7 +188,7 @@ export interface ParsedPlaylist {
   // https://datatracker.ietf.org/doc/html/draft-pantos-hls-rfc8216bis#section-4.4.2.2
   start?: Start;
   // https://datatracker.ietf.org/doc/html/draft-pantos-hls-rfc8216bis#section-4.4.2.3
-  // define?: null;
+  define?: Define;
   // https://datatracker.ietf.org/doc/html/draft-pantos-hls-rfc8216bis#section-4.4.3.1
   targetDuration?: number;
   // https://datatracker.ietf.org/doc/html/draft-pantos-hls-rfc8216bis#section-4.4.3.2
