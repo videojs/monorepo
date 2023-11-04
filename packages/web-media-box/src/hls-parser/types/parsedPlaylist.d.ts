@@ -140,7 +140,7 @@ export interface IFramePlaylist extends BaseStreamInf {}
 
 export interface Skip {
   skippedSegments: number;
-  recentlyRemovedDateranges?: Array<string>;
+  recentlyRemovedDateRanges: Array<string>;
 }
 
 export enum HintType {

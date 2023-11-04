@@ -251,13 +251,15 @@ export class ExtXSkip extends TagWithAttributesProcessor {
   private static readonly SKIPPED_SEGMENTS = 'SKIPPED-SEGMENTS';
   private static readonly RECENTLY_REMOVED_DATERANGES = 'RECENTLY-REMOVED-DATERANGES';
 
-  protected requiredAttributes = new Set([ExtXSkip.SKIPPED_SEGMENTS]);
+  protected readonly requiredAttributes = new Set([ExtXSkip.SKIPPED_SEGMENTS]);
   protected readonly tag = EXT_X_SKIP;
 
   protected safeProcess(tagAttributes: Record<string, string>, playlist: ParsedPlaylist): void {
     playlist.skip = {
       skippedSegments: Number(tagAttributes[ExtXSkip.SKIPPED_SEGMENTS]),
-      recentlyRemovedDateranges: tagAttributes[ExtXSkip.RECENTLY_REMOVED_DATERANGES].split('\t'),
+      recentlyRemovedDateRanges: ExtXSkip.RECENTLY_REMOVED_DATERANGES
+        ? tagAttributes[ExtXSkip.RECENTLY_REMOVED_DATERANGES].split('\t')
+        : [],
     };
   }
 }

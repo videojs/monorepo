@@ -1035,6 +1035,25 @@ segment-3.mp4
     });
   });
 
+  describe('#EXT-X-SKIP', () => {
+    it('should be undefined by default', () => {
+      const playlist = `#EXTM3U`;
+
+      testAllCombinations(playlist, (parsed) => {
+        expect(parsed.skip).toBeUndefined();
+      });
+    });
+
+    it('should parse from a playlist', () => {
+      const playlist = `#EXTM3U\n#EXT-X-SKIP:SKIPPED-SEGMENTS=10,RECENTLY-REMOVED-DATERANGES="1\t2\t3\t4"`;
+
+      testAllCombinations(playlist, (parsed) => {
+        expect(parsed.skip?.skippedSegments).toBe(10);
+        expect(parsed.skip?.recentlyRemovedDateRanges).toEqual(['1', '2', '3', '4']);
+      });
+    });
+  });
+
   describe('#EXT-X-SESSION-KEY', () => {
     it('should be undefined by default', () => {
       const playlist = `#EXTM3U`;
