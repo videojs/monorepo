@@ -1054,6 +1054,53 @@ segment-3.mp4
     });
   });
 
+  describe('#EXT-X-PRELOAD-HINT', () => {
+    it('should be undefined by default', () => {
+      const playlist = `#EXTM3U`;
+      testAllCombinations(playlist, (parsed) => {
+        expect(parsed.preloadHint).toBeUndefined();
+      });
+    });
+
+    it('should parse from a playlist', () => {
+      let playlist = `#EXTM3U\n#EXT-X-PRELOAD-HINT:TYPE=PART,URI="preload-hint-uri"`;
+      testAllCombinations(playlist, (parsed) => {
+        // range: entire resource
+        expect(parsed.preloadHint).toEqual({ type: 'PART', uri: 'preload-hint-uri' });
+      });
+
+      playlist = `#EXTM3U\n#EXT-X-PRELOAD-HINT:TYPE=PART,URI="preload-hint-uri",BYTERANGE-START=10`;
+      testAllCombinations(playlist, (parsed) => {
+        // range: from 10 till end of the resource
+        expect(parsed.preloadHint).toEqual({
+          type: 'PART',
+          uri: 'preload-hint-uri',
+          byteRange: { start: 10, end: Number.MAX_SAFE_INTEGER },
+        });
+      });
+
+      playlist = `#EXTM3U\n#EXT-X-PRELOAD-HINT:TYPE=PART,URI="preload-hint-uri",BYTERANGE-START=10,BYTERANGE-LENGTH=20`;
+      testAllCombinations(playlist, (parsed) => {
+        // range: from 10 till 29
+        expect(parsed.preloadHint).toEqual({
+          type: 'PART',
+          uri: 'preload-hint-uri',
+          byteRange: { start: 10, end: 29 },
+        });
+      });
+
+      playlist = `#EXTM3U\n#EXT-X-PRELOAD-HINT:TYPE=PART,URI="preload-hint-uri",BYTERANGE-LENGTH=20`;
+      testAllCombinations(playlist, (parsed) => {
+        // range: from 0 till 19
+        expect(parsed.preloadHint).toEqual({
+          type: 'PART',
+          uri: 'preload-hint-uri',
+          byteRange: { start: 0, end: 19 },
+        });
+      });
+    });
+  });
+
   describe('#EXT-X-SESSION-KEY', () => {
     it('should be undefined by default', () => {
       const playlist = `#EXTM3U`;

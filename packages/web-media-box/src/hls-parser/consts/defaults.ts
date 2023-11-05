@@ -32,7 +32,6 @@ export const createDefaultParsedPlaylist = (): ParsedPlaylist => ({
   variantStreams: [],
   iFramePlaylists: [],
   dateRanges: [],
-  preloadHints: [],
   renditionReports: [],
   sessionDataTags: [],
 });

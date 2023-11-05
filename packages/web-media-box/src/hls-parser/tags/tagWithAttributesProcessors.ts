@@ -11,9 +11,10 @@ import type {
   BaseStreamInf,
   DateRange,
   DateRangeCue,
-  HintType,
+  PreloadHintType,
   SessionKey,
   Encryption,
+  PreloadHint,
 } from '../types/parsedPlaylist';
 import type { SharedState } from '../types/sharedState';
 import { TagProcessor } from './base.ts';
@@ -494,14 +495,37 @@ export class ExtXPreloadHint extends TagWithAttributesProcessor {
   protected readonly tag = EXT_X_PRELOAD_HINT;
 
   protected safeProcess(tagAttributes: Record<string, string>, playlist: ParsedPlaylist): void {
-    const preloadHint = {
-      type: tagAttributes[ExtXPreloadHint.TYPE] as HintType,
+    const preloadHint: PreloadHint = {
+      type: tagAttributes[ExtXPreloadHint.TYPE] as PreloadHintType,
       uri: tagAttributes[ExtXPreloadHint.URI],
-      byterangeStart: Number(tagAttributes[ExtXPreloadHint.BYTERANGE_START]),
-      byterangeLength: Number(tagAttributes[ExtXPreloadHint.BYTERANGE_LENGTH]),
     };
 
-    playlist.preloadHints.push(preloadHint);
+    const pStart = tagAttributes[ExtXPreloadHint.BYTERANGE_START];
+    const pLength = tagAttributes[ExtXPreloadHint.BYTERANGE_LENGTH];
+
+    /**
+     * There are 4 scenarios with Byte Range for preload-hint
+     * 1. Start is available, Length is available:
+     * Request resource from start till (start + length - 1)
+     * 2. Start is available, Length is not available:
+     * Request resource from start till the end of the resource
+     * 3. Start is not available, Length is available:
+     * Request from 0 till (length - 1)
+     * 4. Start is not available, Length is not available:
+     * Request entire resource (default scenario)
+     */
+
+    if (pStart && pLength) {
+      const start = Number(pStart);
+      const end = start + Number(pLength) - 1;
+      preloadHint.byteRange = { start, end };
+    } else if (pStart && !pLength) {
+      preloadHint.byteRange = { start: Number(pStart), end: Number.MAX_SAFE_INTEGER };
+    } else if (!pStart && pLength) {
+      preloadHint.byteRange = { start: 0, end: Number(pLength) - 1 };
+    }
+
+    playlist.preloadHint = preloadHint;
   }
 }
 

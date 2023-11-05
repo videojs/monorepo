@@ -143,16 +143,12 @@ export interface Skip {
   recentlyRemovedDateRanges: Array<string>;
 }
 
-export enum HintType {
-  PART = 'PART',
-  MAP = 'MAP',
-}
+export type PreloadHintType = 'PART' | 'MAP';
 
 export interface PreloadHint {
-  type: HintType;
+  type: PreloadHintType;
   uri: string;
-  byterangeStart?: number;
-  byterangeLength?: number;
+  byteRange?: Range;
 }
 
 export interface RenditionReport {
@@ -217,7 +213,7 @@ export interface ParsedPlaylist {
   // https://datatracker.ietf.org/doc/html/draft-pantos-hls-rfc8216bis#section-4.4.5.2
   skip?: Skip;
   // https://datatracker.ietf.org/doc/html/draft-pantos-hls-rfc8216bis#section-4.4.5.3
-  preloadHints: Array<PreloadHint>;
+  preloadHint?: PreloadHint;
   // https://datatracker.ietf.org/doc/html/draft-pantos-hls-rfc8216bis#section-4.4.5.4
   renditionReports: Array<RenditionReport>;
   // https://datatracker.ietf.org/doc/html/draft-pantos-hls-rfc8216bis#section-4.4.6.4
