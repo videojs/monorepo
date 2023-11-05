@@ -4,10 +4,9 @@ export interface Start {
 }
 
 export interface Define {
-  name: string;
-  value: string;
-  import: string;
-  queryParam: string;
+  name: Record<string, string | null>;
+  import: Record<string, string | null>;
+  queryParam: Record<string, string | null>;
 }
 
 export interface PartInf {

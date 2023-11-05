@@ -1,7 +1,7 @@
 import { FullPlaylistParser, ProgressiveParser } from '@/hls-parser';
 import type { Mock } from 'bun:test';
 import { describe, it, expect, beforeEach, mock } from 'bun:test';
-import type { ParsedPlaylist } from '@/hls-parser/types/parsedPlaylist';
+import type { Define, ParsedPlaylist } from '@/hls-parser/types/parsedPlaylist';
 import { parseHex } from '@/hls-parser/utils/parse.ts';
 
 describe('hls-parser spec', () => {
@@ -19,6 +19,24 @@ describe('hls-parser spec', () => {
     cb(progressivePlaylistParser.done());
 
     progressivePlaylistParser.pushBuffer(buffer);
+    cb(progressivePlaylistParser.done());
+  };
+
+  const testAllCombinationsDefine = (
+    playlist: string,
+    define: Define,
+    parentUrl: URL,
+    cb: (parsed: ParsedPlaylist) => void
+  ): void => {
+    const buffer = new Uint8Array(playlist.split('').map((char) => char.charCodeAt(0)));
+
+    cb(fullPlaylistParser.parseFullPlaylistString(playlist, define, parentUrl));
+    cb(fullPlaylistParser.parseFullPlaylistBuffer(buffer, define, parentUrl));
+
+    progressivePlaylistParser.pushString(playlist, define, parentUrl);
+    cb(progressivePlaylistParser.done());
+
+    progressivePlaylistParser.pushBuffer(buffer, define, parentUrl);
     cb(progressivePlaylistParser.done());
   };
 
@@ -1043,13 +1061,37 @@ segment-3.mp4
       });
     });
 
-    it('should have some stuff', () => {
-      const playlist = `#EXTM3U\n#EXT-X-DEFINE:NAME="hello",QUERYPARAM="",IMPORT="import"`;
+    it('ext-x-define:name', () => {
+      const playlist = `#EXTM3U
+#EXT-X-DEFINE:NAME="hello",QUERYPARAM="elf",IMPORT="imported"
+#EXT-X-DEFINE:QUERYPARAM="okay"`;
 
-      testAllCombinations(playlist, (parsed) => {
-        // console.log(parsed.define);
-        expect(parsed.define?.name).toBe(undefined);
-      });
+      testAllCombinationsDefine(
+        playlist,
+        { name: {}, import: {}, queryParam: {} },
+        new URL('https://www.example.com/?elf=lmao&okay=dokie'),
+        (parsed) => {
+          expect(parsed.define?.name).toBe(undefined);
+        }
+      );
     });
+
+    // it('ext-x-define:queryparam', () => {
+    //   const playlist = `#EXTM3U\n#EXT-X-DEFINE:NAME="hello",QUERYPARAM="elf",IMPORT="imported"`;
+
+    //   testAllCombinationsDefine(playlist, {}, new URL('https://www.example.com/?elf=lmao'), (parsed) => {
+    //     console.log(parsed.define);
+    //     expect(parsed.define?.name).toBe(undefined);
+    //   });
+    // });
+
+    // it('ext-x-define:import', () => {
+    //   const playlist = `#EXTM3U\n#EXT-X-DEFINE:NAME="hello",QUERYPARAM="elf",IMPORT="imported"`;
+
+    //   testAllCombinationsDefine(playlist, {}, new URL('https://www.example.com/?elf=lmao'), (parsed) => {
+    //     console.log(parsed.define);
+    //     expect(parsed.define?.name).toBe(undefined);
+    //   });
+    // });
   });
 });

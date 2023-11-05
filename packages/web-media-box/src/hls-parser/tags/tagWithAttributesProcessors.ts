@@ -546,19 +546,44 @@ export class ExtXDefine extends TagWithAttributesProcessor {
   protected requiredAttributes = new Set([]);
   protected tag = EXT_X_DEFINE;
 
-  protected safeProcess(tagAttributes: Record<string, string>, playlist: ParsedPlaylist): void {
-    // const regex = /^[A-Za-z0-9_-]+$/;
-    //can only contain EITHER a name OR an import OR a queryparam
+  // TODO: not sure where to get the value for the importName?
+  protected getValueForImportDefine(importName: string): string {
+    return importName;
+  }
 
-    // if (tagAttributes[ExtXDefine.QUERYPARAM]) {
-    //   console.log("queryparam")
-    // }
+  // gets this from the parent url
+  protected getValueForQueryParamDefine(queryParam: string, parentUrl: URL | undefined): string | null {
+    return parentUrl?.searchParams.get(queryParam) || undefined;
+  }
 
-    playlist.define = {
-      name: tagAttributes[ExtXDefine.NAME],
-      value: tagAttributes[ExtXDefine.VALUE],
-      import: tagAttributes[ExtXDefine.IMPORT],
-      queryParam: tagAttributes[ExtXDefine.QUERYPARAM],
-    };
+  protected safeProcess(
+    tagAttributes: Record<string, string>,
+    playlist: ParsedPlaylist,
+    sharedState: SharedState
+  ): void {
+    // unsure if this needs to be instantiated here or will be instantiated elsewhere?
+    if (!playlist.define) {
+      playlist.define = { name: {}, import: {}, queryParam: {} };
+    }
+
+    if (tagAttributes[ExtXDefine.NAME]) {
+      if (!tagAttributes[ExtXDefine.VALUE]) {
+        this.warnCallback(missingRequiredAttributeWarn(this.tag, ExtXDefine.VALUE));
+      } else {
+        playlist.define.name[tagAttributes[ExtXDefine.NAME]] = tagAttributes[ExtXDefine.VALUE];
+      }
+    }
+
+    if (tagAttributes[ExtXDefine.IMPORT]) {
+      playlist.define.import[tagAttributes[ExtXDefine.IMPORT]] = this.getValueForImportDefine(
+        tagAttributes[ExtXDefine.IMPORT]
+      );
+    }
+    if (tagAttributes[ExtXDefine.QUERYPARAM]) {
+      playlist.define.queryParam[tagAttributes[ExtXDefine.QUERYPARAM]] = this.getValueForQueryParamDefine(
+        tagAttributes[ExtXDefine.QUERYPARAM],
+        sharedState.parentUrl
+      );
+    }
   }
 }

@@ -48,7 +48,7 @@ import type {
   TransformTagValue,
   WarnCallback,
 } from './types/parserOptions';
-import type { Segment, ParsedPlaylist, VariantStream } from './types/parsedPlaylist';
+import type { Segment, ParsedPlaylist, VariantStream, Define } from './types/parsedPlaylist';
 import type { SharedState } from './types/sharedState';
 import type { EmptyTagProcessor } from './tags/emptyTagProcessors.ts';
 import {
@@ -319,7 +319,15 @@ class Parser {
 }
 
 export class FullPlaylistParser extends Parser {
-  public parseFullPlaylistString(playlist: string): ParsedPlaylist {
+  public parseFullPlaylistString(playlist: string, define?: Define, parentUrl?: URL): ParsedPlaylist {
+    if (define) {
+      this.sharedState.define = define;
+    }
+
+    if (parentUrl) {
+      this.sharedState.parentUrl = parentUrl;
+    }
+
     const stateMachine = createStateMachine(this.tagInfoCallback, this.uriInfoCallback);
     const length = playlist.length;
 
@@ -332,7 +340,15 @@ export class FullPlaylistParser extends Parser {
     return this.clean();
   }
 
-  public parseFullPlaylistBuffer(playlist: Uint8Array): ParsedPlaylist {
+  public parseFullPlaylistBuffer(playlist: Uint8Array, define?: Define, parentUrl?: URL): ParsedPlaylist {
+    if (define) {
+      this.sharedState.define = define;
+    }
+
+    if (parentUrl) {
+      this.sharedState.parentUrl = parentUrl;
+    }
+
     const stateMachine = createStateMachine(this.tagInfoCallback, this.uriInfoCallback);
     const length = playlist.length;
 
@@ -349,7 +365,15 @@ export class FullPlaylistParser extends Parser {
 export class ProgressiveParser extends Parser {
   private stateMachine: StateMachineTransition | null = null;
 
-  public pushString(chunk: string): void {
+  public pushString(chunk: string, define?: Define, parentUrl?: URL): void {
+    if (define) {
+      this.sharedState.define = define;
+    }
+
+    if (parentUrl) {
+      this.sharedState.parentUrl = parentUrl;
+    }
+
     if (this.stateMachine === null) {
       this.stateMachine = createStateMachine(this.tagInfoCallback, this.uriInfoCallback);
     }
@@ -359,7 +383,15 @@ export class ProgressiveParser extends Parser {
     }
   }
 
-  public pushBuffer(chunk: Uint8Array): void {
+  public pushBuffer(chunk: Uint8Array, define?: Define, parentUrl?: URL): void {
+    if (define) {
+      this.sharedState.define = define;
+    }
+
+    if (parentUrl) {
+      this.sharedState.parentUrl = parentUrl;
+    }
+
     if (this.stateMachine === null) {
       this.stateMachine = createStateMachine(this.tagInfoCallback, this.uriInfoCallback);
     }
