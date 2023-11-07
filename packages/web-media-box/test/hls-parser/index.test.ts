@@ -1069,4 +1069,70 @@ segment-3.mp4
       });
     });
   });
+
+  describe('#EXT-X-MEDIA', () => {
+    it('should be an empty object by default', () => {
+      const playlist = `#EXTM3U
+#EXTINF:4
+segment-1.mp4
+#EXTINF:4
+segment-2.mp4
+`;
+      testAllCombinations(playlist, (parsed) => {
+        expect(parsed.renditionGroups).toEqual({ audio: {}, video: {}, subtitles: {}, closedCaptions: {} });
+      });
+    });
+
+    it('should parse all attributes from a playlist', () => {
+      const playlist = `#EXTM3U
+#EXT-X-MEDIA:TYPE=AUDIO,GROUP-ID="audio",NAME="English",DEFAULT=YES,AUTOSELECT=YES,LANGUAGE="en",URI="audio.m3u8",CHARACTERISTICS="public.accessibility.transcribes-spoken-dialog,public.accessibility.describes-music-and-sound",CHANNELS="2/0/0"
+#EXT-X-MEDIA:TYPE=VIDEO,GROUP-ID="video",NAME="720p",DEFAULT=NO,AUTOSELECT=YES,LANGUAGE="en",URI="video.m3u8",CHARACTERISTICS="public.accessibility.transcribes-spoken-dialog,public.accessibility.describes-video",CHANNELS="1/0/0"
+`;
+      testAllCombinations(playlist, (parsed) => {
+        expect(parsed.renditionGroups.audio['audio'][0].type).toBe('AUDIO');
+        expect(parsed.renditionGroups.audio['audio'][0].groupId).toBe('audio');
+        expect(parsed.renditionGroups.audio['audio'][0].name).toBe('English');
+        expect(parsed.renditionGroups.audio['audio'][0].default).toBe(true);
+        expect(parsed.renditionGroups.audio['audio'][0].autoSelect).toBe(true);
+        expect(parsed.renditionGroups.audio['audio'][0].language).toBe('en');
+        expect(parsed.renditionGroups.audio['audio'][0].uri).toBe('audio.m3u8');
+        expect(parsed.renditionGroups.audio['audio'][0].characteristics).toEqual([
+          'public.accessibility.transcribes-spoken-dialog',
+          'public.accessibility.describes-music-and-sound',
+        ]);
+        expect(parsed.renditionGroups.audio['audio'][0].channels).toEqual(['2', '0', '0']);
+        expect(parsed.renditionGroups.video['video'][0].type).toBe('VIDEO');
+        expect(parsed.renditionGroups.video['video'][0].groupId).toBe('video');
+        expect(parsed.renditionGroups.video['video'][0].name).toBe('720p');
+        expect(parsed.renditionGroups.video['video'][0].default).toBe(false);
+        expect(parsed.renditionGroups.video['video'][0].autoSelect).toBe(true);
+        expect(parsed.renditionGroups.video['video'][0].language).toBe('en');
+        expect(parsed.renditionGroups.video['video'][0].uri).toBe('video.m3u8');
+        expect(parsed.renditionGroups.video['video'][0].characteristics).toEqual([
+          'public.accessibility.transcribes-spoken-dialog',
+          'public.accessibility.describes-video',
+        ]);
+        expect(parsed.renditionGroups.video['video'][0].channels).toEqual(['1', '0', '0']);
+      });
+    });
+
+    it('should parse multiple #EXT-X-MEDIA tags into correct groups', () => {
+      const playlist = `#EXTM3U
+#EXT-X-MEDIA:TYPE=AUDIO,GROUP-ID="group-audio",NAME="English",LANGUAGE="eng",URI="audio-eng.m3u8"
+#EXT-X-MEDIA:TYPE=AUDIO,GROUP-ID="group-audio",NAME="Spanish",LANGUAGE="spa",URI="audio-spa.m3u8"
+#EXT-X-MEDIA:TYPE=SUBTITLES,GROUP-ID="group-sub",NAME="English",LANGUAGE="eng",URI="subs-eng.m3u8"
+#EXTINF:4,
+segment-1.mp4
+#EXTINF:4,
+segment-2.mp4
+`;
+      testAllCombinations(playlist, (parsed) => {
+        expect(parsed.renditionGroups.audio['group-audio'].length).toBe(2);
+        expect(parsed.renditionGroups.audio['group-audio'][0].language).toBe('eng');
+        expect(parsed.renditionGroups.audio['group-audio'][1].language).toBe('spa');
+        expect(parsed.renditionGroups.subtitles['group-sub'].length).toBe(1);
+        expect(parsed.renditionGroups.subtitles['group-sub'][0].language).toBe('eng');
+      });
+    });
+  });
 });
