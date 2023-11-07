@@ -1085,22 +1085,27 @@ segment-2.mp4
 
     it('should parse all attributes from a playlist', () => {
       const playlist = `#EXTM3U
-#EXT-X-MEDIA:TYPE=AUDIO,GROUP-ID="audio",NAME="English",DEFAULT=YES,AUTOSELECT=YES,LANGUAGE="en",URI="audio.m3u8",CHARACTERISTICS="public.accessibility.transcribes-spoken-dialog,public.accessibility.describes-music-and-sound",CHANNELS="2/0/0"
-#EXT-X-MEDIA:TYPE=VIDEO,GROUP-ID="video",NAME="720p",DEFAULT=NO,AUTOSELECT=YES,LANGUAGE="en",URI="video.m3u8",CHARACTERISTICS="public.accessibility.transcribes-spoken-dialog,public.accessibility.describes-video",CHANNELS="1/0/0"
+#EXT-X-MEDIA:TYPE=AUDIO,GROUP-ID="audio",NAME="English",DEFAULT=YES,AUTOSELECT=YES,LANGUAGE="en",ASSOC-LANGUAGE="es",URI="audio.m3u8",CHARACTERISTICS="public.accessibility.transcribes-spoken-dialog,public.accessibility.describes-music-and-sound",CHANNELS="2/0/0",FORCED=NO
+#EXT-X-MEDIA:TYPE=VIDEO,GROUP-ID="video",NAME="720p",DEFAULT=NO,AUTOSELECT=YES,LANGUAGE="en",URI="video.m3u8",CHARACTERISTICS="public.accessibility.transcribes-spoken-dialog,public.accessibility.describes-video",CHANNELS="1/0/0",INSTREAM-ID="CC1",FORCED=YES
 `;
       testAllCombinations(playlist, (parsed) => {
+        // Audio group
         expect(parsed.renditionGroups.audio['audio'][0].type).toBe('AUDIO');
         expect(parsed.renditionGroups.audio['audio'][0].groupId).toBe('audio');
         expect(parsed.renditionGroups.audio['audio'][0].name).toBe('English');
         expect(parsed.renditionGroups.audio['audio'][0].default).toBe(true);
         expect(parsed.renditionGroups.audio['audio'][0].autoSelect).toBe(true);
         expect(parsed.renditionGroups.audio['audio'][0].language).toBe('en');
+        expect(parsed.renditionGroups.audio['audio'][0].assocLanguage).toBe('es');
         expect(parsed.renditionGroups.audio['audio'][0].uri).toBe('audio.m3u8');
         expect(parsed.renditionGroups.audio['audio'][0].characteristics).toEqual([
           'public.accessibility.transcribes-spoken-dialog',
           'public.accessibility.describes-music-and-sound',
         ]);
         expect(parsed.renditionGroups.audio['audio'][0].channels).toEqual(['2', '0', '0']);
+        expect(parsed.renditionGroups.audio['audio'][0].forced).toBe(false);
+
+        // Video group
         expect(parsed.renditionGroups.video['video'][0].type).toBe('VIDEO');
         expect(parsed.renditionGroups.video['video'][0].groupId).toBe('video');
         expect(parsed.renditionGroups.video['video'][0].name).toBe('720p');
@@ -1113,6 +1118,8 @@ segment-2.mp4
           'public.accessibility.describes-video',
         ]);
         expect(parsed.renditionGroups.video['video'][0].channels).toEqual(['1', '0', '0']);
+        expect(parsed.renditionGroups.video['video'][0].inStreamId).toBe('CC1');
+        expect(parsed.renditionGroups.video['video'][0].forced).toBe(true);
       });
     });
 
