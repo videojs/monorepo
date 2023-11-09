@@ -1007,7 +1007,7 @@ segment-2.mp4
 #EXT-X-BYTERANGE:5@0
 #EXTINF:4
 segment-3.mp4
-#EXT-X-DATERANGE:ID="splice-6FFFFFF1",START-DATE="2014-03-05T11:15:00Z",PLANNED-DURATION=59.993,SCTE35-OUT=0xFC002F000000000000FF000014056FFFFFF000E081622DCAFF000052636200000000000A0008029896F50000008700000000
+#EXT-X-DATERANGE:ID="splice-6FFFFFF1",X-CUSTOM-ATTRIBUTE=12,START-DATE="2014-03-05T11:15:00Z",PLANNED-DURATION=59.993,SCTE35-OUT=0xFC002F000000000000FF000014056FFFFFF000E081622DCAFF000052636200000000000A0008029896F50000008700000000
 `;
       testAllCombinations(playlist, (parsed) => {
         expect(parsed.dateRanges.length).toBe(2);
@@ -1015,7 +1015,7 @@ segment-3.mp4
         expect(parsed.dateRanges[0].id).toBe('splice-6FFFFFF0');
         expect(parsed.dateRanges[0].startDate).toBe(1394018100000);
         expect(parsed.dateRanges[0].plannedDuration).toBe(59.993);
-
+        expect(parsed.dateRanges[0].clientAttributes).toEqual({});
         expect(parsed.dateRanges[0].scte35Out).toEqual(
           parseHex(
             '0xFC002F000000000000FF000014056FFFFFF000E081622DCAFF000052636200000000000A0008029896F50000008700000000'
@@ -1025,6 +1025,7 @@ segment-3.mp4
         expect(parsed.dateRanges[1].id).toBe('splice-6FFFFFF1');
         expect(parsed.dateRanges[1].startDate).toBe(1394018100000);
         expect(parsed.dateRanges[1].plannedDuration).toBe(59.993);
+        expect(parsed.dateRanges[1].clientAttributes).toEqual({ 'X-CUSTOM-ATTRIBUTE': '12' });
 
         expect(parsed.dateRanges[1].scte35Out).toEqual(
           parseHex(
