@@ -146,9 +146,13 @@ export interface Skip {
 export type PreloadHintType = 'PART' | 'MAP';
 
 export interface PreloadHint {
-  type: PreloadHintType;
   uri: string;
   byteRange?: Range;
+}
+
+export interface PreloadHints {
+  map?: PreloadHint;
+  part?: PreloadHint;
 }
 
 export interface RenditionReport {
@@ -213,7 +217,7 @@ export interface ParsedPlaylist {
   // https://datatracker.ietf.org/doc/html/draft-pantos-hls-rfc8216bis#section-4.4.5.2
   skip?: Skip;
   // https://datatracker.ietf.org/doc/html/draft-pantos-hls-rfc8216bis#section-4.4.5.3
-  preloadHint?: PreloadHint;
+  preloadHints: PreloadHints;
   // https://datatracker.ietf.org/doc/html/draft-pantos-hls-rfc8216bis#section-4.4.5.4
   renditionReports: Array<RenditionReport>;
   // https://datatracker.ietf.org/doc/html/draft-pantos-hls-rfc8216bis#section-4.4.6.4

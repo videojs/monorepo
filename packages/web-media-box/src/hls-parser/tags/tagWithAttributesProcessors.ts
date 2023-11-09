@@ -14,7 +14,6 @@ import type {
   PreloadHintType,
   SessionKey,
   Encryption,
-  PreloadHint,
 } from '../types/parsedPlaylist';
 import type { SharedState } from '../types/sharedState';
 import { TagProcessor } from './base.ts';
@@ -495,11 +494,8 @@ export class ExtXPreloadHint extends TagWithAttributesProcessor {
   protected readonly tag = EXT_X_PRELOAD_HINT;
 
   protected safeProcess(tagAttributes: Record<string, string>, playlist: ParsedPlaylist): void {
-    const preloadHint: PreloadHint = {
-      type: tagAttributes[ExtXPreloadHint.TYPE] as PreloadHintType,
-      uri: tagAttributes[ExtXPreloadHint.URI],
-    };
-
+    const type = tagAttributes[ExtXPreloadHint.TYPE] as PreloadHintType;
+    const uri = tagAttributes[ExtXPreloadHint.URI];
     const pStart = tagAttributes[ExtXPreloadHint.BYTERANGE_START];
     const pLength = tagAttributes[ExtXPreloadHint.BYTERANGE_LENGTH];
 
@@ -515,17 +511,27 @@ export class ExtXPreloadHint extends TagWithAttributesProcessor {
      * Request entire resource (default scenario)
      */
 
+    let byteRange;
+
     if (pStart && pLength) {
       const start = Number(pStart);
       const end = start + Number(pLength) - 1;
-      preloadHint.byteRange = { start, end };
+      byteRange = { start, end };
     } else if (pStart && !pLength) {
-      preloadHint.byteRange = { start: Number(pStart), end: Number.MAX_SAFE_INTEGER };
+      byteRange = { start: Number(pStart), end: Number.MAX_SAFE_INTEGER };
     } else if (!pStart && pLength) {
-      preloadHint.byteRange = { start: 0, end: Number(pLength) - 1 };
+      byteRange = { start: 0, end: Number(pLength) - 1 };
     }
 
-    playlist.preloadHint = preloadHint;
+    const preloadHint = { uri, byteRange };
+
+    if (type === 'PART') {
+      playlist.preloadHints.part = preloadHint;
+    }
+
+    if (type === 'MAP') {
+      playlist.preloadHints.map = preloadHint;
+    }
   }
 }
 

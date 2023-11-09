@@ -1055,47 +1055,77 @@ segment-3.mp4
   });
 
   describe('#EXT-X-PRELOAD-HINT', () => {
-    it('should be undefined by default', () => {
+    it('should be empty by default', () => {
       const playlist = `#EXTM3U`;
       testAllCombinations(playlist, (parsed) => {
-        expect(parsed.preloadHint).toBeUndefined();
+        expect(parsed.preloadHints).toEqual({});
       });
     });
 
     it('should parse from a playlist', () => {
-      let playlist = `#EXTM3U\n#EXT-X-PRELOAD-HINT:TYPE=PART,URI="preload-hint-uri"`;
+      let playlist = `#EXTM3U
+#EXT-X-PRELOAD-HINT:TYPE=MAP,URI="preload-hint-uri-map"
+#EXT-X-PRELOAD-HINT:TYPE=PART,URI="preload-hint-uri"
+`;
       testAllCombinations(playlist, (parsed) => {
         // range: entire resource
-        expect(parsed.preloadHint).toEqual({ type: 'PART', uri: 'preload-hint-uri' });
+        expect(parsed.preloadHints).toEqual({
+          map: { uri: 'preload-hint-uri-map' },
+          part: { uri: 'preload-hint-uri' },
+        });
       });
 
-      playlist = `#EXTM3U\n#EXT-X-PRELOAD-HINT:TYPE=PART,URI="preload-hint-uri",BYTERANGE-START=10`;
+      playlist = `#EXTM3U
+#EXT-X-PRELOAD-HINT:TYPE=MAP,URI="preload-hint-uri-map",BYTERANGE-START=5
+#EXT-X-PRELOAD-HINT:TYPE=PART,URI="preload-hint-uri",BYTERANGE-START=10
+`;
       testAllCombinations(playlist, (parsed) => {
         // range: from 10 till end of the resource
-        expect(parsed.preloadHint).toEqual({
-          type: 'PART',
-          uri: 'preload-hint-uri',
-          byteRange: { start: 10, end: Number.MAX_SAFE_INTEGER },
+        expect(parsed.preloadHints).toEqual({
+          map: {
+            uri: 'preload-hint-uri-map',
+            byteRange: { start: 5, end: Number.MAX_SAFE_INTEGER },
+          },
+          part: {
+            uri: 'preload-hint-uri',
+            byteRange: { start: 10, end: Number.MAX_SAFE_INTEGER },
+          },
         });
       });
 
-      playlist = `#EXTM3U\n#EXT-X-PRELOAD-HINT:TYPE=PART,URI="preload-hint-uri",BYTERANGE-START=10,BYTERANGE-LENGTH=20`;
+      playlist = `#EXTM3U
+#EXT-X-PRELOAD-HINT:TYPE=MAP,URI="preload-hint-uri-map",BYTERANGE-START=5,BYTERANGE-LENGTH=10
+#EXT-X-PRELOAD-HINT:TYPE=PART,URI="preload-hint-uri",BYTERANGE-START=10,BYTERANGE-LENGTH=20
+`;
       testAllCombinations(playlist, (parsed) => {
         // range: from 10 till 29
-        expect(parsed.preloadHint).toEqual({
-          type: 'PART',
-          uri: 'preload-hint-uri',
-          byteRange: { start: 10, end: 29 },
+        expect(parsed.preloadHints).toEqual({
+          map: {
+            uri: 'preload-hint-uri-map',
+            byteRange: { start: 5, end: 14 },
+          },
+          part: {
+            uri: 'preload-hint-uri',
+            byteRange: { start: 10, end: 29 },
+          },
         });
       });
 
-      playlist = `#EXTM3U\n#EXT-X-PRELOAD-HINT:TYPE=PART,URI="preload-hint-uri",BYTERANGE-LENGTH=20`;
+      playlist = `#EXTM3U
+#EXT-X-PRELOAD-HINT:TYPE=MAP,URI="preload-hint-uri-map",BYTERANGE-LENGTH=20
+#EXT-X-PRELOAD-HINT:TYPE=PART,URI="preload-hint-uri",BYTERANGE-LENGTH=20
+`;
       testAllCombinations(playlist, (parsed) => {
         // range: from 0 till 19
-        expect(parsed.preloadHint).toEqual({
-          type: 'PART',
-          uri: 'preload-hint-uri',
-          byteRange: { start: 0, end: 19 },
+        expect(parsed.preloadHints).toEqual({
+          map: {
+            uri: 'preload-hint-uri-map',
+            byteRange: { start: 0, end: 19 },
+          },
+          part: {
+            uri: 'preload-hint-uri',
+            byteRange: { start: 0, end: 19 },
+          },
         });
       });
     });

@@ -34,6 +34,7 @@ export const createDefaultParsedPlaylist = (): ParsedPlaylist => ({
   dateRanges: [],
   renditionReports: [],
   sessionDataTags: [],
+  preloadHints: {},
 });
 
 export const createDefaultSharedState = (): SharedState => ({
