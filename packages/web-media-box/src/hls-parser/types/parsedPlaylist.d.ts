@@ -156,7 +156,7 @@ export interface PreloadHints {
 }
 
 export interface RenditionReport {
-  uri?: string;
+  uri: string;
   lastMsn?: number;
   lastPart?: number;
 }

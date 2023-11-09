@@ -540,14 +540,18 @@ export class ExtXRenditionReport extends TagWithAttributesProcessor {
   private static readonly LAST_MSN = 'LAST-MSN';
   private static readonly LAST_PART = 'LAST-PART';
 
-  protected readonly requiredAttributes = new Set([]);
+  protected readonly requiredAttributes = new Set([ExtXRenditionReport.URI]);
   protected readonly tag = EXT_X_RENDITION_REPORT;
 
   protected safeProcess(tagAttributes: Record<string, string>, playlist: ParsedPlaylist): void {
     const renditionReport = {
       uri: tagAttributes[ExtXRenditionReport.URI],
-      lastMsn: Number(tagAttributes[ExtXRenditionReport.LAST_MSN]),
-      lastPart: Number(tagAttributes[ExtXRenditionReport.LAST_PART]),
+      lastMsn: tagAttributes[ExtXRenditionReport.LAST_MSN]
+        ? Number(tagAttributes[ExtXRenditionReport.LAST_MSN])
+        : undefined,
+      lastPart: tagAttributes[ExtXRenditionReport.LAST_PART]
+        ? Number(tagAttributes[ExtXRenditionReport.LAST_PART])
+        : undefined,
     };
 
     playlist.renditionReports.push(renditionReport);

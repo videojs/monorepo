@@ -1131,6 +1131,30 @@ segment-3.mp4
     });
   });
 
+  describe('#EXT-X-RENDITION-REPORT', () => {
+    it('should be empty by default', () => {
+      const playlist = `#EXTM3U`;
+      testAllCombinations(playlist, (parsed) => {
+        expect(parsed.renditionReports).toEqual([]);
+      });
+    });
+
+    it('should parse form a playlist', () => {
+      const playlist = `#EXTM3U
+#EXT-X-RENDITION-REPORT:URI=rendition-1,LAST-MSN=10,LAST-PART=2
+#EXT-X-RENDITION-REPORT:URI=rendition-2,LAST-MSN=10
+#EXT-X-RENDITION-REPORT:URI=rendition-3
+`;
+      testAllCombinations(playlist, (parsed) => {
+        expect(parsed.renditionReports).toEqual([
+          { uri: 'rendition-1', lastMsn: 10, lastPart: 2 },
+          { uri: 'rendition-2', lastMsn: 10 },
+          { uri: 'rendition-3' },
+        ]);
+      });
+    });
+  });
+
   describe('#EXT-X-SESSION-KEY', () => {
     it('should be undefined by default', () => {
       const playlist = `#EXTM3U`;
