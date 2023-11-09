@@ -575,7 +575,7 @@ export class ExtXSessionData extends TagWithAttributesProcessor {
       language: tagAttributes[ExtXSessionData.LANGUAGE],
     };
 
-    playlist.sessionDataTags.push(sessionData);
+    playlist.sessionData[sessionData.dataId] = sessionData;
   }
 }
 

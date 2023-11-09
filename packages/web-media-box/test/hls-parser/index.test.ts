@@ -1256,6 +1256,40 @@ stream-2.m3u8
     });
   });
 
+  describe('#EXT-X-SESSION-DATA', () => {
+    it('should be empty by default', () => {
+      const playlist = `#EXTM3U`;
+      testAllCombinations(playlist, (parsed) => {
+        expect(parsed.sessionData).toEqual({});
+      });
+    });
+
+    it('should parse from a playlist', () => {
+      const playlist = `#EXTM3U
+#EXT-X-SESSION-DATA:DATA-ID="com.example.movie.title",VALUE="data-value-1",URI="data-uri.json",FORMAT="JSON",LANGUAGE="en"
+#EXT-X-SESSION-DATA:DATA-ID="com.example.movie.subtitle",VALUE="data-value-2",URI="data-uri.bin",FORMAT="RAW",LANGUAGE="en"
+`;
+      testAllCombinations(playlist, (parsed) => {
+        expect(parsed.sessionData).toEqual({
+          'com.example.movie.title': {
+            dataId: 'com.example.movie.title',
+            value: 'data-value-1',
+            uri: 'data-uri.json',
+            format: 'JSON',
+            language: 'en',
+          },
+          'com.example.movie.subtitle': {
+            dataId: 'com.example.movie.subtitle',
+            value: 'data-value-2',
+            uri: 'data-uri.bin',
+            format: 'RAW',
+            language: 'en',
+          },
+        });
+      });
+    });
+  });
+
   describe('#EXT-X-SESSION-KEY', () => {
     it('should be undefined by default', () => {
       const playlist = `#EXTM3U`;
