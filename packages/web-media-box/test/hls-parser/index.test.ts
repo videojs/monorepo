@@ -1155,6 +1155,106 @@ segment-3.mp4
     });
   });
 
+  describe('#EXT-X-STREAM-INF', () => {
+    it('should be empty by default', () => {
+      const playlist = `#EXTM3U`;
+      testAllCombinations(playlist, (parsed) => {
+        expect(parsed.variantStreams).toEqual([]);
+      });
+    });
+
+    it('should parse from a playlist', () => {
+      const playlist = `#EXTM3U
+#EXT-X-STREAM-INF:BANDWIDTH=123,AVERAGE-BANDWIDTH=123,SCORE=2.5,CODECS="mp4a.40.2, avc1.4d401e",SUPPLEMENTAL-CODECS="dvh1.08.07/db4h, dvh1.08.08/db4h",RESOLUTION=416x234,FRAME-RATE=50,HDCP-LEVEL=TYPE-1,ALLOWED-CPC="com.example.drm1:SMART-TV/PC,com.example.drm2:HW",VIDEO-RANGE=SDR,STABLE-VARIANT-ID="stream-1-id",AUDIO="audio-group-id",VIDEO="video-group-id",SUBTITLES="subtitles-group-id",CLOSED-CAPTIONS="closed-captions-group-id",PATHWAY-ID="pathway-id"
+stream-1.m3u8
+#EXT-X-STREAM-INF:BANDWIDTH=234
+stream-2.m3u8
+`;
+      testAllCombinations(playlist, (parsed) => {
+        expect(parsed.variantStreams.length).toBe(2);
+        expect(parsed.variantStreams[0]).toEqual({
+          uri: 'stream-1.m3u8',
+          bandwidth: 123,
+          averageBandwidth: 123,
+          score: 2.5,
+          codecs: ['mp4a.40.2', 'avc1.4d401e'],
+          supplementalCodecs: ['dvh1.08.07/db4h', 'dvh1.08.08/db4h'],
+          resolution: {
+            width: 416,
+            height: 234,
+          },
+          hdcpLevel: 'TYPE-1',
+          allowedCpc: {
+            'com.example.drm1': ['SMART-TV', 'PC'],
+            'com.example.drm2': ['HW'],
+          },
+          videoRange: 'SDR',
+          stableVariantId: 'stream-1-id',
+          frameRate: 50,
+          audio: 'audio-group-id',
+          video: 'video-group-id',
+          subtitles: 'subtitles-group-id',
+          closedCaptions: 'closed-captions-group-id',
+          pathwayId: 'pathway-id',
+        });
+        expect(parsed.variantStreams[1]).toEqual({
+          uri: 'stream-2.m3u8',
+          bandwidth: 234,
+          codecs: [],
+          supplementalCodecs: [],
+          allowedCpc: {},
+        });
+      });
+    });
+  });
+
+  describe('#EXT-X-I-FRAME-STREAM-INF', () => {
+    it('should be empty by default', () => {
+      const playlist = `#EXTM3U`;
+      testAllCombinations(playlist, (parsed) => {
+        expect(parsed.iFramePlaylists).toEqual([]);
+      });
+    });
+
+    it('should parse from a playlist', () => {
+      const playlist = `#EXTM3U
+#EXT-X-I-FRAME-STREAM-INF:URI="stream-1.m3u8",BANDWIDTH=123,AVERAGE-BANDWIDTH=123,SCORE=2.5,CODECS="mp4a.40.2, avc1.4d401e",SUPPLEMENTAL-CODECS="dvh1.08.07/db4h, dvh1.08.08/db4h",RESOLUTION=416x234,HDCP-LEVEL=TYPE-1,ALLOWED-CPC="com.example.drm1:SMART-TV/PC,com.example.drm2:HW",VIDEO-RANGE=SDR,STABLE-VARIANT-ID="stream-1-id",VIDEO="video-group-id",PATHWAY-ID="pathway-id"
+#EXT-X-I-FRAME-STREAM-INF:URI="stream-2.m3u8",BANDWIDTH=234
+`;
+      testAllCombinations(playlist, (parsed) => {
+        expect(parsed.iFramePlaylists.length).toBe(2);
+        expect(parsed.iFramePlaylists[0]).toEqual({
+          uri: 'stream-1.m3u8',
+          bandwidth: 123,
+          averageBandwidth: 123,
+          score: 2.5,
+          codecs: ['mp4a.40.2', 'avc1.4d401e'],
+          supplementalCodecs: ['dvh1.08.07/db4h', 'dvh1.08.08/db4h'],
+          resolution: {
+            width: 416,
+            height: 234,
+          },
+          hdcpLevel: 'TYPE-1',
+          allowedCpc: {
+            'com.example.drm1': ['SMART-TV', 'PC'],
+            'com.example.drm2': ['HW'],
+          },
+          videoRange: 'SDR',
+          stableVariantId: 'stream-1-id',
+          video: 'video-group-id',
+          pathwayId: 'pathway-id',
+        });
+        expect(parsed.iFramePlaylists[1]).toEqual({
+          uri: 'stream-2.m3u8',
+          bandwidth: 234,
+          codecs: [],
+          supplementalCodecs: [],
+          allowedCpc: {},
+        });
+      });
+    });
+  });
+
   describe('#EXT-X-SESSION-KEY', () => {
     it('should be undefined by default', () => {
       const playlist = `#EXTM3U`;

@@ -6,7 +6,6 @@ import type {
   RenditionGroups,
   GroupId,
   Resolution,
-  AllowedCpc,
   IFramePlaylist,
   BaseStreamInf,
   DateRange,
@@ -14,6 +13,7 @@ import type {
   PreloadHintType,
   SessionKey,
   Encryption,
+  CpcRecord,
 } from '../types/parsedPlaylist';
 import type { SharedState } from '../types/sharedState';
 import { TagProcessor } from './base.ts';
@@ -342,19 +342,21 @@ abstract class BaseStreamInfProcessor extends TagWithAttributesProcessor {
     }
   }
 
-  protected parseAllowedCpc(value?: string): AllowedCpc {
+  protected parseAllowedCpc(value?: string): CpcRecord {
     const parsedAllowedCpc = value ? value.split(',') : [];
-    const allowedCpc: AllowedCpc = [];
+
+    const cpcRecord: CpcRecord = {};
 
     parsedAllowedCpc.forEach((entry) => {
       const parsedEntry = entry.split(':');
       const keyFormat = parsedEntry[0];
-      const cpcs = parsedEntry[1].split('/');
 
-      allowedCpc.push({ [keyFormat]: cpcs });
+      if (keyFormat) {
+        cpcRecord[keyFormat] = parsedEntry[1] ? parsedEntry[1].split('/') : [];
+      }
     });
 
-    return allowedCpc;
+    return cpcRecord;
   }
 
   protected parseCommonAttributes(tagAttributes: Record<string, string>): BaseStreamInf {
@@ -368,10 +370,10 @@ abstract class BaseStreamInfProcessor extends TagWithAttributesProcessor {
         ? Number(tagAttributes[BaseStreamInfProcessor.SCORE])
         : undefined,
       codecs: tagAttributes[BaseStreamInfProcessor.CODECS]
-        ? tagAttributes[BaseStreamInfProcessor.CODECS].split(',')
+        ? tagAttributes[BaseStreamInfProcessor.CODECS].split(',').map((codec) => codec.trim())
         : [],
       supplementalCodecs: tagAttributes[BaseStreamInfProcessor.SUPPLEMENTAL_CODECS]
-        ? tagAttributes[BaseStreamInfProcessor.SUPPLEMENTAL_CODECS].split(',')
+        ? tagAttributes[BaseStreamInfProcessor.SUPPLEMENTAL_CODECS].split(',').map((codec) => codec.trim())
         : [],
       resolution: this.parseResolution(tagAttributes[BaseStreamInfProcessor.RESOLUTION]),
       hdcpLevel: tagAttributes[BaseStreamInfProcessor.HDCP_LEVEL] as 'NONE' | 'TYPE-0' | 'TYPE-1' | undefined,
@@ -422,10 +424,6 @@ export class ExtXIFrameStreamInf extends BaseStreamInfProcessor {
       ...this.parseCommonAttributes(tagAttributes),
       uri: tagAttributes[ExtXIFrameStreamInf.URI],
     };
-
-    if (!playlist.iFramePlaylists) {
-      playlist.iFramePlaylists = [];
-    }
 
     playlist.iFramePlaylists.push(iFrameStreamInf);
   }
