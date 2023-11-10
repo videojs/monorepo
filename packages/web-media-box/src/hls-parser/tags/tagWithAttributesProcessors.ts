@@ -35,6 +35,7 @@ import {
   EXT_X_SESSION_DATA,
   EXT_X_SESSION_KEY,
   EXT_X_CONTENT_STEERING,
+  EXT_X_DEFINE,
 } from '../consts/tags.ts';
 import { parseBoolean, parseHex } from '../utils/parse.ts';
 
@@ -601,5 +602,68 @@ export class ExtXContentSteering extends TagWithAttributesProcessor {
       serverUri: tagAttributes[ExtXContentSteering.SERVER_URI],
       pathwayId: tagAttributes[ExtXContentSteering.PATHWAY_ID],
     };
+  }
+}
+
+export class ExtXDefine extends TagWithAttributesProcessor {
+  private static readonly NAME = 'NAME';
+  private static readonly VALUE = 'VALUE';
+  private static readonly IMPORT = 'IMPORT';
+  private static readonly QUERYPARAM = 'QUERYPARAM';
+
+  protected readonly requiredAttributes = new Set([]);
+  protected readonly tag = EXT_X_DEFINE;
+
+  protected getValueForImportDefine(importName: string, sharedState: SharedState): string | null {
+    if (!sharedState.baseDefine) {
+      return null;
+    }
+
+    if (sharedState.baseDefine.name[importName] !== null) {
+      return sharedState.baseDefine.name[importName];
+    }
+
+    if (sharedState.baseDefine.import[importName] !== null) {
+      return sharedState.baseDefine.import[importName];
+    }
+
+    if (sharedState.baseDefine.queryParam[importName] !== null) {
+      return sharedState.baseDefine.queryParam[importName];
+    }
+
+    return null;
+  }
+
+  // gets this from the parent url
+  protected getValueForQueryParamDefine(queryParam: string, sharedState: SharedState): string | null {
+    if (!sharedState.baseUrl) {
+      return null;
+    }
+
+    return sharedState.baseUrl.searchParams.get(queryParam);
+  }
+
+  protected safeProcess(
+    tagAttributes: Record<string, string>,
+    playlist: ParsedPlaylist,
+    sharedState: SharedState
+  ): void {
+    if (tagAttributes[ExtXDefine.NAME]) {
+      playlist.define.name[tagAttributes[ExtXDefine.NAME]] = tagAttributes[ExtXDefine.VALUE];
+    }
+
+    if (tagAttributes[ExtXDefine.IMPORT]) {
+      playlist.define.import[tagAttributes[ExtXDefine.IMPORT]] = this.getValueForImportDefine(
+        tagAttributes[ExtXDefine.IMPORT],
+        sharedState
+      );
+    }
+
+    if (tagAttributes[ExtXDefine.QUERYPARAM]) {
+      playlist.define.queryParam[tagAttributes[ExtXDefine.QUERYPARAM]] = this.getValueForQueryParamDefine(
+        tagAttributes[ExtXDefine.QUERYPARAM],
+        sharedState
+      );
+    }
   }
 }

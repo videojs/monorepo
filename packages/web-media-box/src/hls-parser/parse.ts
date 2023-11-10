@@ -9,7 +9,7 @@ import {
 } from './utils/warn.ts';
 
 import {
-  // EXT_X_DEFINE,
+  EXT_X_DEFINE,
   EXT_X_DISCONTINUITY_SEQUENCE,
   EXT_X_ENDLIST,
   EXT_X_I_FRAMES_ONLY,
@@ -45,6 +45,7 @@ import {
 import type {
   CustomTagMap,
   DebugCallback,
+  ParseOptions,
   ParserOptions,
   TransformTagAttributes,
   TransformTagValue,
@@ -91,6 +92,7 @@ import {
   ExtXSessionData,
   ExtXSessionKey,
   ExtXContentSteering,
+  ExtXDefine,
 } from './tags/tagWithAttributesProcessors.ts';
 import {
   createDefaultParsedPlaylist,
@@ -163,6 +165,7 @@ class Parser {
       [EXT_X_SESSION_DATA]: new ExtXSessionData(this.warnCallback),
       [EXT_X_SESSION_KEY]: new ExtXSessionKey(this.warnCallback),
       [EXT_X_CONTENT_STEERING]: new ExtXContentSteering(this.warnCallback),
+      [EXT_X_DEFINE]: new ExtXDefine(this.warnCallback),
     };
   }
 
@@ -287,10 +290,18 @@ class Parser {
   protected transitionToNewLine(stateMachine: StateMachineTransition): void {
     stateMachine('\n');
   }
+
+  protected gatherParseOptions(options: ParseOptions = {}): void {
+    this.sharedState.baseDefine = options.baseDefine;
+    this.sharedState.baseUrl = options.baseUrl;
+    this.sharedState.baseTime = options.baseTime;
+  }
 }
 
 export class FullPlaylistParser extends Parser {
-  public parseFullPlaylistString(playlist: string): ParsedPlaylist {
+  public parseFullPlaylistString(playlist: string, options?: ParseOptions): ParsedPlaylist {
+    this.gatherParseOptions(options);
+
     const stateMachine = createStateMachine(this.tagInfoCallback, this.uriInfoCallback);
     const length = playlist.length;
 
@@ -303,7 +314,9 @@ export class FullPlaylistParser extends Parser {
     return this.clean();
   }
 
-  public parseFullPlaylistBuffer(playlist: Uint8Array): ParsedPlaylist {
+  public parseFullPlaylistBuffer(playlist: Uint8Array, options?: ParseOptions): ParsedPlaylist {
+    this.gatherParseOptions(options);
+
     const stateMachine = createStateMachine(this.tagInfoCallback, this.uriInfoCallback);
     const length = playlist.length;
 
@@ -320,7 +333,9 @@ export class FullPlaylistParser extends Parser {
 export class ProgressiveParser extends Parser {
   private stateMachine: StateMachineTransition | null = null;
 
-  public pushString(chunk: string): void {
+  public pushString(chunk: string, options?: ParseOptions): void {
+    this.gatherParseOptions(options);
+
     if (this.stateMachine === null) {
       this.stateMachine = createStateMachine(this.tagInfoCallback, this.uriInfoCallback);
     }
@@ -330,7 +345,9 @@ export class ProgressiveParser extends Parser {
     }
   }
 
-  public pushBuffer(chunk: Uint8Array): void {
+  public pushBuffer(chunk: Uint8Array, options: ParseOptions): void {
+    this.gatherParseOptions(options);
+
     if (this.stateMachine === null) {
       this.stateMachine = createStateMachine(this.tagInfoCallback, this.uriInfoCallback);
     }

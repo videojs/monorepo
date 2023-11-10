@@ -195,7 +195,7 @@ export interface ParsedPlaylist {
   // https://datatracker.ietf.org/doc/html/draft-pantos-hls-rfc8216bis#section-4.4.2.2
   start?: Start;
   // https://datatracker.ietf.org/doc/html/draft-pantos-hls-rfc8216bis#section-4.4.2.3
-  define?: Define;
+  define: Define;
   // https://datatracker.ietf.org/doc/html/draft-pantos-hls-rfc8216bis#section-4.4.3.1
   targetDuration?: number;
   // https://datatracker.ietf.org/doc/html/draft-pantos-hls-rfc8216bis#section-4.4.3.2
@@ -212,23 +212,28 @@ export interface ParsedPlaylist {
   partInf?: PartInf;
   // https://datatracker.ietf.org/doc/html/draft-pantos-hls-rfc8216bis#section-4.4.3.8
   serverControl?: ServerControl;
+  // https://datatracker.ietf.org/doc/html/draft-pantos-hls-rfc8216bis/#section-4.4.4.1
   segments: Array<Segment>;
-  custom: Record<string, unknown>;
-  renditionGroups: RenditionGroups;
   // https://datatracker.ietf.org/doc/html/draft-pantos-hls-rfc8216bis#section-4.4.5.1
   dateRanges: Array<DateRange>;
-  variantStreams: Array<VariantStream>;
-  iFramePlaylists: Array<IFramePlaylist>;
   // https://datatracker.ietf.org/doc/html/draft-pantos-hls-rfc8216bis#section-4.4.5.2
   skip?: Skip;
   // https://datatracker.ietf.org/doc/html/draft-pantos-hls-rfc8216bis#section-4.4.5.3
   preloadHints: PreloadHints;
   // https://datatracker.ietf.org/doc/html/draft-pantos-hls-rfc8216bis#section-4.4.5.4
   renditionReports: Array<RenditionReport>;
+  // https://datatracker.ietf.org/doc/html/draft-pantos-hls-rfc8216bis/#section-4.4.6.1
+  renditionGroups: RenditionGroups;
+  // https://datatracker.ietf.org/doc/html/draft-pantos-hls-rfc8216bis/#section-4.4.6.2
+  variantStreams: Array<VariantStream>;
+  // https://datatracker.ietf.org/doc/html/draft-pantos-hls-rfc8216bis/#section-4.4.6.3
+  iFramePlaylists: Array<IFramePlaylist>;
   // https://datatracker.ietf.org/doc/html/draft-pantos-hls-rfc8216bis#section-4.4.6.4
   sessionData: Record<string, SessionData>;
   // https://datatracker.ietf.org/doc/html/draft-pantos-hls-rfc8216bis#section-4.4.6.5
   sessionKey?: SessionKey;
   // https://datatracker.ietf.org/doc/html/draft-pantos-hls-rfc8216bis#section-4.4.6.6
   contentSteering?: ContentSteering;
+  // out of spec, custom tags
+  custom: Record<string, unknown>;
 }

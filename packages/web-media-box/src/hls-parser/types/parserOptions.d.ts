@@ -1,4 +1,5 @@
 import type { SharedState } from '../types/sharedState';
+import type { Define } from '@/hls-parser/types/parsedPlaylist';
 
 export type WarnCallback = (warn: string) => void;
 export type DebugCallback = (...debug: Array<unknown>) => void;
@@ -24,4 +25,10 @@ export interface ParserOptions {
   ignoreTags?: Set<string>;
   transformTagValue?: TransformTagValue;
   transformTagAttributes?: TransformTagAttributes;
+}
+
+export interface ParseOptions {
+  baseUrl?: URL;
+  baseDefine?: Define;
+  baseTime?: number;
 }

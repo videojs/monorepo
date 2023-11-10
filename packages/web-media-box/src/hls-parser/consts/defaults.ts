@@ -1,4 +1,4 @@
-import type { ParsedPlaylist, Segment, VariantStream } from '@/hls-parser/types/parsedPlaylist';
+import type { Define, ParsedPlaylist, Segment, VariantStream } from '@/hls-parser/types/parsedPlaylist';
 import type { SharedState } from '@/hls-parser/types/sharedState';
 
 export const createDefaultSegment = (): Segment => ({
@@ -17,6 +17,12 @@ export const createDefaultVariantStream = (): VariantStream => ({
   codecs: [],
   supplementalCodecs: [],
   allowedCpc: {},
+});
+
+export const createDefaultDefine = (): Define => ({
+  import: {},
+  name: {},
+  queryParam: {},
 });
 
 export const createDefaultParsedPlaylist = (): ParsedPlaylist => ({
@@ -38,6 +44,7 @@ export const createDefaultParsedPlaylist = (): ParsedPlaylist => ({
   renditionReports: [],
   sessionData: {},
   preloadHints: {},
+  define: createDefaultDefine(),
 });
 
 export const createDefaultSharedState = (): SharedState => ({
