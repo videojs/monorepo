@@ -9,7 +9,7 @@ import {
 } from './utils/warn.ts';
 
 import {
-  EXT_X_DEFINE,
+  // EXT_X_DEFINE,
   EXT_X_DISCONTINUITY_SEQUENCE,
   EXT_X_ENDLIST,
   EXT_X_I_FRAMES_ONLY,
@@ -39,6 +39,8 @@ import {
   EXT_X_RENDITION_REPORT,
   EXT_X_SESSION_DATA,
   EXTM3U,
+  EXT_X_SESSION_KEY,
+  EXT_X_CONTENT_STEERING,
 } from './consts/tags.ts';
 import type {
   CustomTagMap,
@@ -48,7 +50,7 @@ import type {
   TransformTagValue,
   WarnCallback,
 } from './types/parserOptions';
-import type { Segment, ParsedPlaylist, VariantStream, Define } from './types/parsedPlaylist';
+import type { ParsedPlaylist } from './types/parsedPlaylist';
 import type { SharedState } from './types/sharedState';
 import type { EmptyTagProcessor } from './tags/emptyTagProcessors.ts';
 import {
@@ -87,44 +89,15 @@ import {
   ExtXPreloadHint,
   ExtXRenditionReport,
   ExtXSessionData,
-  ExtXDefine,
+  ExtXSessionKey,
+  ExtXContentSteering,
 } from './tags/tagWithAttributesProcessors.ts';
-
-const defaultSegment: Segment = {
-  duration: 0,
-  mediaSequence: 0,
-  discontinuitySequence: 0,
-  isDiscontinuity: false,
-  isGap: false,
-  uri: '',
-  parts: [],
-};
-
-const defaultVariantStream: VariantStream = {
-  bandwidth: 0,
-  uri: '',
-};
-
-const defaultParsedPlaylist: ParsedPlaylist = {
-  m3u: false,
-  independentSegments: false,
-  endList: false,
-  iFramesOnly: false,
-  segments: [],
-  custom: {},
-  renditionGroups: {
-    audio: {},
-    video: {},
-    subtitles: {},
-    closedCaptions: {},
-  },
-  variantStreams: [],
-  iFramePlaylists: [],
-  dateRanges: [],
-  preloadHints: [],
-  renditionReports: [],
-  sessionDataTags: [],
-};
+import {
+  createDefaultParsedPlaylist,
+  createDefaultSegment,
+  createDefaultSharedState,
+  createDefaultVariantStream,
+} from '@/hls-parser/consts/defaults.ts';
 
 class Parser {
   private readonly warnCallback: WarnCallback;
@@ -149,13 +122,8 @@ class Parser {
     this.transformTagAttributes =
       options.transformTagAttributes || ((tagKey, tagAttributes): Record<string, string> => tagAttributes);
 
-    this.parsedPlaylist = structuredClone(defaultParsedPlaylist);
-
-    this.sharedState = {
-      isMultivariantPlaylist: false,
-      currentSegment: structuredClone(defaultSegment),
-      currentVariant: structuredClone(defaultVariantStream),
-    };
+    this.parsedPlaylist = createDefaultParsedPlaylist();
+    this.sharedState = createDefaultSharedState();
 
     this.emptyTagMap = {
       [EXTM3U]: new ExtM3u(this.warnCallback),
@@ -193,7 +161,8 @@ class Parser {
       [EXT_X_PRELOAD_HINT]: new ExtXPreloadHint(this.warnCallback),
       [EXT_X_RENDITION_REPORT]: new ExtXRenditionReport(this.warnCallback),
       [EXT_X_SESSION_DATA]: new ExtXSessionData(this.warnCallback),
-      [EXT_X_DEFINE]: new ExtXDefine(this.warnCallback),
+      [EXT_X_SESSION_KEY]: new ExtXSessionKey(this.warnCallback),
+      [EXT_X_CONTENT_STEERING]: new ExtXContentSteering(this.warnCallback),
     };
   }
 
@@ -256,7 +225,7 @@ class Parser {
   private handleCurrentVariant(uri: string): void {
     this.sharedState.currentVariant.uri = uri;
     this.parsedPlaylist.variantStreams.push(this.sharedState.currentVariant);
-    this.sharedState.currentVariant = structuredClone(defaultVariantStream);
+    this.sharedState.currentVariant = createDefaultVariantStream();
   }
 
   private handleCurrentSegment(uri: string): void {
@@ -303,14 +272,16 @@ class Parser {
     }
 
     this.parsedPlaylist.segments.push(this.sharedState.currentSegment);
-    this.sharedState.currentSegment = structuredClone(defaultSegment);
+    this.sharedState.currentSegment = createDefaultSegment();
   }
 
   protected clean(): ParsedPlaylist {
-    const copy = { ...this.parsedPlaylist };
-    this.parsedPlaylist = structuredClone(defaultParsedPlaylist);
+    const parsedPlaylist = this.parsedPlaylist;
 
-    return copy;
+    this.parsedPlaylist = createDefaultParsedPlaylist();
+    this.sharedState = createDefaultSharedState();
+
+    return parsedPlaylist;
   }
 
   protected transitionToNewLine(stateMachine: StateMachineTransition): void {
@@ -319,15 +290,7 @@ class Parser {
 }
 
 export class FullPlaylistParser extends Parser {
-  public parseFullPlaylistString(playlist: string, define?: Define, parentUrl?: URL): ParsedPlaylist {
-    if (define) {
-      this.sharedState.define = define;
-    }
-
-    if (parentUrl) {
-      this.sharedState.parentUrl = parentUrl;
-    }
-
+  public parseFullPlaylistString(playlist: string): ParsedPlaylist {
     const stateMachine = createStateMachine(this.tagInfoCallback, this.uriInfoCallback);
     const length = playlist.length;
 
@@ -340,15 +303,7 @@ export class FullPlaylistParser extends Parser {
     return this.clean();
   }
 
-  public parseFullPlaylistBuffer(playlist: Uint8Array, define?: Define, parentUrl?: URL): ParsedPlaylist {
-    if (define) {
-      this.sharedState.define = define;
-    }
-
-    if (parentUrl) {
-      this.sharedState.parentUrl = parentUrl;
-    }
-
+  public parseFullPlaylistBuffer(playlist: Uint8Array): ParsedPlaylist {
     const stateMachine = createStateMachine(this.tagInfoCallback, this.uriInfoCallback);
     const length = playlist.length;
 
@@ -365,15 +320,7 @@ export class FullPlaylistParser extends Parser {
 export class ProgressiveParser extends Parser {
   private stateMachine: StateMachineTransition | null = null;
 
-  public pushString(chunk: string, define?: Define, parentUrl?: URL): void {
-    if (define) {
-      this.sharedState.define = define;
-    }
-
-    if (parentUrl) {
-      this.sharedState.parentUrl = parentUrl;
-    }
-
+  public pushString(chunk: string): void {
     if (this.stateMachine === null) {
       this.stateMachine = createStateMachine(this.tagInfoCallback, this.uriInfoCallback);
     }
@@ -383,15 +330,7 @@ export class ProgressiveParser extends Parser {
     }
   }
 
-  public pushBuffer(chunk: Uint8Array, define?: Define, parentUrl?: URL): void {
-    if (define) {
-      this.sharedState.define = define;
-    }
-
-    if (parentUrl) {
-      this.sharedState.parentUrl = parentUrl;
-    }
-
+  public pushBuffer(chunk: Uint8Array): void {
     if (this.stateMachine === null) {
       this.stateMachine = createStateMachine(this.tagInfoCallback, this.uriInfoCallback);
     }

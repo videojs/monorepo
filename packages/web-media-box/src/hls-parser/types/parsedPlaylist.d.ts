@@ -115,18 +115,17 @@ export interface Resolution {
 }
 
 export type CpcRecord = Record<string, Array<string>>;
-export type AllowedCpc = Array<CpcRecord>;
 
 export interface BaseStreamInf {
   uri: string;
   bandwidth: number;
   averageBandwidth?: number;
   score?: number;
-  codecs?: Array<string>;
-  supplementalCodecs?: Array<string>;
+  codecs: Array<string>;
+  supplementalCodecs: Array<string>;
   resolution?: Resolution;
   hdcpLevel?: 'TYPE-0' | 'TYPE-1' | 'NONE';
-  allowedCpc?: AllowedCpc;
+  allowedCpc: CpcRecord;
   videoRange?: 'SDR' | 'HLG' | 'PQ';
   stableVariantId?: string;
   video?: string;
@@ -146,23 +145,23 @@ export interface IFramePlaylist extends BaseStreamInf {}
 
 export interface Skip {
   skippedSegments: number;
-  recentlyRemovedDateranges?: Array<string>;
+  recentlyRemovedDateRanges: Array<string>;
 }
 
-export enum HintType {
-  PART = 'PART',
-  MAP = 'MAP',
-}
+export type PreloadHintType = 'PART' | 'MAP';
 
 export interface PreloadHint {
-  type: HintType;
   uri: string;
-  byterangeStart?: number;
-  byterangeLength?: number;
+  byteRange?: Range;
+}
+
+export interface PreloadHints {
+  map?: PreloadHint;
+  part?: PreloadHint;
 }
 
 export interface RenditionReport {
-  uri?: string;
+  uri: string;
   lastMsn?: number;
   lastPart?: number;
 }
@@ -173,6 +172,15 @@ export interface SessionData {
   uri?: string;
   format?: 'JSON' | 'RAW';
   language?: string;
+}
+
+export interface SessionKey extends Encryption {
+  method: 'AES-128' | 'SAMPLE-AES';
+}
+
+export interface ContentSteering {
+  serverUri: string;
+  pathwayId?: string;
 }
 
 export type PlaylistType = 'EVENT' | 'VOD';
@@ -214,9 +222,13 @@ export interface ParsedPlaylist {
   // https://datatracker.ietf.org/doc/html/draft-pantos-hls-rfc8216bis#section-4.4.5.2
   skip?: Skip;
   // https://datatracker.ietf.org/doc/html/draft-pantos-hls-rfc8216bis#section-4.4.5.3
-  preloadHints: Array<PreloadHint>;
+  preloadHints: PreloadHints;
   // https://datatracker.ietf.org/doc/html/draft-pantos-hls-rfc8216bis#section-4.4.5.4
   renditionReports: Array<RenditionReport>;
   // https://datatracker.ietf.org/doc/html/draft-pantos-hls-rfc8216bis#section-4.4.6.4
-  sessionDataTags: Array<SessionData>;
+  sessionData: Record<string, SessionData>;
+  // https://datatracker.ietf.org/doc/html/draft-pantos-hls-rfc8216bis#section-4.4.6.5
+  sessionKey?: SessionKey;
+  // https://datatracker.ietf.org/doc/html/draft-pantos-hls-rfc8216bis#section-4.4.6.6
+  contentSteering?: ContentSteering;
 }

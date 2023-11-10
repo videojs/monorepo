@@ -6,12 +6,14 @@ import type {
   RenditionGroups,
   GroupId,
   Resolution,
-  AllowedCpc,
   IFramePlaylist,
   BaseStreamInf,
   DateRange,
   DateRangeCue,
-  HintType,
+  PreloadHintType,
+  SessionKey,
+  Encryption,
+  CpcRecord,
 } from '../types/parsedPlaylist';
 import type { SharedState } from '../types/sharedState';
 import { TagProcessor } from './base.ts';
@@ -31,7 +33,8 @@ import {
   EXT_X_PRELOAD_HINT,
   EXT_X_RENDITION_REPORT,
   EXT_X_SESSION_DATA,
-  EXT_X_DEFINE,
+  EXT_X_SESSION_KEY,
+  EXT_X_CONTENT_STEERING,
 } from '../consts/tags.ts';
 import { parseBoolean, parseHex } from '../utils/parse.ts';
 
@@ -130,14 +133,28 @@ export class ExtXServerControl extends TagWithAttributesProcessor {
   }
 }
 
-export class ExtXKey extends TagWithAttributesProcessor {
-  private static readonly METHOD = 'METHOD';
-  private static readonly URI = 'URI';
-  private static readonly IV = 'IV';
-  private static readonly KEYFORMAT = 'KEYFORMAT';
-  private static readonly KEYFORMATVERSIONS = 'KEYFORMATVERSIONS';
+abstract class EncryptionTagProcessor extends TagWithAttributesProcessor {
+  protected static readonly METHOD = 'METHOD';
+  protected static readonly URI = 'URI';
+  protected static readonly IV = 'IV';
+  protected static readonly KEYFORMAT = 'KEYFORMAT';
+  protected static readonly KEYFORMATVERSIONS = 'KEYFORMATVERSIONS';
+  protected readonly requiredAttributes = new Set([EncryptionTagProcessor.METHOD]);
 
-  protected readonly requiredAttributes = new Set([ExtXKey.METHOD]);
+  protected parseEncryptionTag(tagAttributes: Record<string, string>): Encryption | SessionKey {
+    return {
+      method: tagAttributes[EncryptionTagProcessor.METHOD] as 'NONE' | 'AES-128' | 'SAMPLE-AES',
+      uri: tagAttributes[EncryptionTagProcessor.URI],
+      iv: tagAttributes[EncryptionTagProcessor.IV],
+      keyFormat: tagAttributes[EncryptionTagProcessor.KEYFORMAT] || 'identity',
+      keyFormatVersions: tagAttributes[EncryptionTagProcessor.KEYFORMATVERSIONS]
+        ? tagAttributes[EncryptionTagProcessor.KEYFORMATVERSIONS].split('/').map(Number)
+        : [1],
+    };
+  }
+}
+
+export class ExtXKey extends EncryptionTagProcessor {
   protected readonly tag = EXT_X_KEY;
 
   protected safeProcess(
@@ -145,23 +162,14 @@ export class ExtXKey extends TagWithAttributesProcessor {
     playlist: ParsedPlaylist,
     sharedState: SharedState
   ): void {
-    const method = tagAttributes[ExtXKey.METHOD];
-    const uri = tagAttributes[ExtXKey.URI];
+    const encryption = this.parseEncryptionTag(tagAttributes) as Encryption;
 
     // URI attribute is required unless the METHOD is 'NONE'
-    if (method !== 'NONE' && !uri) {
+    if (encryption.method !== 'NONE' && !encryption.uri) {
       return this.warnCallback(missingRequiredAttributeWarn(this.tag, ExtXKey.URI));
     }
 
-    sharedState.currentEncryption = {
-      method: method as 'NONE' | 'AES-128' | 'SAMPLE-AES',
-      uri: uri,
-      iv: tagAttributes[ExtXKey.IV],
-      keyFormat: tagAttributes[ExtXKey.KEYFORMAT] || 'identity',
-      keyFormatVersions: tagAttributes[ExtXKey.KEYFORMATVERSIONS]
-        ? tagAttributes[ExtXKey.KEYFORMATVERSIONS].split('/').map(Number)
-        : [1],
-    };
+    sharedState.currentEncryption = encryption;
   }
 }
 
@@ -243,13 +251,15 @@ export class ExtXSkip extends TagWithAttributesProcessor {
   private static readonly SKIPPED_SEGMENTS = 'SKIPPED-SEGMENTS';
   private static readonly RECENTLY_REMOVED_DATERANGES = 'RECENTLY-REMOVED-DATERANGES';
 
-  protected requiredAttributes = new Set([ExtXSkip.SKIPPED_SEGMENTS]);
+  protected readonly requiredAttributes = new Set([ExtXSkip.SKIPPED_SEGMENTS]);
   protected readonly tag = EXT_X_SKIP;
 
   protected safeProcess(tagAttributes: Record<string, string>, playlist: ParsedPlaylist): void {
     playlist.skip = {
       skippedSegments: Number(tagAttributes[ExtXSkip.SKIPPED_SEGMENTS]),
-      recentlyRemovedDateranges: tagAttributes[ExtXSkip.RECENTLY_REMOVED_DATERANGES].split('\t'),
+      recentlyRemovedDateRanges: ExtXSkip.RECENTLY_REMOVED_DATERANGES
+        ? tagAttributes[ExtXSkip.RECENTLY_REMOVED_DATERANGES].split('\t')
+        : [],
     };
   }
 }
@@ -267,6 +277,7 @@ export class ExtXMedia extends TagWithAttributesProcessor {
   private static readonly INSTREAM_ID = 'INSTREAM-ID';
   private static readonly CHARACTERISTICS = 'CHARACTERISTICS';
   private static readonly CHANNELS = 'CHANNELS';
+  private static readonly STABLE_RENDITION_ID = 'STABLE-RENDITION-ID';
   private static readonly typeToKeyMap: Record<string, keyof RenditionGroups> = {
     AUDIO: 'audio',
     VIDEO: 'video',
@@ -293,6 +304,7 @@ export class ExtXMedia extends TagWithAttributesProcessor {
         ? tagAttributes[ExtXMedia.CHARACTERISTICS].split(',')
         : [],
       channels: tagAttributes[ExtXMedia.CHANNELS] ? tagAttributes[ExtXMedia.CHANNELS].split('/') : [],
+      stableRenditionId: tagAttributes[ExtXMedia.STABLE_RENDITION_ID],
     };
 
     const renditionTypeKey = ExtXMedia.typeToKeyMap[rendition.type];
@@ -332,19 +344,21 @@ abstract class BaseStreamInfProcessor extends TagWithAttributesProcessor {
     }
   }
 
-  protected parseAllowedCpc(value?: string): AllowedCpc {
+  protected parseAllowedCpc(value?: string): CpcRecord {
     const parsedAllowedCpc = value ? value.split(',') : [];
-    const allowedCpc: AllowedCpc = [];
+
+    const cpcRecord: CpcRecord = {};
 
     parsedAllowedCpc.forEach((entry) => {
       const parsedEntry = entry.split(':');
       const keyFormat = parsedEntry[0];
-      const cpcs = parsedEntry[1].split('/');
 
-      allowedCpc.push({ [keyFormat]: cpcs });
+      if (keyFormat) {
+        cpcRecord[keyFormat] = parsedEntry[1] ? parsedEntry[1].split('/') : [];
+      }
     });
 
-    return allowedCpc;
+    return cpcRecord;
   }
 
   protected parseCommonAttributes(tagAttributes: Record<string, string>): BaseStreamInf {
@@ -358,10 +372,10 @@ abstract class BaseStreamInfProcessor extends TagWithAttributesProcessor {
         ? Number(tagAttributes[BaseStreamInfProcessor.SCORE])
         : undefined,
       codecs: tagAttributes[BaseStreamInfProcessor.CODECS]
-        ? tagAttributes[BaseStreamInfProcessor.CODECS].split(',')
+        ? tagAttributes[BaseStreamInfProcessor.CODECS].split(',').map((codec) => codec.trim())
         : [],
       supplementalCodecs: tagAttributes[BaseStreamInfProcessor.SUPPLEMENTAL_CODECS]
-        ? tagAttributes[BaseStreamInfProcessor.SUPPLEMENTAL_CODECS].split(',')
+        ? tagAttributes[BaseStreamInfProcessor.SUPPLEMENTAL_CODECS].split(',').map((codec) => codec.trim())
         : [],
       resolution: this.parseResolution(tagAttributes[BaseStreamInfProcessor.RESOLUTION]),
       hdcpLevel: tagAttributes[BaseStreamInfProcessor.HDCP_LEVEL] as 'NONE' | 'TYPE-0' | 'TYPE-1' | undefined,
@@ -412,10 +426,6 @@ export class ExtXIFrameStreamInf extends BaseStreamInfProcessor {
       ...this.parseCommonAttributes(tagAttributes),
       uri: tagAttributes[ExtXIFrameStreamInf.URI],
     };
-
-    if (!playlist.iFramePlaylists) {
-      playlist.iFramePlaylists = [];
-    }
 
     playlist.iFramePlaylists.push(iFrameStreamInf);
   }
@@ -480,18 +490,48 @@ export class ExtXPreloadHint extends TagWithAttributesProcessor {
   private static readonly BYTERANGE_START = 'BYTERANGE-START';
   private static readonly BYTERANGE_LENGTH = 'BYTERANGE-LENGTH';
 
-  protected requiredAttributes = new Set([ExtXPreloadHint.TYPE, ExtXPreloadHint.URI]);
-  protected tag = EXT_X_PRELOAD_HINT;
+  protected readonly requiredAttributes = new Set([ExtXPreloadHint.TYPE, ExtXPreloadHint.URI]);
+  protected readonly tag = EXT_X_PRELOAD_HINT;
 
   protected safeProcess(tagAttributes: Record<string, string>, playlist: ParsedPlaylist): void {
-    const preloadHint = {
-      type: tagAttributes[ExtXPreloadHint.TYPE] as HintType,
-      uri: tagAttributes[ExtXPreloadHint.URI],
-      byterangeStart: Number(tagAttributes[ExtXPreloadHint.BYTERANGE_START]),
-      byterangeLength: Number(tagAttributes[ExtXPreloadHint.BYTERANGE_LENGTH]),
-    };
+    const type = tagAttributes[ExtXPreloadHint.TYPE] as PreloadHintType;
+    const uri = tagAttributes[ExtXPreloadHint.URI];
+    const pStart = tagAttributes[ExtXPreloadHint.BYTERANGE_START];
+    const pLength = tagAttributes[ExtXPreloadHint.BYTERANGE_LENGTH];
 
-    playlist.preloadHints.push(preloadHint);
+    /**
+     * There are 4 scenarios with Byte Range for preload-hint
+     * 1. Start is available, Length is available:
+     * Request resource from start till (start + length - 1)
+     * 2. Start is available, Length is not available:
+     * Request resource from start till the end of the resource
+     * 3. Start is not available, Length is available:
+     * Request from 0 till (length - 1)
+     * 4. Start is not available, Length is not available:
+     * Request entire resource (default scenario)
+     */
+
+    let byteRange;
+
+    if (pStart && pLength) {
+      const start = Number(pStart);
+      const end = start + Number(pLength) - 1;
+      byteRange = { start, end };
+    } else if (pStart && !pLength) {
+      byteRange = { start: Number(pStart), end: Number.MAX_SAFE_INTEGER };
+    } else if (!pStart && pLength) {
+      byteRange = { start: 0, end: Number(pLength) - 1 };
+    }
+
+    const preloadHint = { uri, byteRange };
+
+    if (type === 'PART') {
+      playlist.preloadHints.part = preloadHint;
+    }
+
+    if (type === 'MAP') {
+      playlist.preloadHints.map = preloadHint;
+    }
   }
 }
 
@@ -500,14 +540,18 @@ export class ExtXRenditionReport extends TagWithAttributesProcessor {
   private static readonly LAST_MSN = 'LAST-MSN';
   private static readonly LAST_PART = 'LAST-PART';
 
-  protected requiredAttributes = new Set([]);
-  protected tag = EXT_X_RENDITION_REPORT;
+  protected readonly requiredAttributes = new Set([ExtXRenditionReport.URI]);
+  protected readonly tag = EXT_X_RENDITION_REPORT;
 
   protected safeProcess(tagAttributes: Record<string, string>, playlist: ParsedPlaylist): void {
     const renditionReport = {
       uri: tagAttributes[ExtXRenditionReport.URI],
-      lastMsn: Number(tagAttributes[ExtXRenditionReport.LAST_MSN]),
-      lastPart: Number(tagAttributes[ExtXRenditionReport.LAST_PART]),
+      lastMsn: tagAttributes[ExtXRenditionReport.LAST_MSN]
+        ? Number(tagAttributes[ExtXRenditionReport.LAST_MSN])
+        : undefined,
+      lastPart: tagAttributes[ExtXRenditionReport.LAST_PART]
+        ? Number(tagAttributes[ExtXRenditionReport.LAST_PART])
+        : undefined,
     };
 
     playlist.renditionReports.push(renditionReport);
@@ -521,8 +565,8 @@ export class ExtXSessionData extends TagWithAttributesProcessor {
   private static readonly FORMAT = 'FORMAT';
   private static readonly LANGUAGE = 'LANGUAGE';
 
-  protected requiredAttributes = new Set([ExtXSessionData.DATA_ID]);
-  protected tag = EXT_X_SESSION_DATA;
+  protected readonly requiredAttributes = new Set([ExtXSessionData.DATA_ID]);
+  protected readonly tag = EXT_X_SESSION_DATA;
 
   protected safeProcess(tagAttributes: Record<string, string>, playlist: ParsedPlaylist): void {
     const sessionData = {
@@ -533,57 +577,29 @@ export class ExtXSessionData extends TagWithAttributesProcessor {
       language: tagAttributes[ExtXSessionData.LANGUAGE],
     };
 
-    playlist.sessionDataTags.push(sessionData);
+    playlist.sessionData[sessionData.dataId] = sessionData;
   }
 }
 
-export class ExtXDefine extends TagWithAttributesProcessor {
-  private static readonly NAME = 'NAME';
-  private static readonly VALUE = 'VALUE';
-  private static readonly IMPORT = 'IMPORT';
-  private static readonly QUERYPARAM = 'QUERYPARAM';
+export class ExtXSessionKey extends EncryptionTagProcessor {
+  protected readonly tag = EXT_X_SESSION_KEY;
 
-  protected requiredAttributes = new Set([]);
-  protected tag = EXT_X_DEFINE;
-
-  // TODO: not sure where to get the value for the importName?
-  protected getValueForImportDefine(importName: string): string {
-    return importName;
+  protected safeProcess(tagAttributes: Record<string, string>, playlist: ParsedPlaylist): void {
+    playlist.sessionKey = this.parseEncryptionTag(tagAttributes) as SessionKey;
   }
+}
 
-  // gets this from the parent url
-  protected getValueForQueryParamDefine(queryParam: string, parentUrl: URL | undefined): string | null {
-    return parentUrl?.searchParams.get(queryParam) || undefined;
-  }
+export class ExtXContentSteering extends TagWithAttributesProcessor {
+  private static readonly SERVER_URI = 'SERVER-URI';
+  private static readonly PATHWAY_ID = 'PATHWAY-ID';
 
-  protected safeProcess(
-    tagAttributes: Record<string, string>,
-    playlist: ParsedPlaylist,
-    sharedState: SharedState
-  ): void {
-    // unsure if this needs to be instantiated here or will be instantiated elsewhere?
-    if (!playlist.define) {
-      playlist.define = { name: {}, import: {}, queryParam: {} };
-    }
+  protected readonly requiredAttributes = new Set([ExtXContentSteering.SERVER_URI]);
+  protected readonly tag = EXT_X_CONTENT_STEERING;
 
-    if (tagAttributes[ExtXDefine.NAME]) {
-      if (!tagAttributes[ExtXDefine.VALUE]) {
-        this.warnCallback(missingRequiredAttributeWarn(this.tag, ExtXDefine.VALUE));
-      } else {
-        playlist.define.name[tagAttributes[ExtXDefine.NAME]] = tagAttributes[ExtXDefine.VALUE];
-      }
-    }
-
-    if (tagAttributes[ExtXDefine.IMPORT]) {
-      playlist.define.import[tagAttributes[ExtXDefine.IMPORT]] = this.getValueForImportDefine(
-        tagAttributes[ExtXDefine.IMPORT]
-      );
-    }
-    if (tagAttributes[ExtXDefine.QUERYPARAM]) {
-      playlist.define.queryParam[tagAttributes[ExtXDefine.QUERYPARAM]] = this.getValueForQueryParamDefine(
-        tagAttributes[ExtXDefine.QUERYPARAM],
-        sharedState.parentUrl
-      );
-    }
+  protected safeProcess(tagAttributes: Record<string, string>, playlist: ParsedPlaylist): void {
+    playlist.contentSteering = {
+      serverUri: tagAttributes[ExtXContentSteering.SERVER_URI],
+      pathwayId: tagAttributes[ExtXContentSteering.PATHWAY_ID],
+    };
   }
 }

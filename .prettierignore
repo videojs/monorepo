@@ -1,1 +1,4 @@
 **/*.toml
+.husky
+.prettierignore
+bun.lockb

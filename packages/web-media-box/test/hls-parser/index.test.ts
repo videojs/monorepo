@@ -1,7 +1,7 @@
 import { FullPlaylistParser, ProgressiveParser } from '@/hls-parser';
 import type { Mock } from 'bun:test';
 import { describe, it, expect, beforeEach, mock } from 'bun:test';
-import type { Define, ParsedPlaylist } from '@/hls-parser/types/parsedPlaylist';
+import type { ParsedPlaylist } from '@/hls-parser/types/parsedPlaylist';
 import { parseHex } from '@/hls-parser/utils/parse.ts';
 
 describe('hls-parser spec', () => {
@@ -19,24 +19,6 @@ describe('hls-parser spec', () => {
     cb(progressivePlaylistParser.done());
 
     progressivePlaylistParser.pushBuffer(buffer);
-    cb(progressivePlaylistParser.done());
-  };
-
-  const testAllCombinationsDefine = (
-    playlist: string,
-    define: Define,
-    parentUrl: URL,
-    cb: (parsed: ParsedPlaylist) => void
-  ): void => {
-    const buffer = new Uint8Array(playlist.split('').map((char) => char.charCodeAt(0)));
-
-    cb(fullPlaylistParser.parseFullPlaylistString(playlist, define, parentUrl));
-    cb(fullPlaylistParser.parseFullPlaylistBuffer(buffer, define, parentUrl));
-
-    progressivePlaylistParser.pushString(playlist, define, parentUrl);
-    cb(progressivePlaylistParser.done());
-
-    progressivePlaylistParser.pushBuffer(buffer, define, parentUrl);
     cb(progressivePlaylistParser.done());
   };
 
@@ -1025,7 +1007,7 @@ segment-2.mp4
 #EXT-X-BYTERANGE:5@0
 #EXTINF:4
 segment-3.mp4
-#EXT-X-DATERANGE:ID="splice-6FFFFFF1",START-DATE="2014-03-05T11:15:00Z",PLANNED-DURATION=59.993,SCTE35-OUT=0xFC002F000000000000FF000014056FFFFFF000E081622DCAFF000052636200000000000A0008029896F50000008700000000
+#EXT-X-DATERANGE:ID="splice-6FFFFFF1",X-CUSTOM-ATTRIBUTE=12,START-DATE="2014-03-05T11:15:00Z",PLANNED-DURATION=59.993,SCTE35-OUT=0xFC002F000000000000FF000014056FFFFFF000E081622DCAFF000052636200000000000A0008029896F50000008700000000
 `;
       testAllCombinations(playlist, (parsed) => {
         expect(parsed.dateRanges.length).toBe(2);
@@ -1033,7 +1015,7 @@ segment-3.mp4
         expect(parsed.dateRanges[0].id).toBe('splice-6FFFFFF0');
         expect(parsed.dateRanges[0].startDate).toBe(1394018100000);
         expect(parsed.dateRanges[0].plannedDuration).toBe(59.993);
-
+        expect(parsed.dateRanges[0].clientAttributes).toEqual({});
         expect(parsed.dateRanges[0].scte35Out).toEqual(
           parseHex(
             '0xFC002F000000000000FF000014056FFFFFF000E081622DCAFF000052636200000000000A0008029896F50000008700000000'
@@ -1043,6 +1025,7 @@ segment-3.mp4
         expect(parsed.dateRanges[1].id).toBe('splice-6FFFFFF1');
         expect(parsed.dateRanges[1].startDate).toBe(1394018100000);
         expect(parsed.dateRanges[1].plannedDuration).toBe(59.993);
+        expect(parsed.dateRanges[1].clientAttributes).toEqual({ 'X-CUSTOM-ATTRIBUTE': '12' });
 
         expect(parsed.dateRanges[1].scte35Out).toEqual(
           parseHex(
@@ -1053,45 +1036,366 @@ segment-3.mp4
     });
   });
 
-  describe('#EXT-X-DEFINE', () => {
+  describe('#EXT-X-SKIP', () => {
     it('should be undefined by default', () => {
       const playlist = `#EXTM3U`;
+
       testAllCombinations(playlist, (parsed) => {
-        expect(parsed.define).toBe(undefined);
+        expect(parsed.skip).toBeUndefined();
       });
     });
 
-    it('ext-x-define:name', () => {
-      const playlist = `#EXTM3U
-#EXT-X-DEFINE:NAME="hello",QUERYPARAM="elf",IMPORT="imported"
-#EXT-X-DEFINE:QUERYPARAM="okay"`;
+    it('should parse from a playlist', () => {
+      const playlist = `#EXTM3U\n#EXT-X-SKIP:SKIPPED-SEGMENTS=10,RECENTLY-REMOVED-DATERANGES="1\t2\t3\t4"`;
 
-      testAllCombinationsDefine(
-        playlist,
-        { name: {}, import: {}, queryParam: {} },
-        new URL('https://www.example.com/?elf=lmao&okay=dokie'),
-        (parsed) => {
-          expect(parsed.define?.name).toBe(undefined);
-        }
-      );
+      testAllCombinations(playlist, (parsed) => {
+        expect(parsed.skip?.skippedSegments).toBe(10);
+        expect(parsed.skip?.recentlyRemovedDateRanges).toEqual(['1', '2', '3', '4']);
+      });
+    });
+  });
+
+  describe('#EXT-X-PRELOAD-HINT', () => {
+    it('should be empty by default', () => {
+      const playlist = `#EXTM3U`;
+      testAllCombinations(playlist, (parsed) => {
+        expect(parsed.preloadHints).toEqual({});
+      });
     });
 
-    // it('ext-x-define:queryparam', () => {
-    //   const playlist = `#EXTM3U\n#EXT-X-DEFINE:NAME="hello",QUERYPARAM="elf",IMPORT="imported"`;
+    it('should parse from a playlist', () => {
+      let playlist = `#EXTM3U
+#EXT-X-PRELOAD-HINT:TYPE=MAP,URI="preload-hint-uri-map"
+#EXT-X-PRELOAD-HINT:TYPE=PART,URI="preload-hint-uri"
+`;
+      testAllCombinations(playlist, (parsed) => {
+        // range: entire resource
+        expect(parsed.preloadHints).toEqual({
+          map: { uri: 'preload-hint-uri-map' },
+          part: { uri: 'preload-hint-uri' },
+        });
+      });
 
-    //   testAllCombinationsDefine(playlist, {}, new URL('https://www.example.com/?elf=lmao'), (parsed) => {
-    //     console.log(parsed.define);
-    //     expect(parsed.define?.name).toBe(undefined);
-    //   });
-    // });
+      playlist = `#EXTM3U
+#EXT-X-PRELOAD-HINT:TYPE=MAP,URI="preload-hint-uri-map",BYTERANGE-START=5
+#EXT-X-PRELOAD-HINT:TYPE=PART,URI="preload-hint-uri",BYTERANGE-START=10
+`;
+      testAllCombinations(playlist, (parsed) => {
+        // range: from 10 till end of the resource
+        expect(parsed.preloadHints).toEqual({
+          map: {
+            uri: 'preload-hint-uri-map',
+            byteRange: { start: 5, end: Number.MAX_SAFE_INTEGER },
+          },
+          part: {
+            uri: 'preload-hint-uri',
+            byteRange: { start: 10, end: Number.MAX_SAFE_INTEGER },
+          },
+        });
+      });
 
-    // it('ext-x-define:import', () => {
-    //   const playlist = `#EXTM3U\n#EXT-X-DEFINE:NAME="hello",QUERYPARAM="elf",IMPORT="imported"`;
+      playlist = `#EXTM3U
+#EXT-X-PRELOAD-HINT:TYPE=MAP,URI="preload-hint-uri-map",BYTERANGE-START=5,BYTERANGE-LENGTH=10
+#EXT-X-PRELOAD-HINT:TYPE=PART,URI="preload-hint-uri",BYTERANGE-START=10,BYTERANGE-LENGTH=20
+`;
+      testAllCombinations(playlist, (parsed) => {
+        // range: from 10 till 29
+        expect(parsed.preloadHints).toEqual({
+          map: {
+            uri: 'preload-hint-uri-map',
+            byteRange: { start: 5, end: 14 },
+          },
+          part: {
+            uri: 'preload-hint-uri',
+            byteRange: { start: 10, end: 29 },
+          },
+        });
+      });
 
-    //   testAllCombinationsDefine(playlist, {}, new URL('https://www.example.com/?elf=lmao'), (parsed) => {
-    //     console.log(parsed.define);
-    //     expect(parsed.define?.name).toBe(undefined);
-    //   });
-    // });
+      playlist = `#EXTM3U
+#EXT-X-PRELOAD-HINT:TYPE=MAP,URI="preload-hint-uri-map",BYTERANGE-LENGTH=20
+#EXT-X-PRELOAD-HINT:TYPE=PART,URI="preload-hint-uri",BYTERANGE-LENGTH=20
+`;
+      testAllCombinations(playlist, (parsed) => {
+        // range: from 0 till 19
+        expect(parsed.preloadHints).toEqual({
+          map: {
+            uri: 'preload-hint-uri-map',
+            byteRange: { start: 0, end: 19 },
+          },
+          part: {
+            uri: 'preload-hint-uri',
+            byteRange: { start: 0, end: 19 },
+          },
+        });
+      });
+    });
+  });
+
+  describe('#EXT-X-RENDITION-REPORT', () => {
+    it('should be empty by default', () => {
+      const playlist = `#EXTM3U`;
+      testAllCombinations(playlist, (parsed) => {
+        expect(parsed.renditionReports).toEqual([]);
+      });
+    });
+
+    it('should parse form a playlist', () => {
+      const playlist = `#EXTM3U
+#EXT-X-RENDITION-REPORT:URI=rendition-1,LAST-MSN=10,LAST-PART=2
+#EXT-X-RENDITION-REPORT:URI=rendition-2,LAST-MSN=10
+#EXT-X-RENDITION-REPORT:URI=rendition-3
+`;
+      testAllCombinations(playlist, (parsed) => {
+        expect(parsed.renditionReports).toEqual([
+          { uri: 'rendition-1', lastMsn: 10, lastPart: 2 },
+          { uri: 'rendition-2', lastMsn: 10 },
+          { uri: 'rendition-3' },
+        ]);
+      });
+    });
+  });
+
+  describe('#EXT-X-STREAM-INF', () => {
+    it('should be empty by default', () => {
+      const playlist = `#EXTM3U`;
+      testAllCombinations(playlist, (parsed) => {
+        expect(parsed.variantStreams).toEqual([]);
+      });
+    });
+
+    it('should parse from a playlist', () => {
+      const playlist = `#EXTM3U
+#EXT-X-STREAM-INF:BANDWIDTH=123,AVERAGE-BANDWIDTH=123,SCORE=2.5,CODECS="mp4a.40.2, avc1.4d401e",SUPPLEMENTAL-CODECS="dvh1.08.07/db4h, dvh1.08.08/db4h",RESOLUTION=416x234,FRAME-RATE=50,HDCP-LEVEL=TYPE-1,ALLOWED-CPC="com.example.drm1:SMART-TV/PC,com.example.drm2:HW",VIDEO-RANGE=SDR,STABLE-VARIANT-ID="stream-1-id",AUDIO="audio-group-id",VIDEO="video-group-id",SUBTITLES="subtitles-group-id",CLOSED-CAPTIONS="closed-captions-group-id",PATHWAY-ID="pathway-id"
+stream-1.m3u8
+#EXT-X-STREAM-INF:BANDWIDTH=234
+stream-2.m3u8
+`;
+      testAllCombinations(playlist, (parsed) => {
+        expect(parsed.variantStreams.length).toBe(2);
+        expect(parsed.variantStreams[0]).toEqual({
+          uri: 'stream-1.m3u8',
+          bandwidth: 123,
+          averageBandwidth: 123,
+          score: 2.5,
+          codecs: ['mp4a.40.2', 'avc1.4d401e'],
+          supplementalCodecs: ['dvh1.08.07/db4h', 'dvh1.08.08/db4h'],
+          resolution: {
+            width: 416,
+            height: 234,
+          },
+          hdcpLevel: 'TYPE-1',
+          allowedCpc: {
+            'com.example.drm1': ['SMART-TV', 'PC'],
+            'com.example.drm2': ['HW'],
+          },
+          videoRange: 'SDR',
+          stableVariantId: 'stream-1-id',
+          frameRate: 50,
+          audio: 'audio-group-id',
+          video: 'video-group-id',
+          subtitles: 'subtitles-group-id',
+          closedCaptions: 'closed-captions-group-id',
+          pathwayId: 'pathway-id',
+        });
+        expect(parsed.variantStreams[1]).toEqual({
+          uri: 'stream-2.m3u8',
+          bandwidth: 234,
+          codecs: [],
+          supplementalCodecs: [],
+          allowedCpc: {},
+        });
+      });
+    });
+  });
+
+  describe('#EXT-X-I-FRAME-STREAM-INF', () => {
+    it('should be empty by default', () => {
+      const playlist = `#EXTM3U`;
+      testAllCombinations(playlist, (parsed) => {
+        expect(parsed.iFramePlaylists).toEqual([]);
+      });
+    });
+
+    it('should parse from a playlist', () => {
+      const playlist = `#EXTM3U
+#EXT-X-I-FRAME-STREAM-INF:URI="stream-1.m3u8",BANDWIDTH=123,AVERAGE-BANDWIDTH=123,SCORE=2.5,CODECS="mp4a.40.2, avc1.4d401e",SUPPLEMENTAL-CODECS="dvh1.08.07/db4h, dvh1.08.08/db4h",RESOLUTION=416x234,HDCP-LEVEL=TYPE-1,ALLOWED-CPC="com.example.drm1:SMART-TV/PC,com.example.drm2:HW",VIDEO-RANGE=SDR,STABLE-VARIANT-ID="stream-1-id",VIDEO="video-group-id",PATHWAY-ID="pathway-id"
+#EXT-X-I-FRAME-STREAM-INF:URI="stream-2.m3u8",BANDWIDTH=234
+`;
+      testAllCombinations(playlist, (parsed) => {
+        expect(parsed.iFramePlaylists.length).toBe(2);
+        expect(parsed.iFramePlaylists[0]).toEqual({
+          uri: 'stream-1.m3u8',
+          bandwidth: 123,
+          averageBandwidth: 123,
+          score: 2.5,
+          codecs: ['mp4a.40.2', 'avc1.4d401e'],
+          supplementalCodecs: ['dvh1.08.07/db4h', 'dvh1.08.08/db4h'],
+          resolution: {
+            width: 416,
+            height: 234,
+          },
+          hdcpLevel: 'TYPE-1',
+          allowedCpc: {
+            'com.example.drm1': ['SMART-TV', 'PC'],
+            'com.example.drm2': ['HW'],
+          },
+          videoRange: 'SDR',
+          stableVariantId: 'stream-1-id',
+          video: 'video-group-id',
+          pathwayId: 'pathway-id',
+        });
+        expect(parsed.iFramePlaylists[1]).toEqual({
+          uri: 'stream-2.m3u8',
+          bandwidth: 234,
+          codecs: [],
+          supplementalCodecs: [],
+          allowedCpc: {},
+        });
+      });
+    });
+  });
+
+  describe('#EXT-X-SESSION-DATA', () => {
+    it('should be empty by default', () => {
+      const playlist = `#EXTM3U`;
+      testAllCombinations(playlist, (parsed) => {
+        expect(parsed.sessionData).toEqual({});
+      });
+    });
+
+    it('should parse from a playlist', () => {
+      const playlist = `#EXTM3U
+#EXT-X-SESSION-DATA:DATA-ID="com.example.movie.title",VALUE="data-value-1",URI="data-uri.json",FORMAT="JSON",LANGUAGE="en"
+#EXT-X-SESSION-DATA:DATA-ID="com.example.movie.subtitle",VALUE="data-value-2",URI="data-uri.bin",FORMAT="RAW",LANGUAGE="en"
+`;
+      testAllCombinations(playlist, (parsed) => {
+        expect(parsed.sessionData).toEqual({
+          'com.example.movie.title': {
+            dataId: 'com.example.movie.title',
+            value: 'data-value-1',
+            uri: 'data-uri.json',
+            format: 'JSON',
+            language: 'en',
+          },
+          'com.example.movie.subtitle': {
+            dataId: 'com.example.movie.subtitle',
+            value: 'data-value-2',
+            uri: 'data-uri.bin',
+            format: 'RAW',
+            language: 'en',
+          },
+        });
+      });
+    });
+  });
+
+  describe('#EXT-X-SESSION-KEY', () => {
+    it('should be undefined by default', () => {
+      const playlist = `#EXTM3U`;
+      testAllCombinations(playlist, (parsed) => {
+        expect(parsed.sessionKey).toBeUndefined();
+      });
+    });
+
+    it('should parse from a playlist', () => {
+      const playlist = `#EXTM3U\n#EXT-X-SESSION-KEY:METHOD=AES-128,URI="https://my-key.com",IV=0x00000000000000000000000000000000`;
+      testAllCombinations(playlist, (parsed) => {
+        expect(parsed.sessionKey?.method).toBe('AES-128');
+        expect(parsed.sessionKey?.uri).toBe('https://my-key.com');
+        expect(parsed.sessionKey?.iv).toBe('0x00000000000000000000000000000000');
+      });
+    });
+  });
+
+  describe('#EXT-X-CONTENT-STEERING', () => {
+    it('should be undefined by default', () => {
+      const playlist = `#EXTM3U`;
+      testAllCombinations(playlist, (parsed) => {
+        expect(parsed.contentSteering).toBeUndefined();
+      });
+    });
+
+    it('should parse from a playlist', () => {
+      const playlist = `#EXTM3U\n#EXT-X-CONTENT-STEERING:SERVER-URI="https://steering-server.com",PATHWAY-ID="CDN-A"`;
+      testAllCombinations(playlist, (parsed) => {
+        expect(parsed.contentSteering?.serverUri).toBe('https://steering-server.com');
+        expect(parsed.contentSteering?.pathwayId).toBe('CDN-A');
+      });
+    });
+  });
+
+  describe('#EXT-X-MEDIA', () => {
+    it('should be an empty object by default', () => {
+      const playlist = `#EXTM3U
+#EXTINF:4
+segment-1.mp4
+#EXTINF:4
+segment-2.mp4
+`;
+      testAllCombinations(playlist, (parsed) => {
+        expect(parsed.renditionGroups).toEqual({ audio: {}, video: {}, subtitles: {}, closedCaptions: {} });
+      });
+    });
+
+    it('should parse all attributes from a playlist', () => {
+      const playlist = `#EXTM3U
+#EXT-X-MEDIA:TYPE=AUDIO,GROUP-ID="audio",NAME="English",DEFAULT=YES,AUTOSELECT=YES,LANGUAGE="en",ASSOC-LANGUAGE="es",URI="audio.m3u8",CHARACTERISTICS="public.accessibility.transcribes-spoken-dialog,public.accessibility.describes-music-and-sound",CHANNELS="2/0/0",FORCED=NO,STABLE-RENDITION-ID="id-1"
+#EXT-X-MEDIA:TYPE=VIDEO,GROUP-ID="video",NAME="720p",DEFAULT=NO,AUTOSELECT=YES,LANGUAGE="en",URI="video.m3u8",CHARACTERISTICS="public.accessibility.transcribes-spoken-dialog,public.accessibility.describes-video",CHANNELS="1/0/0",INSTREAM-ID="CC1",FORCED=YES
+`;
+      testAllCombinations(playlist, (parsed) => {
+        // Audio group
+        expect(parsed.renditionGroups.audio['audio'][0].type).toBe('AUDIO');
+        expect(parsed.renditionGroups.audio['audio'][0].groupId).toBe('audio');
+        expect(parsed.renditionGroups.audio['audio'][0].name).toBe('English');
+        expect(parsed.renditionGroups.audio['audio'][0].default).toBe(true);
+        expect(parsed.renditionGroups.audio['audio'][0].autoSelect).toBe(true);
+        expect(parsed.renditionGroups.audio['audio'][0].language).toBe('en');
+        expect(parsed.renditionGroups.audio['audio'][0].assocLanguage).toBe('es');
+        expect(parsed.renditionGroups.audio['audio'][0].uri).toBe('audio.m3u8');
+        expect(parsed.renditionGroups.audio['audio'][0].characteristics).toEqual([
+          'public.accessibility.transcribes-spoken-dialog',
+          'public.accessibility.describes-music-and-sound',
+        ]);
+        expect(parsed.renditionGroups.audio['audio'][0].channels).toEqual(['2', '0', '0']);
+        expect(parsed.renditionGroups.audio['audio'][0].forced).toBe(false);
+        expect(parsed.renditionGroups.audio['audio'][0].stableRenditionId).toBe('id-1');
+
+        // Video group
+        expect(parsed.renditionGroups.video['video'][0].type).toBe('VIDEO');
+        expect(parsed.renditionGroups.video['video'][0].groupId).toBe('video');
+        expect(parsed.renditionGroups.video['video'][0].name).toBe('720p');
+        expect(parsed.renditionGroups.video['video'][0].default).toBe(false);
+        expect(parsed.renditionGroups.video['video'][0].autoSelect).toBe(true);
+        expect(parsed.renditionGroups.video['video'][0].language).toBe('en');
+        expect(parsed.renditionGroups.video['video'][0].uri).toBe('video.m3u8');
+        expect(parsed.renditionGroups.video['video'][0].characteristics).toEqual([
+          'public.accessibility.transcribes-spoken-dialog',
+          'public.accessibility.describes-video',
+        ]);
+        expect(parsed.renditionGroups.video['video'][0].channels).toEqual(['1', '0', '0']);
+        expect(parsed.renditionGroups.video['video'][0].inStreamId).toBe('CC1');
+        expect(parsed.renditionGroups.video['video'][0].forced).toBe(true);
+      });
+    });
+
+    it('should parse multiple #EXT-X-MEDIA tags into correct groups', () => {
+      const playlist = `#EXTM3U
+#EXT-X-MEDIA:TYPE=AUDIO,GROUP-ID="group-audio",NAME="English",LANGUAGE="eng",URI="audio-eng.m3u8"
+#EXT-X-MEDIA:TYPE=AUDIO,GROUP-ID="group-audio",NAME="Spanish",LANGUAGE="spa",URI="audio-spa.m3u8"
+#EXT-X-MEDIA:TYPE=SUBTITLES,GROUP-ID="group-sub",NAME="English",LANGUAGE="eng",URI="subs-eng.m3u8"
+#EXTINF:4,
+segment-1.mp4
+#EXTINF:4,
+segment-2.mp4
+`;
+      testAllCombinations(playlist, (parsed) => {
+        expect(parsed.renditionGroups.audio['group-audio'].length).toBe(2);
+        expect(parsed.renditionGroups.audio['group-audio'][0].language).toBe('eng');
+        expect(parsed.renditionGroups.audio['group-audio'][1].language).toBe('spa');
+        expect(parsed.renditionGroups.subtitles['group-sub'].length).toBe(1);
+        expect(parsed.renditionGroups.subtitles['group-sub'][0].language).toBe('eng');
+      });
+    });
   });
 });

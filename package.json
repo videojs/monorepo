@@ -9,9 +9,12 @@
     "build": "bun run build:web-media-box && bun run build:demo",
     "build:web-media-box": "bun run --cwd packages/web-media-box build",
     "build:demo": "bun run --cwd packages/demo build",
-    "prepare": "husky install"
+    "prepare": "husky install",
+    "commitlint": "commitlint --edit"
   },
   "devDependencies": {
+    "@commitlint/cli": "^18.2.0",
+    "@commitlint/config-conventional": "^18.1.0",
     "@happy-dom/global-registrator": "^12.9.1",
     "@typescript-eslint/eslint-plugin": "^6.7.3",
     "@typescript-eslint/parser": "^6.7.3",
