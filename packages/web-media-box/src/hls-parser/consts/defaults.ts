@@ -14,6 +14,9 @@ export const createDefaultSegment = (): Segment => ({
 export const createDefaultVariantStream = (): VariantStream => ({
   bandwidth: 0,
   uri: '',
+  codecs: [],
+  supplementalCodecs: [],
+  allowedCpc: {},
 });
 
 export const createDefaultParsedPlaylist = (): ParsedPlaylist => ({
@@ -33,7 +36,7 @@ export const createDefaultParsedPlaylist = (): ParsedPlaylist => ({
   iFramePlaylists: [],
   dateRanges: [],
   renditionReports: [],
-  sessionDataTags: [],
+  sessionData: {},
   preloadHints: {},
 });
 

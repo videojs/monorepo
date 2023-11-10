@@ -109,18 +109,17 @@ export interface Resolution {
 }
 
 export type CpcRecord = Record<string, Array<string>>;
-export type AllowedCpc = Array<CpcRecord>;
 
 export interface BaseStreamInf {
   uri: string;
   bandwidth: number;
   averageBandwidth?: number;
   score?: number;
-  codecs?: Array<string>;
-  supplementalCodecs?: Array<string>;
+  codecs: Array<string>;
+  supplementalCodecs: Array<string>;
   resolution?: Resolution;
   hdcpLevel?: 'TYPE-0' | 'TYPE-1' | 'NONE';
-  allowedCpc?: AllowedCpc;
+  allowedCpc: CpcRecord;
   videoRange?: 'SDR' | 'HLG' | 'PQ';
   stableVariantId?: string;
   video?: string;
@@ -221,7 +220,7 @@ export interface ParsedPlaylist {
   // https://datatracker.ietf.org/doc/html/draft-pantos-hls-rfc8216bis#section-4.4.5.4
   renditionReports: Array<RenditionReport>;
   // https://datatracker.ietf.org/doc/html/draft-pantos-hls-rfc8216bis#section-4.4.6.4
-  sessionDataTags: Array<SessionData>;
+  sessionData: Record<string, SessionData>;
   // https://datatracker.ietf.org/doc/html/draft-pantos-hls-rfc8216bis#section-4.4.6.5
   sessionKey?: SessionKey;
   // https://datatracker.ietf.org/doc/html/draft-pantos-hls-rfc8216bis#section-4.4.6.6

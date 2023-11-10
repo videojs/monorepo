@@ -1007,7 +1007,7 @@ segment-2.mp4
 #EXT-X-BYTERANGE:5@0
 #EXTINF:4
 segment-3.mp4
-#EXT-X-DATERANGE:ID="splice-6FFFFFF1",START-DATE="2014-03-05T11:15:00Z",PLANNED-DURATION=59.993,SCTE35-OUT=0xFC002F000000000000FF000014056FFFFFF000E081622DCAFF000052636200000000000A0008029896F50000008700000000
+#EXT-X-DATERANGE:ID="splice-6FFFFFF1",X-CUSTOM-ATTRIBUTE=12,START-DATE="2014-03-05T11:15:00Z",PLANNED-DURATION=59.993,SCTE35-OUT=0xFC002F000000000000FF000014056FFFFFF000E081622DCAFF000052636200000000000A0008029896F50000008700000000
 `;
       testAllCombinations(playlist, (parsed) => {
         expect(parsed.dateRanges.length).toBe(2);
@@ -1015,7 +1015,7 @@ segment-3.mp4
         expect(parsed.dateRanges[0].id).toBe('splice-6FFFFFF0');
         expect(parsed.dateRanges[0].startDate).toBe(1394018100000);
         expect(parsed.dateRanges[0].plannedDuration).toBe(59.993);
-
+        expect(parsed.dateRanges[0].clientAttributes).toEqual({});
         expect(parsed.dateRanges[0].scte35Out).toEqual(
           parseHex(
             '0xFC002F000000000000FF000014056FFFFFF000E081622DCAFF000052636200000000000A0008029896F50000008700000000'
@@ -1025,6 +1025,7 @@ segment-3.mp4
         expect(parsed.dateRanges[1].id).toBe('splice-6FFFFFF1');
         expect(parsed.dateRanges[1].startDate).toBe(1394018100000);
         expect(parsed.dateRanges[1].plannedDuration).toBe(59.993);
+        expect(parsed.dateRanges[1].clientAttributes).toEqual({ 'X-CUSTOM-ATTRIBUTE': '12' });
 
         expect(parsed.dateRanges[1].scte35Out).toEqual(
           parseHex(
@@ -1151,6 +1152,140 @@ segment-3.mp4
           { uri: 'rendition-2', lastMsn: 10 },
           { uri: 'rendition-3' },
         ]);
+      });
+    });
+  });
+
+  describe('#EXT-X-STREAM-INF', () => {
+    it('should be empty by default', () => {
+      const playlist = `#EXTM3U`;
+      testAllCombinations(playlist, (parsed) => {
+        expect(parsed.variantStreams).toEqual([]);
+      });
+    });
+
+    it('should parse from a playlist', () => {
+      const playlist = `#EXTM3U
+#EXT-X-STREAM-INF:BANDWIDTH=123,AVERAGE-BANDWIDTH=123,SCORE=2.5,CODECS="mp4a.40.2, avc1.4d401e",SUPPLEMENTAL-CODECS="dvh1.08.07/db4h, dvh1.08.08/db4h",RESOLUTION=416x234,FRAME-RATE=50,HDCP-LEVEL=TYPE-1,ALLOWED-CPC="com.example.drm1:SMART-TV/PC,com.example.drm2:HW",VIDEO-RANGE=SDR,STABLE-VARIANT-ID="stream-1-id",AUDIO="audio-group-id",VIDEO="video-group-id",SUBTITLES="subtitles-group-id",CLOSED-CAPTIONS="closed-captions-group-id",PATHWAY-ID="pathway-id"
+stream-1.m3u8
+#EXT-X-STREAM-INF:BANDWIDTH=234
+stream-2.m3u8
+`;
+      testAllCombinations(playlist, (parsed) => {
+        expect(parsed.variantStreams.length).toBe(2);
+        expect(parsed.variantStreams[0]).toEqual({
+          uri: 'stream-1.m3u8',
+          bandwidth: 123,
+          averageBandwidth: 123,
+          score: 2.5,
+          codecs: ['mp4a.40.2', 'avc1.4d401e'],
+          supplementalCodecs: ['dvh1.08.07/db4h', 'dvh1.08.08/db4h'],
+          resolution: {
+            width: 416,
+            height: 234,
+          },
+          hdcpLevel: 'TYPE-1',
+          allowedCpc: {
+            'com.example.drm1': ['SMART-TV', 'PC'],
+            'com.example.drm2': ['HW'],
+          },
+          videoRange: 'SDR',
+          stableVariantId: 'stream-1-id',
+          frameRate: 50,
+          audio: 'audio-group-id',
+          video: 'video-group-id',
+          subtitles: 'subtitles-group-id',
+          closedCaptions: 'closed-captions-group-id',
+          pathwayId: 'pathway-id',
+        });
+        expect(parsed.variantStreams[1]).toEqual({
+          uri: 'stream-2.m3u8',
+          bandwidth: 234,
+          codecs: [],
+          supplementalCodecs: [],
+          allowedCpc: {},
+        });
+      });
+    });
+  });
+
+  describe('#EXT-X-I-FRAME-STREAM-INF', () => {
+    it('should be empty by default', () => {
+      const playlist = `#EXTM3U`;
+      testAllCombinations(playlist, (parsed) => {
+        expect(parsed.iFramePlaylists).toEqual([]);
+      });
+    });
+
+    it('should parse from a playlist', () => {
+      const playlist = `#EXTM3U
+#EXT-X-I-FRAME-STREAM-INF:URI="stream-1.m3u8",BANDWIDTH=123,AVERAGE-BANDWIDTH=123,SCORE=2.5,CODECS="mp4a.40.2, avc1.4d401e",SUPPLEMENTAL-CODECS="dvh1.08.07/db4h, dvh1.08.08/db4h",RESOLUTION=416x234,HDCP-LEVEL=TYPE-1,ALLOWED-CPC="com.example.drm1:SMART-TV/PC,com.example.drm2:HW",VIDEO-RANGE=SDR,STABLE-VARIANT-ID="stream-1-id",VIDEO="video-group-id",PATHWAY-ID="pathway-id"
+#EXT-X-I-FRAME-STREAM-INF:URI="stream-2.m3u8",BANDWIDTH=234
+`;
+      testAllCombinations(playlist, (parsed) => {
+        expect(parsed.iFramePlaylists.length).toBe(2);
+        expect(parsed.iFramePlaylists[0]).toEqual({
+          uri: 'stream-1.m3u8',
+          bandwidth: 123,
+          averageBandwidth: 123,
+          score: 2.5,
+          codecs: ['mp4a.40.2', 'avc1.4d401e'],
+          supplementalCodecs: ['dvh1.08.07/db4h', 'dvh1.08.08/db4h'],
+          resolution: {
+            width: 416,
+            height: 234,
+          },
+          hdcpLevel: 'TYPE-1',
+          allowedCpc: {
+            'com.example.drm1': ['SMART-TV', 'PC'],
+            'com.example.drm2': ['HW'],
+          },
+          videoRange: 'SDR',
+          stableVariantId: 'stream-1-id',
+          video: 'video-group-id',
+          pathwayId: 'pathway-id',
+        });
+        expect(parsed.iFramePlaylists[1]).toEqual({
+          uri: 'stream-2.m3u8',
+          bandwidth: 234,
+          codecs: [],
+          supplementalCodecs: [],
+          allowedCpc: {},
+        });
+      });
+    });
+  });
+
+  describe('#EXT-X-SESSION-DATA', () => {
+    it('should be empty by default', () => {
+      const playlist = `#EXTM3U`;
+      testAllCombinations(playlist, (parsed) => {
+        expect(parsed.sessionData).toEqual({});
+      });
+    });
+
+    it('should parse from a playlist', () => {
+      const playlist = `#EXTM3U
+#EXT-X-SESSION-DATA:DATA-ID="com.example.movie.title",VALUE="data-value-1",URI="data-uri.json",FORMAT="JSON",LANGUAGE="en"
+#EXT-X-SESSION-DATA:DATA-ID="com.example.movie.subtitle",VALUE="data-value-2",URI="data-uri.bin",FORMAT="RAW",LANGUAGE="en"
+`;
+      testAllCombinations(playlist, (parsed) => {
+        expect(parsed.sessionData).toEqual({
+          'com.example.movie.title': {
+            dataId: 'com.example.movie.title',
+            value: 'data-value-1',
+            uri: 'data-uri.json',
+            format: 'JSON',
+            language: 'en',
+          },
+          'com.example.movie.subtitle': {
+            dataId: 'com.example.movie.subtitle',
+            value: 'data-value-2',
+            uri: 'data-uri.bin',
+            format: 'RAW',
+            language: 'en',
+          },
+        });
       });
     });
   });
