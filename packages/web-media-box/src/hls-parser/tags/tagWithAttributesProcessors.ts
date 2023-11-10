@@ -277,6 +277,7 @@ export class ExtXMedia extends TagWithAttributesProcessor {
   private static readonly INSTREAM_ID = 'INSTREAM-ID';
   private static readonly CHARACTERISTICS = 'CHARACTERISTICS';
   private static readonly CHANNELS = 'CHANNELS';
+  private static readonly STABLE_RENDITION_ID = 'STABLE-RENDITION-ID';
   private static readonly typeToKeyMap: Record<string, keyof RenditionGroups> = {
     AUDIO: 'audio',
     VIDEO: 'video',
@@ -303,6 +304,7 @@ export class ExtXMedia extends TagWithAttributesProcessor {
         ? tagAttributes[ExtXMedia.CHARACTERISTICS].split(',')
         : [],
       channels: tagAttributes[ExtXMedia.CHANNELS] ? tagAttributes[ExtXMedia.CHANNELS].split('/') : [],
+      stableRenditionId: tagAttributes[ExtXMedia.STABLE_RENDITION_ID],
     };
 
     const renditionTypeKey = ExtXMedia.typeToKeyMap[rendition.type];

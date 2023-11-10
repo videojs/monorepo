@@ -1340,7 +1340,7 @@ segment-2.mp4
 
     it('should parse all attributes from a playlist', () => {
       const playlist = `#EXTM3U
-#EXT-X-MEDIA:TYPE=AUDIO,GROUP-ID="audio",NAME="English",DEFAULT=YES,AUTOSELECT=YES,LANGUAGE="en",ASSOC-LANGUAGE="es",URI="audio.m3u8",CHARACTERISTICS="public.accessibility.transcribes-spoken-dialog,public.accessibility.describes-music-and-sound",CHANNELS="2/0/0",FORCED=NO
+#EXT-X-MEDIA:TYPE=AUDIO,GROUP-ID="audio",NAME="English",DEFAULT=YES,AUTOSELECT=YES,LANGUAGE="en",ASSOC-LANGUAGE="es",URI="audio.m3u8",CHARACTERISTICS="public.accessibility.transcribes-spoken-dialog,public.accessibility.describes-music-and-sound",CHANNELS="2/0/0",FORCED=NO,STABLE-RENDITION-ID="id-1"
 #EXT-X-MEDIA:TYPE=VIDEO,GROUP-ID="video",NAME="720p",DEFAULT=NO,AUTOSELECT=YES,LANGUAGE="en",URI="video.m3u8",CHARACTERISTICS="public.accessibility.transcribes-spoken-dialog,public.accessibility.describes-video",CHANNELS="1/0/0",INSTREAM-ID="CC1",FORCED=YES
 `;
       testAllCombinations(playlist, (parsed) => {
@@ -1359,6 +1359,7 @@ segment-2.mp4
         ]);
         expect(parsed.renditionGroups.audio['audio'][0].channels).toEqual(['2', '0', '0']);
         expect(parsed.renditionGroups.audio['audio'][0].forced).toBe(false);
+        expect(parsed.renditionGroups.audio['audio'][0].stableRenditionId).toBe('id-1');
 
         // Video group
         expect(parsed.renditionGroups.video['video'][0].type).toBe('VIDEO');
