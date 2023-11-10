@@ -176,14 +176,14 @@ export class BaseUrl extends TagProcessor {
     sharedState: SharedState
     // pendingProcessors: PendingProcessors
   ): void {
-    const uri = tagInfo.tagValue;
+    const uri = tagInfo.tagValue as string;
     const attributes = tagInfo.tagAttributes;
     const prevBaseURLs = sharedState.baseUrls || [];
     const newBaseURLs = [];
 
     // First Base URL
     if (!prevBaseURLs.length) {
-      sharedState.baseUrls.push({ uri, attributes, parentKey: parentTagInfo.tagKey });
+      sharedState.baseUrls.push({ uri, attributes, parentKey: parentTagInfo?.tagKey });
     } else {
       for (const base of prevBaseURLs) {
         const resolved = resolveURL(uri, base.uri);
@@ -192,18 +192,18 @@ export class BaseUrl extends TagProcessor {
         if (resolved === uri) {
           // add new absolute baseURL to preexisting list
 
-          sharedState.baseUrls.push({ uri, attributes, parentKey: parentTagInfo.tagKey });
+          sharedState.baseUrls.push({ uri, attributes, parentKey: parentTagInfo?.tagKey });
 
           break;
         } else {
           // URL is relative
           // concat to all other URLs
-          if (parentTagInfo.tagKey !== base.parentKey) {
+          if (parentTagInfo?.tagKey !== base.parentKey) {
             // We only want to concat if they are not children of the same node
             newBaseURLs.push({
               uri: resolved,
               attributes: { ...base.attributes, ...attributes },
-              parentKey: parentTagInfo.tagKey,
+              parentKey: parentTagInfo?.tagKey,
             });
           }
         }
