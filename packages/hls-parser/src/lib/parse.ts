@@ -1,6 +1,5 @@
 import createStateMachine from './stateMachine';
 import type { StateMachineTransition } from './stateMachine';
-// import { noop } from '../utils/fn.ts'; // TODO: add web-media-box shared utils package as private
 import {
   ignoreTagWarn,
   missingTagValueWarn,
@@ -114,9 +113,7 @@ class Parser {
   protected sharedState: SharedState;
 
   public constructor(options: ParserOptions) {
-    // this.warnCallback = options.warnCallback || noop; // TODO
     this.warnCallback = options.warnCallback || ((): void => {});
-    // this.debugCallback = options.debugCallback || noop; // TODO
     this.debugCallback = options.debugCallback || ((): void => {});
     this.customTagMap = options.customTagMap || {};
     this.ignoreTags = options.ignoreTags || new Set();
