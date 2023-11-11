@@ -1,5 +1,5 @@
-import type { ParsedPlaylist, Segment, VariantStream } from '@/hls-parser/types/parsedPlaylist';
-import type { SharedState } from '@/hls-parser/types/sharedState';
+import type { ParsedPlaylist, Segment, VariantStream } from '../types/parsedPlaylist';
+import type { SharedState } from '../types/sharedState';
 
 export const createDefaultSegment = (): Segment => ({
   duration: 0,

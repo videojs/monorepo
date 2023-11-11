@@ -1,4 +1,4 @@
-import type { SharedState } from '../types/sharedState';
+import type { SharedState } from './sharedState';
 
 export type WarnCallback = (warn: string) => void;
 export type DebugCallback = (...debug: Array<unknown>) => void;

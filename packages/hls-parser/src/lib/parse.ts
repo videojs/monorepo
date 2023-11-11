@@ -1,6 +1,6 @@
 import createStateMachine from './stateMachine.ts';
 import type { StateMachineTransition } from './stateMachine.ts';
-import { noop } from '../utils/fn.ts';
+// import { noop } from '../utils/fn.ts'; // TODO: add web-media-box shared utils package as private
 import {
   ignoreTagWarn,
   missingTagValueWarn,
@@ -97,7 +97,7 @@ import {
   createDefaultSegment,
   createDefaultSharedState,
   createDefaultVariantStream,
-} from '@/hls-parser/consts/defaults.ts';
+} from './consts/defaults.ts';
 
 class Parser {
   private readonly warnCallback: WarnCallback;
@@ -114,8 +114,10 @@ class Parser {
   protected sharedState: SharedState;
 
   public constructor(options: ParserOptions) {
-    this.warnCallback = options.warnCallback || noop;
-    this.debugCallback = options.debugCallback || noop;
+    // this.warnCallback = options.warnCallback || noop; // TODO
+    this.warnCallback = options.warnCallback || ((): void => {});
+    // this.debugCallback = options.debugCallback || noop; // TODO
+    this.debugCallback = options.debugCallback || ((): void => {});
     this.customTagMap = options.customTagMap || {};
     this.ignoreTags = options.ignoreTags || new Set();
     this.transformTagValue = options.transformTagValue || ((tagKey, tagValue): string | null => tagValue);
