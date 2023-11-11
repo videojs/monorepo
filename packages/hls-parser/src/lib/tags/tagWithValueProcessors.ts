@@ -1,6 +1,6 @@
 import type { ParsedPlaylist, PlaylistType } from '../types/parsedPlaylist';
 import type { SharedState } from '../types/sharedState';
-import { TagProcessor } from './base.ts';
+import { TagProcessor } from './base';
 import {
   EXT_X_DISCONTINUITY_SEQUENCE,
   EXT_X_MEDIA_SEQUENCE,
@@ -11,8 +11,8 @@ import {
   EXT_X_BYTERANGE,
   EXT_X_BITRATE,
   EXT_X_PROGRAM_DATE_TIME,
-} from '../consts/tags.ts';
-import { fallbackUsedWarn, unableToParseValueWarn, unsupportedEnumValue } from '../utils/warn.ts';
+} from '../consts/tags';
+import { fallbackUsedWarn, unableToParseValueWarn, unsupportedEnumValue } from '../utils/warn';
 
 export abstract class TagWithValueProcessor extends TagProcessor {
   public abstract process(tagValue: string, playlist: ParsedPlaylist, sharedState: SharedState): void;

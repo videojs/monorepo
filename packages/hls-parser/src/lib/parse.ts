@@ -1,12 +1,12 @@
-import createStateMachine from './stateMachine.ts';
-import type { StateMachineTransition } from './stateMachine.ts';
+import createStateMachine from './stateMachine';
+import type { StateMachineTransition } from './stateMachine';
 // import { noop } from '../utils/fn.ts'; // TODO: add web-media-box shared utils package as private
 import {
   ignoreTagWarn,
   missingTagValueWarn,
   segmentDurationExceededTargetDuration,
   unsupportedTagWarn,
-} from './utils/warn.ts';
+} from './utils/warn';
 
 import {
   // EXT_X_DEFINE,
@@ -41,7 +41,7 @@ import {
   EXTM3U,
   EXT_X_SESSION_KEY,
   EXT_X_CONTENT_STEERING,
-} from './consts/tags.ts';
+} from './consts/tags';
 import type {
   CustomTagMap,
   DebugCallback,
@@ -52,7 +52,7 @@ import type {
 } from './types/parserOptions';
 import type { ParsedPlaylist } from './types/parsedPlaylist';
 import type { SharedState } from './types/sharedState';
-import type { EmptyTagProcessor } from './tags/emptyTagProcessors.ts';
+import type { EmptyTagProcessor } from './tags/emptyTagProcessors';
 import {
   ExtXEndList,
   ExtXIframesOnly,
@@ -60,8 +60,8 @@ import {
   ExtXDiscontinuity,
   ExtXGap,
   ExtM3u,
-} from './tags/emptyTagProcessors.ts';
-import type { TagWithValueProcessor } from './tags/tagWithValueProcessors.ts';
+} from './tags/emptyTagProcessors';
+import type { TagWithValueProcessor } from './tags/tagWithValueProcessors';
 import {
   ExtXBitrate,
   ExtXByteRange,
@@ -72,8 +72,8 @@ import {
   ExtXTargetDuration,
   ExtXVersion,
   ExtXProgramDateTime,
-} from './tags/tagWithValueProcessors.ts';
-import type { TagWithAttributesProcessor } from './tags/tagWithAttributesProcessors.ts';
+} from './tags/tagWithValueProcessors';
+import type { TagWithAttributesProcessor } from './tags/tagWithAttributesProcessors';
 import {
   ExtXPartInf,
   ExtXServerControl,
@@ -91,13 +91,13 @@ import {
   ExtXSessionData,
   ExtXSessionKey,
   ExtXContentSteering,
-} from './tags/tagWithAttributesProcessors.ts';
+} from './tags/tagWithAttributesProcessors';
 import {
   createDefaultParsedPlaylist,
   createDefaultSegment,
   createDefaultSharedState,
   createDefaultVariantStream,
-} from './consts/defaults.ts';
+} from './consts/defaults';
 
 class Parser {
   private readonly warnCallback: WarnCallback;

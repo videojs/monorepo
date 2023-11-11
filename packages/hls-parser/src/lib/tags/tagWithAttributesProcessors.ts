@@ -16,8 +16,8 @@ import type {
   CpcRecord,
 } from '../types/parsedPlaylist';
 import type { SharedState } from '../types/sharedState';
-import { TagProcessor } from './base.ts';
-import { missingRequiredAttributeWarn } from '../utils/warn.ts';
+import { TagProcessor } from './base';
+import { missingRequiredAttributeWarn } from '../utils/warn';
 import {
   EXT_X_PART_INF,
   EXT_X_SERVER_CONTROL,
@@ -35,8 +35,8 @@ import {
   EXT_X_SESSION_DATA,
   EXT_X_SESSION_KEY,
   EXT_X_CONTENT_STEERING,
-} from '../consts/tags.ts';
-import { parseBoolean, parseHex } from '../utils/parse.ts';
+} from '../consts/tags';
+import { parseBoolean, parseHex } from '../utils/parse';
 
 export abstract class TagWithAttributesProcessor extends TagProcessor {
   protected abstract readonly requiredAttributes: Set<string>;

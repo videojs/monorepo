@@ -1,4 +1,4 @@
-import { TagProcessor } from './base.ts';
+import { TagProcessor } from './base';
 import type { ParsedPlaylist } from '../types/parsedPlaylist';
 import type { SharedState } from '../types/sharedState';
 import {
@@ -8,7 +8,7 @@ import {
   EXT_X_DISCONTINUITY,
   EXT_X_GAP,
   EXTM3U,
-} from '../consts/tags.ts';
+} from '../consts/tags';
 
 export abstract class EmptyTagProcessor extends TagProcessor {
   public abstract process(playlist: ParsedPlaylist, sharedState: SharedState): void;
