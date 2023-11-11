@@ -1,4 +1,3 @@
-import { version } from './package.json';
 import type { BuildConfig } from 'bun';
 
 interface CreateConfigOptions {
@@ -14,9 +13,6 @@ const createConfig = ({ minify, naming }: CreateConfigOptions): BuildConfig => (
   sourcemap: 'external',
   minify,
   naming,
-  define: {
-    VERSION: JSON.stringify(version),
-  },
 });
 
 await Promise.all([
