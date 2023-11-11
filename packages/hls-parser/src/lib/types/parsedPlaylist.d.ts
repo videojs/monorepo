@@ -97,9 +97,9 @@ export interface DateRange {
   duration?: number;
   plannedDuration?: number;
   clientAttributes: Record<string, string | number>;
-  scte35Cmd?: ArrayBuffer;
-  scte35Out?: ArrayBuffer;
-  scte35In?: ArrayBuffer;
+  scte35Cmd?: Uint8Array;
+  scte35Out?: Uint8Array;
+  scte35In?: Uint8Array;
   endOnNext: boolean;
 }
 

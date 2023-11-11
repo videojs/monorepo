@@ -1,8 +1,8 @@
 import { FullPlaylistParser, ProgressiveParser } from '../src';
 import type { ParsedPlaylist } from '../src';
 import type { Mock } from 'bun:test';
+// eslint-disable-next-line import/no-unresolved
 import { describe, it, expect, beforeEach, mock } from 'bun:test';
-// import { parseHex } from '@/hls-parser/utils/parse.ts'; // TODO: do not rely on this
 
 describe('hls-parser spec', () => {
   let fullPlaylistParser: FullPlaylistParser;
@@ -1016,22 +1016,24 @@ segment-3.mp4
         expect(parsed.dateRanges[0].startDate).toBe(1394018100000);
         expect(parsed.dateRanges[0].plannedDuration).toBe(59.993);
         expect(parsed.dateRanges[0].clientAttributes).toEqual({});
-        // expect(parsed.dateRanges[0].scte35Out).toEqual(
-        //   parseHex(
-        //     '0xFC002F000000000000FF000014056FFFFFF000E081622DCAFF000052636200000000000A0008029896F50000008700000000'
-        //   ) as ArrayBuffer
-        // ); // TODO
+        expect(parsed.dateRanges[0].scte35Out).toEqual(
+          new Uint8Array([
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 14, 5, 0, 0, 0, 0, 0, 0, 81, 62, 0, 0, 0, 0, 0, 52, 63, 62, 0, 0, 0, 0,
+            0, 0, 0, 8, 2, 98, 96, 0, 0, 0, 0, 87, 0, 0, 0, 0,
+          ])
+        );
 
         expect(parsed.dateRanges[1].id).toBe('splice-6FFFFFF1');
         expect(parsed.dateRanges[1].startDate).toBe(1394018100000);
         expect(parsed.dateRanges[1].plannedDuration).toBe(59.993);
         expect(parsed.dateRanges[1].clientAttributes).toEqual({ 'X-CUSTOM-ATTRIBUTE': '12' });
 
-        // expect(parsed.dateRanges[1].scte35Out).toEqual(
-        //   parseHex(
-        //     '0xFC002F000000000000FF000014056FFFFFF000E081622DCAFF000052636200000000000A0008029896F50000008700000000'
-        //   ) as ArrayBuffer
-        // ); // TODO
+        expect(parsed.dateRanges[1].scte35Out).toEqual(
+          new Uint8Array([
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 14, 5, 0, 0, 0, 0, 0, 0, 81, 62, 0, 0, 0, 0, 0, 52, 63, 62, 0, 0, 0, 0,
+            0, 0, 0, 8, 2, 98, 96, 0, 0, 0, 0, 87, 0, 0, 0, 0,
+          ])
+        );
       });
     });
   });
