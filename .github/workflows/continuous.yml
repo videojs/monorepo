@@ -7,13 +7,39 @@ jobs:
     runs-on: ubuntu-latest
     name: Quality Gates
     steps:
-      - uses: actions/checkout@v3
-      - uses: oven-sh/setup-bun@v1
-      - name: install
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Install Bun
+        uses: oven-sh/setup-bun@v1
+      - name: Install Dependencies
         run: bun install
-      - name: lint
+      - name: Lint All Packages
         run: bun run lint
-      - name: build
+      - name: Build All Packages
         run: bun run build
-      - name: test
-        run: bun run test
+      - name: Test All Packages
+        run: bun run test:coverage
+      - name: Upload Hls-Parser Coverage
+        uses: codecov/codecov-action@v3
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          flags: hls-parser
+          files: ./packages/hls-parser/coverage/coverage-final.json
+          name: hls-parser-coverage
+          fail_ci_if_error: true
+      - name: Upload Dash-Parser Coverage
+        uses: codecov/codecov-action@v3
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          flags: dash-parser
+          files: ./packages/dash-parser/coverage/coverage-final.json
+          name: dash-parser-coverage
+          fail_ci_if_error: true
+      - name: Upload Player Coverage
+        uses: codecov/codecov-action@v3
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          flags: player
+          files: ./packages/player/coverage/coverage-final.json
+          name: player-coverage
+          fail_ci_if_error: true
