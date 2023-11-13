@@ -13,9 +13,6 @@
     "jsx": "react-jsx",
     "allowSyntheticDefaultImports": true,
     "forceConsistentCasingInFileNames": true,
-    "allowJs": false,
-    "paths": {
-      "@/*": ["./packages/web-media-box/src/*"]
-    }
+    "allowJs": false
   }
 }
