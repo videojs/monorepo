@@ -13,10 +13,10 @@ jobs:
         uses: oven-sh/setup-bun@v1
       - name: Install Dependencies
         run: bun install
-      - name: Lint All Packages
-        run: bun run lint
       - name: Build All Packages
         run: bun run build
+      - name: Lint All Packages
+        run: bun run lint
       - name: Test All Packages
         run: bun run test:coverage
       - name: Upload Hls-Parser Coverage
