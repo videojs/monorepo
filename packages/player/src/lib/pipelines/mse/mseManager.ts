@@ -1,4 +1,4 @@
-import type Logger from '@/utils/logger';
+import type Logger from '../../utils/logger';
 import { OperationType, type SourceBufferWrapper } from './types/bufferOperation';
 
 export default class MseManager {

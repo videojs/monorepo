@@ -1,5 +1,6 @@
 **/*.toml
 **/*.puml
+**/*.svg
 .husky
 .prettierignore
 bun.lockb

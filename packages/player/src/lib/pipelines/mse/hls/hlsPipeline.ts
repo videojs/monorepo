@@ -1,6 +1,6 @@
-import MsePipeLine from '@/pipelines/mse/msePipeline.ts';
+import MsePipeLine from '../msePipeline';
 
-export default class DashPipeline extends MsePipeLine {
+export default class HlsPipeline extends MsePipeLine {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   public loadLocalAsset(asset: string | ArrayBuffer): void {
     //TODO

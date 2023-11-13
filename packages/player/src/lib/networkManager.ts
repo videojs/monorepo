@@ -5,10 +5,10 @@ import {
   RequestInterceptorNetworkError,
   ResponseInterceptorNetworkError,
   TimeoutNetworkError,
-} from '@/player/errors.ts';
-import type { RetryWrapperOptions } from '@/utils/retryWrapper.ts';
-import RetryWrapper from '@/utils/retryWrapper.ts';
-import type Logger from '@/utils/logger.ts';
+} from './errors';
+import type { RetryWrapperOptions } from './utils/retryWrapper';
+import RetryWrapper from './utils/retryWrapper';
+import type Logger from './utils/logger';
 
 export enum RequestType {
   InitSegment,

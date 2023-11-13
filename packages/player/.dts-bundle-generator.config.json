@@ -1,0 +1,19 @@
+{
+  "compilationOptions": {
+    "preferredConfigPath": "../../tsconfig.json"
+  },
+  "entries": [
+    {
+      "filePath": "./src/player.ts",
+      "outFile": "./dist/player.d.ts"
+    },
+    {
+      "filePath": "./src/hls-pipeline.ts",
+      "outFile": "./dist/hls-pipeline.d.ts"
+    },
+    {
+      "filePath": "./src/dash-pipeline.ts",
+      "outFile": "./dist/dash-pipeline.d.ts"
+    }
+  ]
+}

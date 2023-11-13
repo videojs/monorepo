@@ -1,15 +1,14 @@
-import type { PlayerConfiguration } from './configuration.ts';
-import { LoggerLevel } from '../utils/logger.ts';
-import Logger from '../utils/logger.ts';
-import { getDefaultPlayerConfiguration } from './configuration.ts';
-import EventEmitter from '../utils/eventEmitter.ts';
+import type { PlayerConfiguration } from './configuration';
+import Logger, { LoggerLevel } from './utils/logger';
+import { getDefaultPlayerConfiguration } from './configuration';
+import EventEmitter from './utils/eventEmitter';
 
-import { Events, EnterPictureInPictureModeEvent, LeavePictureInPictureModeEvent, ErrorEvent } from './events.ts';
-import type { EventToTypeMap } from './events.ts';
-import type Pipeline from '@/pipelines/basePipeline.ts';
-import NativePipeline from '@/pipelines/native/nativePipeline.ts';
-import { NoSupportedPipelineError } from '@/player/errors.ts';
-import NetworkManager, { RequestType } from '@/player/networkManager.ts';
+import { Events, EnterPictureInPictureModeEvent, LeavePictureInPictureModeEvent, ErrorEvent } from './events';
+import type { EventToTypeMap } from './events';
+import type Pipeline from './pipelines/basePipeline';
+import NativePipeline from './pipelines/native/nativePipeline';
+import { NoSupportedPipelineError } from './errors';
+import NetworkManager, { RequestType } from './networkManager';
 
 enum PlaybackState {
   Playing = 'Playing',

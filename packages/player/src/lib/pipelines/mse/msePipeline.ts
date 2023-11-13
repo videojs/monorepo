@@ -1,4 +1,4 @@
-import Pipeline from '@/pipelines/basePipeline.ts';
+import Pipeline from '../basePipeline';
 
 export default abstract class MsePipeLine extends Pipeline {
   public abstract loadLocalAsset(asset: string | ArrayBuffer): void;
