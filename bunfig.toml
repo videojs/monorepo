@@ -1,6 +1,0 @@
-[test]
-preload = "./happydom.ts"
-coverage = true
-# Increare coverage threshold everytime
-coverageThreshold = { line = 0.2, function = 0 }
-

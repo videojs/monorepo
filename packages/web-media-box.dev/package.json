@@ -5,7 +5,9 @@
   "type": "module",
   "scripts": {
     "build": "bun run build:source",
-    "build:source": "bun run bun.build.ts"
+    "build:source": "bun run bun.build.ts",
+    "test": "echo \"No test for web-media-box.dev\"",
+    "test:coverage": "echo \"No test for web-media-box.dev\""
   },
   "dependencies": {
     "@web-media-box/player": "*",
