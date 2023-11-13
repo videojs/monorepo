@@ -1,5 +1,5 @@
-import type { WarnCallback } from '@/dash-parser/types/parserOptions';
-import type { TagInfo } from '@/dash-parser/stateMachine.ts';
+import type { WarnCallback } from '../types/parserOptions';
+import type { TagInfo } from '../stateMachine';
 import {
   ADAPTATION_SET,
   BASE_URL,
@@ -10,19 +10,19 @@ import {
   EVENT_STREAM,
   EVENT,
   SEGMENT_TEMPLATE,
-} from '@/dash-parser/consts/tags.ts';
+} from '../consts/tags';
 import type {
   // ManifestType,
   EventScheme,
   ParsedManifest,
   UTCTimingScheme,
   Segment,
-} from '@/dash-parser/types/parsedManifest';
-import type { SharedState } from '@/dash-parser/types/sharedState';
-import type { PendingProcessors } from '@/dash-parser/pendingProcessors.ts';
-import { missingRequiredAttributeWarn } from '@/dash-parser/utils/warn.ts';
-import { parseAttributes } from '@/dash-parser/parseAttributes';
-import { parseUTCTimingScheme } from '@/dash-parser/utils/parseUTCTimingScheme';
+} from '../types/parsedManifest';
+import type { SharedState } from '../types/sharedState';
+import type { PendingProcessors } from '../pendingProcessors';
+import { missingRequiredAttributeWarn } from '../utils/warn';
+import { parseAttributes } from '../parseAttributes';
+import { parseUTCTimingScheme } from '../utils/parseUTCTimingScheme';
 import { segmentsFromTemplate } from '../segments/segmentParser';
 import { resolveURL } from '../segments/resolveUrl';
 

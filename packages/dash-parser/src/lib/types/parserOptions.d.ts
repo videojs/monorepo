@@ -1,4 +1,4 @@
-import type { TagInfo } from '@/dash-parser/stateMachine.ts';
+import type { TagInfo } from '../stateMachine';
 
 export type WarnCallback = (warn: string) => void;
 export type DebugCallback = (...debug: Array<unknown>) => void;

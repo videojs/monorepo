@@ -1,5 +1,5 @@
-import type { TagInfo } from '@/dash-parser/stateMachine.ts';
-import type { TagProcessor } from '@/dash-parser/tags/base.ts';
+import type { TagInfo } from './stateMachine';
+import type { TagProcessor } from './tags/base';
 // import type { ParsedManifest } from '@/dash-parser/types/parsedManifest';
 // import type { SharedState } from '@/dash-parser/types/sharedState';
 

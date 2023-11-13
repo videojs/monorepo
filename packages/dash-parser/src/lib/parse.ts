@@ -5,10 +5,9 @@ import type {
   CustomTagMap,
   TransformTagAttributes,
   TransformTagValue,
-} from '@/dash-parser/types/parserOptions';
-import { noop } from '../utils/fn.ts';
-import type { ParsedManifest } from '@/dash-parser/types/parsedManifest';
-import type { TagProcessor } from '@/dash-parser/tags/base.ts';
+} from './types/parserOptions';
+import type { ParsedManifest } from './types/parsedManifest';
+import type { TagProcessor } from './tags/base';
 import {
   ADAPTATION_SET,
   MPD,
@@ -19,28 +18,14 @@ import {
   // EVENT_STREAM,
   // EVENT,
   BASE_URL,
-} from '@/dash-parser/consts/tags.ts';
-import {
-  AdaptationSet,
-  Mpd,
-  Period,
-  Representation,
-  UTCTiming,
-  SegmentTemplate,
-  BaseUrl,
-} from '@/dash-parser/tags/base.ts';
-import type { TagInfo } from '@/dash-parser/stateMachine.ts';
-import { ignoreTagWarn, unsupportedTagWarn } from '@/dash-parser/utils/warn.ts';
-import createStateMachine from '@/dash-parser/stateMachine.ts';
-import type { StateMachineTransition } from '@/dash-parser/stateMachine.ts';
-import { PendingProcessors } from '@/dash-parser/pendingProcessors.ts';
-import type { SharedState } from '@/dash-parser/types/sharedState';
-
-const defaultParsedManifest: ParsedManifest = {
-  representations: [],
-  type: 'static', //default value, could be updated after parsing
-  custom: {},
-};
+} from './consts/tags';
+import { AdaptationSet, Mpd, Period, Representation, UTCTiming, SegmentTemplate, BaseUrl } from './tags/base';
+import type { TagInfo, StateMachineTransition } from './stateMachine';
+import { ignoreTagWarn, unsupportedTagWarn } from './utils/warn';
+import createStateMachine from './stateMachine';
+import { PendingProcessors } from './pendingProcessors';
+import type { SharedState } from './types/sharedState';
+import { createDefaultParsedManifest } from './consts/defaults';
 
 class Parser {
   private readonly warnCallback: WarnCallback;
@@ -56,15 +41,15 @@ class Parser {
   protected readonly pendingProcessors: PendingProcessors;
 
   public constructor(options: ParserOptions) {
-    this.warnCallback = options.warnCallback || noop;
-    this.debugCallback = options.debugCallback || noop;
+    this.warnCallback = options.warnCallback || ((): void => {});
+    this.debugCallback = options.debugCallback || ((): void => {});
     this.customTagMap = options.customTagMap || {};
     this.ignoreTags = options.ignoreTags || new Set();
     this.transformTagValue = options.transformTagValue || ((tagKey, tagValue): string | null => tagValue);
     this.transformTagAttributes =
       options.transformTagAttributes || ((tagKey, tagAttributes): Record<string, string> => tagAttributes);
 
-    this.parsedManifest = structuredClone(defaultParsedManifest);
+    this.parsedManifest = createDefaultParsedManifest();
 
     this.sharedState = {
       baseUrls: [],
@@ -125,7 +110,7 @@ class Parser {
 
   protected clean(): ParsedManifest {
     const copy = { ...this.parsedManifest };
-    this.parsedManifest = structuredClone(defaultParsedManifest);
+    this.parsedManifest = createDefaultParsedManifest();
 
     return copy;
   }

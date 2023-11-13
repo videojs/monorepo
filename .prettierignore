@@ -1,4 +1,5 @@
 **/*.toml
+**/*.puml
 .husky
 .prettierignore
 bun.lockb
