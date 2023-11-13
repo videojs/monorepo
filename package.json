@@ -6,10 +6,10 @@
     "packages/*"
   ],
   "scripts": {
-    "test": "npm run test --workspaces",
-    "test:coverage": "npm run test:coverage --workspaces",
+    "test": "bunx nx run-many -t test",
+    "test:coverage": "bunx nx run-many -t test:coverage",
     "lint": "eslint .",
-    "build": "npm run build --workspaces",
+    "build": "bunx nx run-many -t build",
     "prepare": "husky install",
     "commitlint": "commitlint --edit"
   },
@@ -33,6 +33,7 @@
     "lint-staged": "^15.0.2",
     "prettier": "^3.0.3",
     "ts-jest": "^29.1.1",
-    "typescript": "^5.2.2"
+    "typescript": "^5.2.2",
+    "nx": "17.1.2"
   }
 }

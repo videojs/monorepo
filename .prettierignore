@@ -3,4 +3,5 @@
 **/*.svg
 .husky
 .prettierignore
+.gitignore
 bun.lockb
