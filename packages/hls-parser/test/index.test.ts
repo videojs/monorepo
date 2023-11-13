@@ -1,13 +1,13 @@
 import { FullPlaylistParser, ProgressiveParser } from '../src';
 import type { ParsedPlaylist } from '../src';
-import type { Mock } from 'bun:test';
+// import type { Mock } from 'bun:test';
 // eslint-disable-next-line import/no-unresolved
-import { describe, it, expect, beforeEach, mock } from 'bun:test';
+import { describe, it, expect, beforeEach, jest } from '@jest/globals';
 
 describe('hls-parser spec', () => {
   let fullPlaylistParser: FullPlaylistParser;
   let progressivePlaylistParser: ProgressiveParser;
-  let warnCallback: Mock<(warn: string) => void>;
+  let warnCallback: jest.Mock<(warn: string) => void>;
 
   const testAllCombinations = (playlist: string, cb: (parsed: ParsedPlaylist) => void): void => {
     const buffer = new Uint8Array(playlist.split('').map((char) => char.charCodeAt(0)));
@@ -23,7 +23,7 @@ describe('hls-parser spec', () => {
   };
 
   beforeEach(() => {
-    warnCallback = mock(() => {});
+    warnCallback = jest.fn(() => {});
 
     fullPlaylistParser = new FullPlaylistParser({
       warnCallback,
@@ -997,7 +997,7 @@ segment-3.mp4
       });
     });
 
-    it('should be empty list by default', () => {
+    it('should parse from a playlist', () => {
       const playlist = `#EXTM3U
 #EXT-X-DATERANGE:ID="splice-6FFFFFF0",START-DATE="2014-03-05T11:15:00Z",PLANNED-DURATION=59.993,SCTE35-OUT=0xFC002F000000000000FF000014056FFFFFF000E081622DCAFF000052636200000000000A0008029896F50000008700000000
 #EXTINF:4

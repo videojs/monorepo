@@ -1,21 +1,3 @@
-import type { BuildConfig } from 'bun';
+import baseBuilder from '../../bun.build.base';
 
-interface CreateConfigOptions {
-  minify: boolean;
-  naming: string;
-}
-
-const createConfig = ({ minify, naming }: CreateConfigOptions): BuildConfig => ({
-  entrypoints: ['./src/index.ts'],
-  outdir: './dist',
-  target: 'browser',
-  format: 'esm',
-  sourcemap: 'external',
-  minify,
-  naming,
-});
-
-await Promise.all([
-  Bun.build(createConfig({ minify: false, naming: '[dir]/[name].debug.[ext]' })),
-  Bun.build(createConfig({ minify: true, naming: '[dir]/[name].[ext]' })),
-]);
+await baseBuilder({ entrypoints: ['./src/index.ts'], outdir: './dist' });
