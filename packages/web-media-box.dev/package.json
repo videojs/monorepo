@@ -1,0 +1,15 @@
+{
+  "name": "web-media-box.dev",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "build": "bun run build:source",
+    "build:source": "bun run bun.build.ts"
+  },
+  "dependencies": {
+    "@web-media-box/player": "*",
+    "@web-media-box/hls-parser": "*",
+    "@web-media-box/dash-parser": "*"
+  }
+}

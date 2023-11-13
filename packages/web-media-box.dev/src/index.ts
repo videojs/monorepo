@@ -2,12 +2,12 @@
 import {
   FullPlaylistParser as HlsFullParser,
   ProgressiveParser as HlsProgressiveParser,
-} from 'web-media-box/hls-parser';
+} from '@web-media-box/hls-parser';
 import {
   FullManifestParser as DashFullParser,
   ProgressiveParser as DashProgressiveParser,
-} from 'web-media-box/dash-parser';
-import { Player } from 'web-media-box/player';
+} from '@web-media-box/dash-parser';
+import { Player } from '@web-media-box/player/player';
 
 declare global {
   interface Window {
