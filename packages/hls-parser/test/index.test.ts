@@ -1,7 +1,5 @@
 import { FullPlaylistParser, ProgressiveParser } from '../src';
 import type { ParsedPlaylist } from '../src';
-// import type { Mock } from 'bun:test';
-// eslint-disable-next-line import/no-unresolved
 import { describe, it, expect, beforeEach, jest } from '@jest/globals';
 
 describe('hls-parser spec', () => {
