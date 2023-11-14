@@ -1,31 +1,39 @@
 {
+  "name": "web-media-box",
   "private": true,
+  "type": "module",
   "workspaces": [
     "packages/*"
   ],
   "scripts": {
-    "test": "bun test",
+    "test": "bunx nx run-many -t test",
+    "test:coverage": "bunx nx run-many -t test:coverage",
     "lint": "eslint .",
-    "build": "bun run build:web-media-box && bun run build:demo",
-    "build:web-media-box": "bun run --cwd packages/web-media-box build",
-    "build:demo": "bun run --cwd packages/demo build",
+    "build": "bunx nx run-many -t build",
     "prepare": "husky install",
     "commitlint": "commitlint --edit"
   },
   "devDependencies": {
     "@commitlint/cli": "^18.2.0",
     "@commitlint/config-conventional": "^18.1.0",
-    "@happy-dom/global-registrator": "^12.9.1",
+    "@types/jest": "^29.5.8",
     "@typescript-eslint/eslint-plugin": "^6.7.3",
     "@typescript-eslint/parser": "^6.7.3",
     "bun-types": "^1.0.3",
     "dts-bundle-generator": "^8.0.1",
     "eslint": "^8.50.0",
     "eslint-config-prettier": "^9.0.0",
+    "eslint-import-resolver-typescript": "^3.6.1",
+    "eslint-plugin-import": "^2.29.0",
+    "eslint-plugin-jest": "^27.6.0",
     "eslint-plugin-prettier": "^5.0.0",
     "husky": "^8.0.3",
+    "jest": "^29.7.0",
+    "jest-environment-jsdom": "^29.7.0",
     "lint-staged": "^15.0.2",
     "prettier": "^3.0.3",
-    "typescript": "^5.2.2"
+    "ts-jest": "^29.1.1",
+    "typescript": "^5.2.2",
+    "nx": "17.1.2"
   }
 }

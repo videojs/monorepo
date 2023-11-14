@@ -1,4 +1,7 @@
 **/*.toml
+**/*.puml
+**/*.svg
 .husky
 .prettierignore
+.gitignore
 bun.lockb
