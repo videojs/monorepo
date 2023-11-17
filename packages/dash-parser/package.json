@@ -1,0 +1,13 @@
+{
+  "name": "@web-media-box/dash-parser",
+  "version": "0.0.0",
+  "type": "module",
+  "main": "./dist/index.js",
+  "scripts": {
+    "build": "bun run build:source && bun run build:types",
+    "build:types": "dts-bundle-generator --project ../../tsconfig.json -o ./dist/index.d.ts ./src/index.ts",
+    "build:source": "bun run bun.build.ts",
+    "test": "bunx jest",
+    "test:coverage": "bunx jest --coverage=true"
+  }
+}
