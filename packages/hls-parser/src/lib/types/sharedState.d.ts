@@ -1,10 +1,4 @@
-import type {
-  Define,
-  Encryption,
-  MediaInitializationSection,
-  Segment,
-  VariantStream,
-} from './parsedPlaylist';
+import type { Define, Encryption, MediaInitializationSection, Segment, VariantStream } from './parsedPlaylist';
 
 export interface SharedState {
   currentBitrate?: number;

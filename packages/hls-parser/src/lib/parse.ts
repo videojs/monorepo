@@ -344,7 +344,7 @@ export class ProgressiveParser extends Parser {
     }
   }
 
-  public pushBuffer(chunk: Uint8Array, options: ParseOptions): void {
+  public pushBuffer(chunk: Uint8Array, options?: ParseOptions): void {
     this.gatherParseOptions(options);
 
     if (this.stateMachine === null) {
