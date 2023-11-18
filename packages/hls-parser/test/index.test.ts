@@ -872,9 +872,12 @@ segment-3.ts
 `;
 
       testAllCombinations(playlist, (parsed) => {
-        expect(parsed.segments[0].programDateTime).toBeUndefined();
-        expect(parsed.segments[1].programDateTime).toBeUndefined();
-        expect(parsed.segments[2].programDateTime).toBeUndefined();
+        expect(parsed.segments[0].programDateTimeStart).toBeUndefined();
+        expect(parsed.segments[0].programDateTimeEnd).toBeUndefined();
+        expect(parsed.segments[1].programDateTimeStart).toBeUndefined();
+        expect(parsed.segments[1].programDateTimeEnd).toBeUndefined();
+        expect(parsed.segments[2].programDateTimeStart).toBeUndefined();
+        expect(parsed.segments[2].programDateTimeEnd).toBeUndefined();
       });
     });
 
@@ -889,9 +892,12 @@ segment-2.ts
 segment-3.ts
 `;
       testAllCombinations(playlist, (parsed) => {
-        expect(parsed.segments[0].programDateTime).toBe(1698516684010);
-        expect(parsed.segments[1].programDateTime).toBe(1698516684010 + 4000);
-        expect(parsed.segments[2].programDateTime).toBe(1698516684010 + 4000 + 4000);
+        expect(parsed.segments[0].programDateTimeStart).toBe(1698516684010);
+        expect(parsed.segments[0].programDateTimeEnd).toBe(1698516684010 + 4000);
+        expect(parsed.segments[1].programDateTimeStart).toBe(1698516684010 + 4000);
+        expect(parsed.segments[1].programDateTimeEnd).toBe(1698516684010 + 4000 + 4000);
+        expect(parsed.segments[2].programDateTimeStart).toBe(1698516684010 + 4000 + 4000);
+        expect(parsed.segments[2].programDateTimeEnd).toBe(1698516684010 + 4000 + 4000 + 4000);
       });
     });
 
@@ -907,9 +913,12 @@ segment-3.ts
 `;
 
       testAllCombinations(playlist, (parsed) => {
-        expect(parsed.segments[0].programDateTime).toBe(1698516684010 - 4000 - 4000);
-        expect(parsed.segments[1].programDateTime).toBe(1698516684010 - 4000);
-        expect(parsed.segments[2].programDateTime).toBe(1698516684010);
+        expect(parsed.segments[0].programDateTimeStart).toBe(1698516684010 - 4000 - 4000);
+        expect(parsed.segments[0].programDateTimeEnd).toBe(1698516684010 - 4000);
+        expect(parsed.segments[1].programDateTimeStart).toBe(1698516684010 - 4000);
+        expect(parsed.segments[1].programDateTimeEnd).toBe(1698516684010);
+        expect(parsed.segments[2].programDateTimeStart).toBe(1698516684010);
+        expect(parsed.segments[2].programDateTimeEnd).toBe(1698516684010 + 4000);
       });
     });
   });

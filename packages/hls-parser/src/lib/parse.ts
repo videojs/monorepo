@@ -281,9 +281,14 @@ class Parser {
     }
 
     // Extrapolate a program date time value from the previous segment's program date time
-    if (!this.sharedState.currentSegment.programDateTime && previousSegment?.programDateTime) {
-      this.sharedState.currentSegment.programDateTime =
-        previousSegment.programDateTime + previousSegment.duration * 1000;
+    if (!this.sharedState.currentSegment.programDateTimeStart && previousSegment?.programDateTimeStart) {
+      this.sharedState.currentSegment.programDateTimeStart =
+        previousSegment.programDateTimeStart + previousSegment.duration * 1000;
+    }
+
+    if (this.sharedState.currentSegment.programDateTimeStart) {
+      this.sharedState.currentSegment.programDateTimeEnd =
+        this.sharedState.currentSegment.programDateTimeStart + this.sharedState.currentSegment.duration * 1000;
     }
 
     this.parsedPlaylist.segments.push(this.sharedState.currentSegment);

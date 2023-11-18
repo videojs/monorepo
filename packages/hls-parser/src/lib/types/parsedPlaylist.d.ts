@@ -55,7 +55,8 @@ export interface Segment {
   startTime: number;
   endTime: number;
   title?: string;
-  programDateTime?: number;
+  programDateTimeStart?: number;
+  programDateTimeEnd?: number;
   byteRange?: Range;
   bitrate?: number;
   uri: string;
