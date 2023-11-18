@@ -49,6 +49,7 @@ export const createDefaultParsedPlaylist = (): ParsedPlaylist => ({
 
 export const createDefaultSharedState = (): SharedState => ({
   isMultivariantPlaylist: false,
+  hasVariablesForSubstitution: false,
   currentSegment: createDefaultSegment(),
   currentVariant: createDefaultVariantStream(),
 });

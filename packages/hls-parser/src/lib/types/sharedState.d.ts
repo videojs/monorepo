@@ -10,4 +10,5 @@ export interface SharedState {
   baseUrl?: URL;
   baseTime?: number;
   baseDefine?: Define;
+  hasVariablesForSubstitution: boolean;
 }

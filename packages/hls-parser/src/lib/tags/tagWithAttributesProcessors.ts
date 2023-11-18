@@ -17,7 +17,7 @@ import type {
 } from '../types/parsedPlaylist';
 import type { SharedState } from '../types/sharedState';
 import { TagProcessor } from './base';
-import { missingRequiredAttributeWarn } from '../utils/warn';
+import { missingRequiredAttributeWarn, missingRequiredVariableForAttributeValueSubstitutionWarn } from '../utils/warn';
 import {
   EXT_X_PART_INF,
   EXT_X_SERVER_CONTROL,
@@ -37,12 +37,12 @@ import {
   EXT_X_CONTENT_STEERING,
   EXT_X_DEFINE,
 } from '../consts/tags';
-import { parseBoolean, parseHex } from '../utils/parse';
+import { parseBoolean, parseHex, substituteVariable } from '../utils/parse';
 
 export abstract class TagWithAttributesProcessor extends TagProcessor {
   protected abstract readonly requiredAttributes: Set<string>;
 
-  public process(tagAttributes: Record<string, string>, playlist: ParsedPlaylist, sharedState: SharedState): void {
+  private checkRequiredAttributes(tagAttributes: Record<string, string>): boolean {
     let isRequiredAttributedMissed = false;
 
     this.requiredAttributes.forEach((requiredAttribute) => {
@@ -54,7 +54,39 @@ export abstract class TagWithAttributesProcessor extends TagProcessor {
       }
     });
 
-    if (isRequiredAttributedMissed) {
+    return isRequiredAttributedMissed;
+  }
+
+  private runVariableSubstitution(
+    tagAttributes: Record<string, string>,
+    playlist: ParsedPlaylist,
+    sharedState: SharedState
+  ): boolean {
+    if (!sharedState.hasVariablesForSubstitution) {
+      return false;
+    }
+
+    let isRequiredVariableMissing = false;
+
+    for (const attributeKey in tagAttributes) {
+      const attributeValue = tagAttributes[attributeKey];
+      tagAttributes[attributeKey] = substituteVariable(attributeValue, playlist.define, (variableName) => {
+        this.warnCallback(
+          missingRequiredVariableForAttributeValueSubstitutionWarn(this.tag, attributeKey, variableName)
+        );
+        isRequiredVariableMissing = true;
+      });
+    }
+
+    return isRequiredVariableMissing;
+  }
+
+  public process(tagAttributes: Record<string, string>, playlist: ParsedPlaylist, sharedState: SharedState): void {
+    if (this.checkRequiredAttributes(tagAttributes)) {
+      return;
+    }
+
+    if (this.runVariableSubstitution(tagAttributes, playlist, sharedState)) {
       return;
     }
 
@@ -634,7 +666,6 @@ export class ExtXDefine extends TagWithAttributesProcessor {
     return null;
   }
 
-  // gets this from the parent url
   protected getValueForQueryParamDefine(queryParam: string, sharedState: SharedState): string | null {
     if (!sharedState.baseUrl) {
       return null;
@@ -650,6 +681,7 @@ export class ExtXDefine extends TagWithAttributesProcessor {
   ): void {
     if (tagAttributes[ExtXDefine.NAME]) {
       playlist.define.name[tagAttributes[ExtXDefine.NAME]] = tagAttributes[ExtXDefine.VALUE];
+      sharedState.hasVariablesForSubstitution = true;
     }
 
     if (tagAttributes[ExtXDefine.IMPORT]) {
@@ -657,6 +689,10 @@ export class ExtXDefine extends TagWithAttributesProcessor {
         tagAttributes[ExtXDefine.IMPORT],
         sharedState
       );
+
+      if (playlist.define.import[tagAttributes[ExtXDefine.IMPORT]] !== null) {
+        sharedState.hasVariablesForSubstitution = true;
+      }
     }
 
     if (tagAttributes[ExtXDefine.QUERYPARAM]) {
@@ -664,6 +700,10 @@ export class ExtXDefine extends TagWithAttributesProcessor {
         tagAttributes[ExtXDefine.QUERYPARAM],
         sharedState
       );
+
+      if (playlist.define.queryParam[tagAttributes[ExtXDefine.QUERYPARAM]] !== null) {
+        sharedState.hasVariablesForSubstitution = true;
+      }
     }
   }
 }

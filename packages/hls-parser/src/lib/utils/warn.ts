@@ -5,6 +5,12 @@ export const missingTagValueWarn = (tag: string): string => skipProcessing(tag, 
 export const missingRequiredAttributeWarn = (tag: string, attribute: string): string =>
   skipProcessing(tag, `No required ${attribute} attribute`);
 
+export const missingRequiredVariableForAttributeValueSubstitutionWarn = (
+  tag: string,
+  attribute: string,
+  variableName: string
+): string => skipProcessing(tag, `No required variable for ${variableName} when processing ${attribute}`);
+
 export const unsupportedTagWarn = (tag: string): string => skipProcessing(tag, 'Unsupported');
 
 export const unableToParseValueWarn = (tag: string): string => skipProcessing(tag, 'Unable to parse tag value');
