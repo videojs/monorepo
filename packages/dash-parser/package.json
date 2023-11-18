@@ -1,5 +1,5 @@
 {
-  "name": "@web-media-box/dash-parser",
+  "name": "@videojs/dash-parser",
   "version": "0.0.0",
   "type": "module",
   "main": "./dist/index.js",

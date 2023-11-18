@@ -1,13 +1,7 @@
 /* eslint-disable no-console */
-import {
-  FullPlaylistParser as HlsFullParser,
-  ProgressiveParser as HlsProgressiveParser,
-} from '@web-media-box/hls-parser';
-import {
-  FullManifestParser as DashFullParser,
-  ProgressiveParser as DashProgressiveParser,
-} from '@web-media-box/dash-parser';
-import { Player } from '@web-media-box/player/player';
+import { FullPlaylistParser as HlsFullParser, ProgressiveParser as HlsProgressiveParser } from '@videojs/hls-parser';
+import { FullManifestParser as DashFullParser, ProgressiveParser as DashProgressiveParser } from '@videojs/dash-parser';
+import { Player } from '@videojs/playback/player';
 
 declare global {
   interface Window {
@@ -36,7 +30,6 @@ window.dashFullParser = dashFullParser;
 window.dashProgressiveParser = dashProgressiveParser;
 
 /**
- * We created a new project called web-media-box https://github.com/dzianis-dashkevich/web-media-box
  * Our goal is to create a fully typed/robust/next-gen player
  * During hack week we implemented NetworkManager, Hls-Parser, Dash-Parser
  * NetworkManager:

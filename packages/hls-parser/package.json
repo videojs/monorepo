@@ -1,5 +1,5 @@
 {
-  "name": "@web-media-box/hls-parser",
+  "name": "@videojs/hls-parser",
   "version": "0.0.0",
   "type": "module",
   "main": "./dist/index.js",
