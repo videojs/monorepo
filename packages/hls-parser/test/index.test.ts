@@ -1,5 +1,5 @@
 import { FullPlaylistParser, ProgressiveParser } from '../src';
-import type { ParsedPlaylist } from '../src';
+import type { ParsedPlaylist, ParseOptions } from '../src';
 import { describe, it, expect, beforeEach, jest } from '@jest/globals';
 
 describe('hls-parser spec', () => {
@@ -7,16 +7,20 @@ describe('hls-parser spec', () => {
   let progressivePlaylistParser: ProgressiveParser;
   let warnCallback: jest.Mock<(warn: string) => void>;
 
-  const testAllCombinations = (playlist: string, cb: (parsed: ParsedPlaylist) => void): void => {
+  const testAllCombinations = (
+    playlist: string,
+    cb: (parsed: ParsedPlaylist) => void,
+    options: ParseOptions = {}
+  ): void => {
     const buffer = new Uint8Array(playlist.split('').map((char) => char.charCodeAt(0)));
 
-    cb(fullPlaylistParser.parseFullPlaylistString(playlist));
-    cb(fullPlaylistParser.parseFullPlaylistBuffer(buffer));
+    cb(fullPlaylistParser.parseFullPlaylistString(playlist, options));
+    cb(fullPlaylistParser.parseFullPlaylistBuffer(buffer, options));
 
-    progressivePlaylistParser.pushString(playlist);
+    progressivePlaylistParser.pushString(playlist, options);
     cb(progressivePlaylistParser.done());
 
-    progressivePlaylistParser.pushBuffer(buffer);
+    progressivePlaylistParser.pushBuffer(buffer, options);
     cb(progressivePlaylistParser.done());
   };
 
@@ -1396,6 +1400,66 @@ segment-2.mp4
         expect(parsed.renditionGroups.subtitles['group-sub'].length).toBe(1);
         expect(parsed.renditionGroups.subtitles['group-sub'][0].language).toBe('eng');
       });
+    });
+  });
+
+  describe('#EXT-X-DEFINE', () => {
+    it('should be empty by default', () => {
+      const playlist = `#EXTM3U`;
+      testAllCombinations(playlist, (parsed) => {
+        expect(parsed.define.name).toEqual({});
+        expect(parsed.define.import).toEqual({});
+        expect(parsed.define.queryParam).toEqual({});
+      });
+    });
+
+    it('should parse from a playlist', () => {
+      const playlist = `#EXTM3U
+#EXT-X-DEFINE:NAME="token",VALUE="my-token-123"
+#EXT-X-DEFINE:IMPORT="key"
+#EXT-X-DEFINE:QUERYPARAM="customerId"
+`;
+      testAllCombinations(
+        playlist,
+        (parsed) => {
+          expect(parsed.define.name).toEqual({ token: 'my-token-123' });
+          expect(parsed.define.import).toEqual({ key: 'my-key-123' });
+          expect(parsed.define.queryParam).toEqual({ customerId: 'my-customer-id-123' });
+        },
+        {
+          baseDefine: { name: { key: 'my-key-123' }, import: {}, queryParam: {} },
+          baseUrl: new URL('https://baseurl.com?customerId=my-customer-id-123'),
+        }
+      );
+    });
+
+    it('should substitute variables in a playlist', () => {
+      const playlist = `#EXTM3U
+#EXT-X-DEFINE:NAME="token",VALUE="my-token-123"
+#EXT-X-DEFINE:IMPORT="key"
+#EXT-X-DEFINE:QUERYPARAM="customerId"
+#EXT-X-MAP:URI=https://host.com?token={$token}&key={$key}&customerId={$customerId}
+#EXTINF:5
+https://host.com/segment.ts?token={$token}&key={$key}&customerId={$customerId}
+`;
+
+      testAllCombinations(
+        playlist,
+        (parsed) => {
+          expect(parsed.segments[0].map).toEqual({
+            uri: 'https://host.com?token=my-token-123&key=my-key-123&customerId=my-customer-id-123',
+            byteRange: undefined,
+            encryption: undefined,
+          });
+          expect(parsed.segments[0].uri).toBe(
+            'https://host.com/segment.ts?token=my-token-123&key=my-key-123&customerId=my-customer-id-123'
+          );
+        },
+        {
+          baseDefine: { name: { key: 'my-key-123' }, import: {}, queryParam: {} },
+          baseUrl: new URL('https://baseurl.com?customerId=my-customer-id-123'),
+        }
+      );
     });
   });
 });

@@ -61,12 +61,10 @@ export abstract class TagWithAttributesProcessor extends TagProcessor {
     tagAttributes: Record<string, string>,
     playlist: ParsedPlaylist,
     sharedState: SharedState
-  ): boolean {
+  ): void {
     if (!sharedState.hasVariablesForSubstitution) {
-      return false;
+      return;
     }
-
-    let isRequiredVariableMissing = false;
 
     for (const attributeKey in tagAttributes) {
       const attributeValue = tagAttributes[attributeKey];
@@ -74,11 +72,8 @@ export abstract class TagWithAttributesProcessor extends TagProcessor {
         this.warnCallback(
           missingRequiredVariableForAttributeValueSubstitutionWarn(this.tag, attributeKey, variableName)
         );
-        isRequiredVariableMissing = true;
       });
     }
-
-    return isRequiredVariableMissing;
   }
 
   public process(tagAttributes: Record<string, string>, playlist: ParsedPlaylist, sharedState: SharedState): void {
@@ -86,9 +81,7 @@ export abstract class TagWithAttributesProcessor extends TagProcessor {
       return;
     }
 
-    if (this.runVariableSubstitution(tagAttributes, playlist, sharedState)) {
-      return;
-    }
+    this.runVariableSubstitution(tagAttributes, playlist, sharedState);
 
     return this.safeProcess(tagAttributes, playlist, sharedState);
   }

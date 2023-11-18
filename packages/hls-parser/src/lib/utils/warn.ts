@@ -9,7 +9,11 @@ export const missingRequiredVariableForAttributeValueSubstitutionWarn = (
   tag: string,
   attribute: string,
   variableName: string
-): string => skipProcessing(tag, `No required variable for ${variableName} when processing ${attribute}`);
+): string =>
+  `${tag}: Unable to substitute variable for ${variableName} when processing the following attribute: ${attribute}`;
+
+export const missingRequiredVariableForUriSubstitutionWarn = (uri: string, variableName: string): string =>
+  `Unable to substitute variable for ${variableName} when processing the following uri: ${uri}`;
 
 export const unsupportedTagWarn = (tag: string): string => skipProcessing(tag, 'Unsupported');
 

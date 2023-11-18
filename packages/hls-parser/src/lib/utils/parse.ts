@@ -37,15 +37,15 @@ export const substituteVariable = (
     // we expect match to be the following patter {$variableName}
     const variableName = match.slice(2, -1);
 
-    if (define.name[variableName] !== null) {
+    if (define.name[variableName]) {
       return define.name[variableName] as string;
     }
 
-    if (define.import[variableName] !== null) {
+    if (define.import[variableName]) {
       return define.import[variableName] as string;
     }
 
-    if (define.queryParam[variableName] !== null) {
+    if (define.queryParam[variableName]) {
       return define.queryParam[variableName] as string;
     }
 

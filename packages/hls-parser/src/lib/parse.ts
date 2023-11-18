@@ -2,6 +2,7 @@ import createStateMachine from './stateMachine';
 import type { StateMachineTransition } from './stateMachine';
 import {
   ignoreTagWarn,
+  missingRequiredVariableForUriSubstitutionWarn,
   missingTagValueWarn,
   segmentDurationExceededTargetDuration,
   unsupportedTagWarn,
@@ -99,6 +100,7 @@ import {
   createDefaultSharedState,
   createDefaultVariantStream,
 } from './consts/defaults';
+import { substituteVariable } from './utils/parse';
 
 class Parser {
   private readonly warnCallback: WarnCallback;
@@ -217,6 +219,12 @@ class Parser {
   };
 
   protected readonly uriInfoCallback = (uri: string): void => {
+    if (this.sharedState.hasVariablesForSubstitution) {
+      uri = substituteVariable(uri, this.parsedPlaylist.define, (variableName) => {
+        this.warnCallback(missingRequiredVariableForUriSubstitutionWarn(uri, variableName));
+      });
+    }
+
     if (this.sharedState.isMultivariantPlaylist) {
       this.handleCurrentVariant(uri);
     } else {
