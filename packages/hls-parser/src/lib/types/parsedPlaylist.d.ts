@@ -24,6 +24,7 @@ export interface ServerControl {
 export interface Encryption {
   method: 'NONE' | 'AES-128' | 'SAMPLE-AES';
   uri?: string;
+  resolvedUri?: string;
   iv?: string;
   keyFormat?: string;
   keyFormatVersions: Array<number>;
@@ -31,6 +32,7 @@ export interface Encryption {
 
 export interface MediaInitializationSection {
   uri: string;
+  resolvedUri: string;
   byteRange?: Range;
   encryption?: Encryption;
 }
@@ -42,6 +44,7 @@ export interface Range {
 
 export interface PartialSegment {
   uri: string;
+  resolvedUri: string;
   duration: number;
   byteRange?: Range;
   independent: boolean;
@@ -60,6 +63,7 @@ export interface Segment {
   byteRange?: Range;
   bitrate?: number;
   uri: string;
+  resolvedUri: string;
   isDiscontinuity: boolean;
   isGap: boolean;
   encryption?: Encryption;
@@ -72,6 +76,7 @@ export type RenditionType = 'AUDIO' | 'VIDEO' | 'SUBTITLES' | 'CLOSED-CAPTIONS';
 export interface Rendition {
   type: RenditionType;
   uri?: string;
+  resolvedUri?: string;
   groupId: string;
   language?: string;
   assocLanguage?: string;
@@ -121,6 +126,7 @@ export type CpcRecord = Record<string, Array<string>>;
 
 export interface BaseStreamInf {
   uri: string;
+  resolvedUri: string;
   bandwidth: number;
   averageBandwidth?: number;
   score?: number;
@@ -155,6 +161,7 @@ export type PreloadHintType = 'PART' | 'MAP';
 
 export interface PreloadHint {
   uri: string;
+  resolvedUri: string;
   byteRange?: Range;
 }
 
@@ -165,6 +172,7 @@ export interface PreloadHints {
 
 export interface RenditionReport {
   uri: string;
+  resolvedUri: string;
   lastMsn?: number;
   lastPart?: number;
 }
@@ -173,6 +181,7 @@ export interface SessionData {
   dataId: string;
   value?: string;
   uri?: string;
+  resolvedUri?: string;
   format?: 'JSON' | 'RAW';
   language?: string;
 }
@@ -183,6 +192,7 @@ export interface SessionKey extends Encryption {
 
 export interface ContentSteering {
   serverUri: string;
+  resolvedServerUri: string;
   pathwayId?: string;
 }
 

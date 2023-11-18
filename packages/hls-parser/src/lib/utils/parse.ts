@@ -54,3 +54,11 @@ export const substituteVariables = (
     return match;
   });
 };
+
+export const resolveUri = (uri: string, baseUrl: string): string | null => {
+  try {
+    return new URL(uri, baseUrl).toString();
+  } catch (e) {
+    return null;
+  }
+};

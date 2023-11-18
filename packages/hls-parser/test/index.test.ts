@@ -3,6 +3,8 @@ import type { ParsedPlaylist, ParseOptions } from '../src';
 import { describe, it, expect, beforeEach, jest } from '@jest/globals';
 
 describe('hls-parser spec', () => {
+  const baseUrl = 'https://baseurl.com';
+
   let fullPlaylistParser: FullPlaylistParser;
   let progressivePlaylistParser: ProgressiveParser;
   let warnCallback: jest.Mock<(warn: string) => void>;
@@ -10,7 +12,7 @@ describe('hls-parser spec', () => {
   const testAllCombinations = (
     playlist: string,
     cb: (parsed: ParsedPlaylist) => void,
-    options: ParseOptions = {}
+    options: ParseOptions = { baseUrl }
   ): void => {
     const buffer = new Uint8Array(playlist.split('').map((char) => char.charCodeAt(0)));
 
@@ -512,6 +514,7 @@ segment-4.ts
         },
         {
           baseTime: 25,
+          baseUrl,
         }
       );
     });
@@ -1155,8 +1158,8 @@ segment-3.mp4
       testAllCombinations(playlist, (parsed) => {
         // range: entire resource
         expect(parsed.preloadHints).toEqual({
-          map: { uri: 'preload-hint-uri-map' },
-          part: { uri: 'preload-hint-uri' },
+          map: { uri: 'preload-hint-uri-map', resolvedUri: `${baseUrl}/preload-hint-uri-map` },
+          part: { uri: 'preload-hint-uri', resolvedUri: `${baseUrl}/preload-hint-uri` },
         });
       });
 
@@ -1169,10 +1172,12 @@ segment-3.mp4
         expect(parsed.preloadHints).toEqual({
           map: {
             uri: 'preload-hint-uri-map',
+            resolvedUri: `${baseUrl}/preload-hint-uri-map`,
             byteRange: { start: 5, end: Number.MAX_SAFE_INTEGER },
           },
           part: {
             uri: 'preload-hint-uri',
+            resolvedUri: `${baseUrl}/preload-hint-uri`,
             byteRange: { start: 10, end: Number.MAX_SAFE_INTEGER },
           },
         });
@@ -1187,10 +1192,12 @@ segment-3.mp4
         expect(parsed.preloadHints).toEqual({
           map: {
             uri: 'preload-hint-uri-map',
+            resolvedUri: `${baseUrl}/preload-hint-uri-map`,
             byteRange: { start: 5, end: 14 },
           },
           part: {
             uri: 'preload-hint-uri',
+            resolvedUri: `${baseUrl}/preload-hint-uri`,
             byteRange: { start: 10, end: 29 },
           },
         });
@@ -1205,10 +1212,12 @@ segment-3.mp4
         expect(parsed.preloadHints).toEqual({
           map: {
             uri: 'preload-hint-uri-map',
+            resolvedUri: `${baseUrl}/preload-hint-uri-map`,
             byteRange: { start: 0, end: 19 },
           },
           part: {
             uri: 'preload-hint-uri',
+            resolvedUri: `${baseUrl}/preload-hint-uri`,
             byteRange: { start: 0, end: 19 },
           },
         });
@@ -1232,9 +1241,9 @@ segment-3.mp4
 `;
       testAllCombinations(playlist, (parsed) => {
         expect(parsed.renditionReports).toEqual([
-          { uri: 'rendition-1', lastMsn: 10, lastPart: 2 },
-          { uri: 'rendition-2', lastMsn: 10 },
-          { uri: 'rendition-3' },
+          { uri: 'rendition-1', resolvedUri: `${baseUrl}/rendition-1`, lastMsn: 10, lastPart: 2 },
+          { uri: 'rendition-2', resolvedUri: `${baseUrl}/rendition-2`, lastMsn: 10 },
+          { uri: 'rendition-3', resolvedUri: `${baseUrl}/rendition-3` },
         ]);
       });
     });
@@ -1259,6 +1268,7 @@ stream-2.m3u8
         expect(parsed.variantStreams.length).toBe(2);
         expect(parsed.variantStreams[0]).toEqual({
           uri: 'stream-1.m3u8',
+          resolvedUri: `${baseUrl}/stream-1.m3u8`,
           bandwidth: 123,
           averageBandwidth: 123,
           score: 2.5,
@@ -1284,6 +1294,7 @@ stream-2.m3u8
         });
         expect(parsed.variantStreams[1]).toEqual({
           uri: 'stream-2.m3u8',
+          resolvedUri: `${baseUrl}/stream-2.m3u8`,
           bandwidth: 234,
           codecs: [],
           supplementalCodecs: [],
@@ -1310,6 +1321,7 @@ stream-2.m3u8
         expect(parsed.iFramePlaylists.length).toBe(2);
         expect(parsed.iFramePlaylists[0]).toEqual({
           uri: 'stream-1.m3u8',
+          resolvedUri: `${baseUrl}/stream-1.m3u8`,
           bandwidth: 123,
           averageBandwidth: 123,
           score: 2.5,
@@ -1331,6 +1343,7 @@ stream-2.m3u8
         });
         expect(parsed.iFramePlaylists[1]).toEqual({
           uri: 'stream-2.m3u8',
+          resolvedUri: `${baseUrl}/stream-2.m3u8`,
           bandwidth: 234,
           codecs: [],
           supplementalCodecs: [],
@@ -1359,6 +1372,7 @@ stream-2.m3u8
             dataId: 'com.example.movie.title',
             value: 'data-value-1',
             uri: 'data-uri.json',
+            resolvedUri: `${baseUrl}/data-uri.json`,
             format: 'JSON',
             language: 'en',
           },
@@ -1366,6 +1380,7 @@ stream-2.m3u8
             dataId: 'com.example.movie.subtitle',
             value: 'data-value-2',
             uri: 'data-uri.bin',
+            resolvedUri: `${baseUrl}/data-uri.bin`,
             format: 'RAW',
             language: 'en',
           },
@@ -1520,7 +1535,7 @@ segment-2.mp4
             import: { key1: 'my-key1-123' },
             queryParam: { key2: 'my-key2-123' },
           },
-          baseUrl: new URL('https://baseurl.com?customerId=my-customer-id-123'),
+          baseUrl: 'https://baseurl.com?customerId=my-customer-id-123',
         }
       );
     });
@@ -1540,16 +1555,20 @@ https://host.com/segment.ts?token={$token}&key={$key}&customerId={$customerId}
         (parsed) => {
           expect(parsed.segments[0].map).toEqual({
             uri: 'https://host.com?token=my-token-123&key=my-key-123&customerId=my-customer-id-123',
+            resolvedUri: 'https://host.com/?token=my-token-123&key=my-key-123&customerId=my-customer-id-123',
             byteRange: undefined,
             encryption: undefined,
           });
           expect(parsed.segments[0].uri).toBe(
             'https://host.com/segment.ts?token=my-token-123&key=my-key-123&customerId=my-customer-id-123'
           );
+          expect(parsed.segments[0].resolvedUri).toBe(
+            'https://host.com/segment.ts?token=my-token-123&key=my-key-123&customerId=my-customer-id-123'
+          );
         },
         {
           baseDefine: { name: { key: 'my-key-123' }, import: {}, queryParam: {} },
-          baseUrl: new URL('https://baseurl.com?customerId=my-customer-id-123'),
+          baseUrl: 'https://baseurl.com?customerId=my-customer-id-123',
         }
       );
 
@@ -1562,16 +1581,26 @@ https://host.com/segment.ts?token={$token}&key={$key}&customerId={$customerId}
 https://host.com/segment.ts?token={$token}&key={$key}&customerId={$customerId}
       `;
 
-      testAllCombinations(playlist, (parsed) => {
-        expect(parsed.segments[0].map).toEqual({
-          uri: 'https://host.com?token=my-token-123&key={$key}&customerId={$customerId}',
-          byteRange: undefined,
-          encryption: undefined,
-        });
-        expect(parsed.segments[0].uri).toBe(
-          'https://host.com/segment.ts?token=my-token-123&key={$key}&customerId={$customerId}'
-        );
-      });
+      testAllCombinations(
+        playlist,
+        (parsed) => {
+          expect(parsed.segments[0].map).toEqual({
+            uri: 'https://host.com?token=my-token-123&key={$key}&customerId={$customerId}',
+            resolvedUri: 'https://host.com/?token=my-token-123&key={$key}&customerId={$customerId}',
+            byteRange: undefined,
+            encryption: undefined,
+          });
+          expect(parsed.segments[0].uri).toBe(
+            'https://host.com/segment.ts?token=my-token-123&key={$key}&customerId={$customerId}'
+          );
+          expect(parsed.segments[0].resolvedUri).toBe(
+            'https://host.com/segment.ts?token=my-token-123&key={$key}&customerId={$customerId}'
+          );
+        },
+        {
+          baseUrl,
+        }
+      );
 
       expect(warnCallback).toHaveBeenCalledTimes(16);
     });

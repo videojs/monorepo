@@ -28,7 +28,7 @@ export interface ParserOptions {
 }
 
 export interface ParseOptions {
-  baseUrl?: URL;
+  baseUrl: string;
   baseDefine?: Define;
   baseTime?: number;
 }

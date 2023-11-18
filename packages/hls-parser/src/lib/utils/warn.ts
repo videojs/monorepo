@@ -21,6 +21,16 @@ export const unableToParseValueWarn = (tag: string): string => skipProcessing(ta
 
 export const fallbackUsedWarn = (tag: string, fallback: string): string => `${tag}: Fallback used ${fallback}`;
 
+export const failedToResolveUriAttribute = (
+  tag: string,
+  attribute: string,
+  uriValue: string,
+  baseUrl: string
+): string => `${tag}: Failed to resolve ${attribute}. Value: ${uriValue}. Base URL: ${baseUrl}`;
+
+export const failedToResolveUri = (uriValue: string, baseUrl: string): string =>
+  `Failed to resolve ${uriValue}. Base URL: ${baseUrl}`;
+
 export const unsupportedEnumValue = (tag: string, actual: string, required: Set<string>): string =>
   skipProcessing(tag, `received unsupported tag value: ${actual}. Possible values: ${Array.from(required).toString()}`);
 

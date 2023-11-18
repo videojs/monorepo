@@ -1,6 +1,7 @@
 import createStateMachine from './stateMachine';
 import type { StateMachineTransition } from './stateMachine';
 import {
+  failedToResolveUri,
   ignoreTagWarn,
   missingRequiredVariableForUriSubstitutionWarn,
   missingTagValueWarn,
@@ -100,7 +101,7 @@ import {
   createDefaultSharedState,
   createDefaultVariantStream,
 } from './consts/defaults';
-import { substituteVariables } from './utils/parse';
+import { resolveUri, substituteVariables } from './utils/parse';
 
 class Parser {
   private readonly warnCallback: WarnCallback;
@@ -225,20 +226,28 @@ class Parser {
       });
     }
 
+    let resolvedUri = resolveUri(uri, this.sharedState.baseUrl);
+
+    if (resolvedUri === null) {
+      this.warnCallback(failedToResolveUri(uri, this.sharedState.baseUrl));
+      resolvedUri = uri;
+    }
+
     if (this.sharedState.isMultivariantPlaylist) {
-      this.handleCurrentVariant(uri);
+      this.handleCurrentVariant(uri, resolvedUri);
     } else {
-      this.handleCurrentSegment(uri);
+      this.handleCurrentSegment(uri, resolvedUri);
     }
   };
 
-  private handleCurrentVariant(uri: string): void {
+  private handleCurrentVariant(uri: string, resolvedUri: string): void {
     this.sharedState.currentVariant.uri = uri;
+    this.sharedState.currentVariant.resolvedUri = resolvedUri;
     this.parsedPlaylist.variantStreams.push(this.sharedState.currentVariant);
     this.sharedState.currentVariant = createDefaultVariantStream();
   }
 
-  private handleCurrentSegment(uri: string): void {
+  private handleCurrentSegment(uri: string, resolvedUri: string): void {
     if (
       this.parsedPlaylist.targetDuration !== undefined &&
       this.sharedState.currentSegment.duration > this.parsedPlaylist.targetDuration
@@ -257,6 +266,7 @@ class Parser {
     this.sharedState.currentSegment.encryption = this.sharedState.currentEncryption;
     this.sharedState.currentSegment.map = this.sharedState.currentMap;
     this.sharedState.currentSegment.uri = uri;
+    this.sharedState.currentSegment.resolvedUri = resolvedUri;
     this.sharedState.currentSegment.startTime = this.sharedState.baseTime;
 
     if (previousSegment) {
@@ -308,7 +318,7 @@ class Parser {
     stateMachine('\n');
   }
 
-  protected gatherParseOptions(options: ParseOptions = {}): void {
+  protected gatherParseOptions(options: ParseOptions): void {
     this.sharedState.baseDefine = options.baseDefine;
     this.sharedState.baseUrl = options.baseUrl;
     this.sharedState.baseTime = options.baseTime || 0;
@@ -316,7 +326,7 @@ class Parser {
 }
 
 export class FullPlaylistParser extends Parser {
-  public parseFullPlaylistString(playlist: string, options?: ParseOptions): ParsedPlaylist {
+  public parseFullPlaylistString(playlist: string, options: ParseOptions): ParsedPlaylist {
     this.gatherParseOptions(options);
 
     const stateMachine = createStateMachine(this.tagInfoCallback, this.uriInfoCallback);
@@ -331,7 +341,7 @@ export class FullPlaylistParser extends Parser {
     return this.clean();
   }
 
-  public parseFullPlaylistBuffer(playlist: Uint8Array, options?: ParseOptions): ParsedPlaylist {
+  public parseFullPlaylistBuffer(playlist: Uint8Array, options: ParseOptions): ParsedPlaylist {
     this.gatherParseOptions(options);
 
     const stateMachine = createStateMachine(this.tagInfoCallback, this.uriInfoCallback);
@@ -350,7 +360,7 @@ export class FullPlaylistParser extends Parser {
 export class ProgressiveParser extends Parser {
   private stateMachine: StateMachineTransition | null = null;
 
-  public pushString(chunk: string, options?: ParseOptions): void {
+  public pushString(chunk: string, options: ParseOptions): void {
     this.gatherParseOptions(options);
 
     if (this.stateMachine === null) {
@@ -362,7 +372,7 @@ export class ProgressiveParser extends Parser {
     }
   }
 
-  public pushBuffer(chunk: Uint8Array, options?: ParseOptions): void {
+  public pushBuffer(chunk: Uint8Array, options: ParseOptions): void {
     this.gatherParseOptions(options);
 
     if (this.stateMachine === null) {

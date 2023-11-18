@@ -10,12 +10,14 @@ export const createDefaultSegment = (): Segment => ({
   isDiscontinuity: false,
   isGap: false,
   uri: '',
+  resolvedUri: '',
   parts: [],
 });
 
 export const createDefaultVariantStream = (): VariantStream => ({
   bandwidth: 0,
   uri: '',
+  resolvedUri: '',
   codecs: [],
   supplementalCodecs: [],
   allowedCpc: {},
@@ -53,6 +55,7 @@ export const createDefaultSharedState = (): SharedState => ({
   isMultivariantPlaylist: false,
   hasVariablesForSubstitution: false,
   baseTime: 0,
+  baseUrl: '',
   currentSegment: createDefaultSegment(),
   currentVariant: createDefaultVariantStream(),
 });
