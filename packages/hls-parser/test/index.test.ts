@@ -1434,7 +1434,7 @@ segment-2.mp4
     });
 
     it('should substitute variables in a playlist', () => {
-      const playlist = `#EXTM3U
+      let playlist = `#EXTM3U
 #EXT-X-DEFINE:NAME="token",VALUE="my-token-123"
 #EXT-X-DEFINE:IMPORT="key"
 #EXT-X-DEFINE:QUERYPARAM="customerId"
@@ -1460,6 +1460,28 @@ https://host.com/segment.ts?token={$token}&key={$key}&customerId={$customerId}
           baseUrl: new URL('https://baseurl.com?customerId=my-customer-id-123'),
         }
       );
+
+      playlist = `#EXTM3U
+#EXT-X-DEFINE:NAME="token",VALUE="my-token-123"
+#EXT-X-DEFINE:IMPORT="key"
+#EXT-X-DEFINE:QUERYPARAM="customerId"
+#EXT-X-MAP:URI=https://host.com?token={$token}&key={$key}&customerId={$customerId}
+#EXTINF:5
+https://host.com/segment.ts?token={$token}&key={$key}&customerId={$customerId}
+      `;
+
+      testAllCombinations(playlist, (parsed) => {
+        expect(parsed.segments[0].map).toEqual({
+          uri: 'https://host.com?token=my-token-123&key={$key}&customerId={$customerId}',
+          byteRange: undefined,
+          encryption: undefined,
+        });
+        expect(parsed.segments[0].uri).toBe(
+          'https://host.com/segment.ts?token=my-token-123&key={$key}&customerId={$customerId}'
+        );
+      });
+
+      expect(warnCallback).toHaveBeenCalledTimes(16);
     });
   });
 });

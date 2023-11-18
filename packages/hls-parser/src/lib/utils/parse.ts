@@ -28,7 +28,7 @@ const VARIABLE_REPLACEMENT_REGEX = /\{\$([a-zA-Z0-9-_]+)\}/g;
  * Variable Substitution
  * @see https://datatracker.ietf.org/doc/html/draft-pantos-hls-rfc8216bis#section-4.3
  */
-export const substituteVariable = (
+export const substituteVariables = (
   value: string,
   define: Define,
   warnCallback: (variableName: string) => void

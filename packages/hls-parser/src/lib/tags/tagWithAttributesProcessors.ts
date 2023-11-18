@@ -37,7 +37,7 @@ import {
   EXT_X_CONTENT_STEERING,
   EXT_X_DEFINE,
 } from '../consts/tags';
-import { parseBoolean, parseHex, substituteVariable } from '../utils/parse';
+import { parseBoolean, parseHex, substituteVariables } from '../utils/parse';
 
 export abstract class TagWithAttributesProcessor extends TagProcessor {
   protected abstract readonly requiredAttributes: Set<string>;
@@ -68,7 +68,7 @@ export abstract class TagWithAttributesProcessor extends TagProcessor {
 
     for (const attributeKey in tagAttributes) {
       const attributeValue = tagAttributes[attributeKey];
-      tagAttributes[attributeKey] = substituteVariable(attributeValue, playlist.define, (variableName) => {
+      tagAttributes[attributeKey] = substituteVariables(attributeValue, playlist.define, (variableName) => {
         this.warnCallback(
           missingRequiredVariableForAttributeValueSubstitutionWarn(this.tag, attributeKey, variableName)
         );

@@ -100,7 +100,7 @@ import {
   createDefaultSharedState,
   createDefaultVariantStream,
 } from './consts/defaults';
-import { substituteVariable } from './utils/parse';
+import { substituteVariables } from './utils/parse';
 
 class Parser {
   private readonly warnCallback: WarnCallback;
@@ -220,7 +220,7 @@ class Parser {
 
   protected readonly uriInfoCallback = (uri: string): void => {
     if (this.sharedState.hasVariablesForSubstitution) {
-      uri = substituteVariable(uri, this.parsedPlaylist.define, (variableName) => {
+      uri = substituteVariables(uri, this.parsedPlaylist.define, (variableName) => {
         this.warnCallback(missingRequiredVariableForUriSubstitutionWarn(uri, variableName));
       });
     }
