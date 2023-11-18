@@ -1417,17 +1417,23 @@ segment-2.mp4
       const playlist = `#EXTM3U
 #EXT-X-DEFINE:NAME="token",VALUE="my-token-123"
 #EXT-X-DEFINE:IMPORT="key"
+#EXT-X-DEFINE:IMPORT="key1"
+#EXT-X-DEFINE:IMPORT="key2"
 #EXT-X-DEFINE:QUERYPARAM="customerId"
 `;
       testAllCombinations(
         playlist,
         (parsed) => {
           expect(parsed.define.name).toEqual({ token: 'my-token-123' });
-          expect(parsed.define.import).toEqual({ key: 'my-key-123' });
+          expect(parsed.define.import).toEqual({ key: 'my-key-123', key1: 'my-key1-123', key2: 'my-key2-123' });
           expect(parsed.define.queryParam).toEqual({ customerId: 'my-customer-id-123' });
         },
         {
-          baseDefine: { name: { key: 'my-key-123' }, import: {}, queryParam: {} },
+          baseDefine: {
+            name: { key: 'my-key-123' },
+            import: { key1: 'my-key1-123' },
+            queryParam: { key2: 'my-key2-123' },
+          },
           baseUrl: new URL('https://baseurl.com?customerId=my-customer-id-123'),
         }
       );

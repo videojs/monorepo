@@ -644,15 +644,15 @@ export class ExtXDefine extends TagWithAttributesProcessor {
       return null;
     }
 
-    if (sharedState.baseDefine.name[importName] !== null) {
+    if (sharedState.baseDefine.name[importName]) {
       return sharedState.baseDefine.name[importName];
     }
 
-    if (sharedState.baseDefine.import[importName] !== null) {
+    if (sharedState.baseDefine.import[importName]) {
       return sharedState.baseDefine.import[importName];
     }
 
-    if (sharedState.baseDefine.queryParam[importName] !== null) {
+    if (sharedState.baseDefine.queryParam[importName]) {
       return sharedState.baseDefine.queryParam[importName];
     }
 
