@@ -52,6 +52,8 @@ export interface Segment {
   mediaSequence: number;
   discontinuitySequence: number;
   duration: number;
+  startTime: number;
+  endTime: number;
   title?: string;
   programDateTime?: number;
   byteRange?: Range;

@@ -257,9 +257,11 @@ class Parser {
     this.sharedState.currentSegment.encryption = this.sharedState.currentEncryption;
     this.sharedState.currentSegment.map = this.sharedState.currentMap;
     this.sharedState.currentSegment.uri = uri;
+    this.sharedState.currentSegment.startTime = this.sharedState.baseTime;
 
     if (previousSegment) {
       this.sharedState.currentSegment.mediaSequence = previousSegment.mediaSequence + 1;
+      this.sharedState.currentSegment.startTime = previousSegment.endTime;
 
       if (this.sharedState.currentSegment.isDiscontinuity) {
         this.sharedState.currentSegment.discontinuitySequence = previousSegment.discontinuitySequence + 1;
@@ -267,6 +269,9 @@ class Parser {
         this.sharedState.currentSegment.discontinuitySequence = previousSegment.discontinuitySequence;
       }
     }
+
+    this.sharedState.currentSegment.endTime =
+      this.sharedState.currentSegment.startTime + this.sharedState.currentSegment.duration;
 
     // Apply the EXT-X-BITRATE value from previous segments to this segment as well,
     // as long as it doesn't have an EXT-X-BYTERANGE tag applied to it.
@@ -301,7 +306,7 @@ class Parser {
   protected gatherParseOptions(options: ParseOptions = {}): void {
     this.sharedState.baseDefine = options.baseDefine;
     this.sharedState.baseUrl = options.baseUrl;
-    this.sharedState.baseTime = options.baseTime;
+    this.sharedState.baseTime = options.baseTime || 0;
   }
 }
 

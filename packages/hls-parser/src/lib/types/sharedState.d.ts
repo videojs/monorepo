@@ -8,7 +8,7 @@ export interface SharedState {
   currentVariant: VariantStream;
   isMultivariantPlaylist: boolean;
   baseUrl?: URL;
-  baseTime?: number;
+  baseTime: number;
   baseDefine?: Define;
   hasVariablesForSubstitution: boolean;
 }

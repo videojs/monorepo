@@ -3,6 +3,8 @@ import type { SharedState } from '../types/sharedState';
 
 export const createDefaultSegment = (): Segment => ({
   duration: 0,
+  startTime: 0,
+  endTime: 0,
   mediaSequence: 0,
   discontinuitySequence: 0,
   isDiscontinuity: false,
@@ -50,6 +52,7 @@ export const createDefaultParsedPlaylist = (): ParsedPlaylist => ({
 export const createDefaultSharedState = (): SharedState => ({
   isMultivariantPlaylist: false,
   hasVariablesForSubstitution: false,
+  baseTime: 0,
   currentSegment: createDefaultSegment(),
   currentVariant: createDefaultVariantStream(),
 });

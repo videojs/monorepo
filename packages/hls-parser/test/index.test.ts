@@ -434,17 +434,88 @@ main.ts
   });
 
   describe('#EXTINF', () => {
-    it('should parse value from a playlist', () => {
-      const playlist = `#EXTM3U
-#EXTINF:9.9766,segment-title
-main.ts
+    it('should parse from a playlist', () => {
+      let playlist = `#EXTM3U
+#EXTINF:5,segment-title-1
+segment-1.ts
+#EXTINF:5,segment-title-2
+segment-2.ts
+#EXTINF:5,segment-title-3
+segment-3.ts
+#EXTINF:5,segment-title-4
+segment-4.ts
 `;
 
       testAllCombinations(playlist, (parsed) => {
-        expect(parsed.segments[0]?.title).toBe('segment-title');
-        expect(parsed.segments[0]?.duration).toBe(9.9766);
+        expect(parsed.segments[0]?.title).toBe('segment-title-1');
+        expect(parsed.segments[0]?.uri).toBe('segment-1.ts');
+        expect(parsed.segments[0]?.duration).toBe(5);
+        expect(parsed.segments[0]?.startTime).toBe(0);
+        expect(parsed.segments[0]?.endTime).toBe(5);
+
+        expect(parsed.segments[1]?.title).toBe('segment-title-2');
+        expect(parsed.segments[1]?.uri).toBe('segment-2.ts');
+        expect(parsed.segments[1]?.duration).toBe(5);
+        expect(parsed.segments[1]?.startTime).toBe(5);
+        expect(parsed.segments[1]?.endTime).toBe(10);
+
+        expect(parsed.segments[2]?.title).toBe('segment-title-3');
+        expect(parsed.segments[2]?.uri).toBe('segment-3.ts');
+        expect(parsed.segments[2]?.duration).toBe(5);
+        expect(parsed.segments[2]?.startTime).toBe(10);
+        expect(parsed.segments[2]?.endTime).toBe(15);
+
+        expect(parsed.segments[3]?.title).toBe('segment-title-4');
+        expect(parsed.segments[3]?.uri).toBe('segment-4.ts');
+        expect(parsed.segments[3]?.duration).toBe(5);
+        expect(parsed.segments[3]?.startTime).toBe(15);
+        expect(parsed.segments[3]?.endTime).toBe(20);
       });
+
+      playlist = `#EXTM3U
+#EXTINF:5,segment-title-1
+segment-1.ts
+#EXTINF:5,segment-title-2
+segment-2.ts
+#EXTINF:5,segment-title-3
+segment-3.ts
+#EXTINF:5,segment-title-4
+segment-4.ts
+`;
+
+      testAllCombinations(
+        playlist,
+        (parsed) => {
+          expect(parsed.segments[0]?.title).toBe('segment-title-1');
+          expect(parsed.segments[0]?.uri).toBe('segment-1.ts');
+          expect(parsed.segments[0]?.duration).toBe(5);
+          expect(parsed.segments[0]?.startTime).toBe(25);
+          expect(parsed.segments[0]?.endTime).toBe(30);
+
+          expect(parsed.segments[1]?.title).toBe('segment-title-2');
+          expect(parsed.segments[1]?.uri).toBe('segment-2.ts');
+          expect(parsed.segments[1]?.duration).toBe(5);
+          expect(parsed.segments[1]?.startTime).toBe(30);
+          expect(parsed.segments[1]?.endTime).toBe(35);
+
+          expect(parsed.segments[2]?.title).toBe('segment-title-3');
+          expect(parsed.segments[2]?.uri).toBe('segment-3.ts');
+          expect(parsed.segments[2]?.duration).toBe(5);
+          expect(parsed.segments[2]?.startTime).toBe(35);
+          expect(parsed.segments[2]?.endTime).toBe(40);
+
+          expect(parsed.segments[3]?.title).toBe('segment-title-4');
+          expect(parsed.segments[3]?.uri).toBe('segment-4.ts');
+          expect(parsed.segments[3]?.duration).toBe(5);
+          expect(parsed.segments[3]?.startTime).toBe(40);
+          expect(parsed.segments[3]?.endTime).toBe(45);
+        },
+        {
+          baseTime: 25,
+        }
+      );
     });
+
     it('should fallback to 0, if value is invalid', () => {
       const playlist = `#EXTM3U
 #EXTINF:X
