@@ -1419,13 +1419,19 @@ segment-2.mp4
 #EXT-X-DEFINE:IMPORT="key"
 #EXT-X-DEFINE:IMPORT="key1"
 #EXT-X-DEFINE:IMPORT="key2"
+#EXT-X-DEFINE:IMPORT="key3"
 #EXT-X-DEFINE:QUERYPARAM="customerId"
 `;
       testAllCombinations(
         playlist,
         (parsed) => {
           expect(parsed.define.name).toEqual({ token: 'my-token-123' });
-          expect(parsed.define.import).toEqual({ key: 'my-key-123', key1: 'my-key1-123', key2: 'my-key2-123' });
+          expect(parsed.define.import).toEqual({
+            key: 'my-key-123',
+            key1: 'my-key1-123',
+            key2: 'my-key2-123',
+            key3: null,
+          });
           expect(parsed.define.queryParam).toEqual({ customerId: 'my-customer-id-123' });
         },
         {
