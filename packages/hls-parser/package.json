@@ -1,6 +1,7 @@
 {
   "name": "@videojs/hls-parser",
   "version": "0.0.0",
+  "description": "hls parser",
   "type": "module",
   "main": "./dist/index.js",
   "scripts": {
@@ -9,5 +10,20 @@
     "build:source": "bun run bun.build.ts",
     "test": "bunx jest",
     "test:coverage": "bunx jest --coverage=true"
-  }
+  },
+  "keywords": [
+    "videojs",
+    "videojs-plugin",
+    "hls",
+    "hls-parser",
+    "m3u8",
+    "m3u8-parser",
+    "video",
+    "streaming"
+  ],
+  "author": "Brightcove, Inc",
+  "license": "Apache-2.0",
+  "files": [
+    "./dist/"
+  ]
 }
