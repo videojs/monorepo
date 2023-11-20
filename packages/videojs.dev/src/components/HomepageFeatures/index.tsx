@@ -1,8 +1,6 @@
 import { clsx } from 'clsx';
 import Heading from '@theme/Heading';
 import styles from './styles.module.css';
-import * as mountainSVG from '@site/static/img/undraw_docusaurus_mountain.svg';
-import * as treeSVG from '@site/static/img/undraw_docusaurus_tree.svg';
 import * as reactSVG from '@site/static/img/undraw_docusaurus_react.svg';
 
 type FeatureItem = {
@@ -13,28 +11,6 @@ type FeatureItem = {
 
 const FeatureList: Array<FeatureItem> = [
   {
-    title: 'Easy to Use',
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    Svg: mountainSVG.default,
-    description: (
-      <>
-        Docusaurus was designed from the ground up to be easily installed and used to get your website up and running
-        quickly.
-      </>
-    ),
-  },
-  {
-    title: 'Focus on What Matters',
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    Svg: treeSVG.default,
-    description: (
-      <>
-        Docusaurus lets you focus on your docs, and we&apos;ll do the chores. Go ahead and move your docs into the{' '}
-        <code>docs</code> directory.
-      </>
-    ),
-  },
-  {
     title: 'Powered by React',
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     Svg: reactSVG.default,
@@ -44,6 +20,7 @@ const FeatureList: Array<FeatureItem> = [
         header and footer.
       </>
     ),
+    // TODO: add more info here
   },
 ];
 

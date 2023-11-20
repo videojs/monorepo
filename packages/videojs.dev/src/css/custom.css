@@ -28,3 +28,23 @@
   --ifm-color-primary-lightest: #4fddbf;
   --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.3);
 }
+
+.videoContainer {
+  position: relative;
+}
+
+.videoContainer video {
+  width: 100%;
+  height: auto;
+}
+
+.controls {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.manifestLoader {
+  margin-top: 1rem;
+}

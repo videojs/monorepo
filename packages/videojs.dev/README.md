@@ -1,3 +1,3 @@
-web-media-box.dev
+videojs.dev
 
 TBD
