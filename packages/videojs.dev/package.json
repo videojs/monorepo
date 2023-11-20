@@ -1,0 +1,17 @@
+{
+  "name": "videojs.dev",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "build": "bun run build:source",
+    "build:source": "bun run bun.build.ts",
+    "test": "echo \"No test for videojs.dev\"",
+    "test:coverage": "echo \"No test for videojs.dev\""
+  },
+  "dependencies": {
+    "@videojs/playback": "*",
+    "@videojs/hls-parser": "*",
+    "@videojs/dash-parser": "*"
+  }
+}

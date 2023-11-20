@@ -17,8 +17,8 @@ export abstract class EmptyTagProcessor extends TagProcessor {
 export class ExtM3u extends EmptyTagProcessor {
   protected readonly tag = EXTM3U;
 
-  public process(): void {
-    //do nothing
+  public process(playlist: ParsedPlaylist): void {
+    playlist.m3u = true;
   }
 }
 
