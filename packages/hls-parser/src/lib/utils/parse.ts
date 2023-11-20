@@ -34,7 +34,7 @@ export const substituteVariables = (
   warnCallback: (variableName: string) => void
 ): string => {
   return value.replace(VARIABLE_REPLACEMENT_REGEX, (match: string): string => {
-    // we expect match to be the following patter {$variableName}
+    // We expect the match to be the following pattern {$variableName}
     const variableName = match.slice(2, -1);
 
     if (define.name[variableName]) {
