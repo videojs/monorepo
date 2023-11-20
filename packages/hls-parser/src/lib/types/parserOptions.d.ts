@@ -18,6 +18,7 @@ export type CustomTagMap = Record<
 export type TransformTagValue = (tagKey: string, tagValue: string | null) => string | null;
 export type TransformTagAttributes = (tagKey: string, tagAttributes: Record<string, string>) => Record<string, string>;
 
+// used in the parser's constructor
 export interface ParserOptions {
   warnCallback?: WarnCallback;
   debugCallback?: DebugCallback;
@@ -27,6 +28,7 @@ export interface ParserOptions {
   transformTagAttributes?: TransformTagAttributes;
 }
 
+// used in the parse methods (eg parseFullPlaylistString, parseFullPlaylistBuffer, pushBuffer, pushString)
 export interface ParseOptions {
   baseUrl: string;
   baseDefine?: Define;
