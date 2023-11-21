@@ -3,6 +3,12 @@ export interface Start {
   precise: boolean;
 }
 
+export interface Define {
+  name: Record<string, string | null>;
+  import: Record<string, string | null>;
+  queryParam: Record<string, string | null>;
+}
+
 export interface PartInf {
   partTarget: number;
 }
@@ -18,6 +24,7 @@ export interface ServerControl {
 export interface Encryption {
   method: 'NONE' | 'AES-128' | 'SAMPLE-AES';
   uri?: string;
+  resolvedUri?: string;
   iv?: string;
   keyFormat?: string;
   keyFormatVersions: Array<number>;
@@ -25,6 +32,7 @@ export interface Encryption {
 
 export interface MediaInitializationSection {
   uri: string;
+  resolvedUri: string;
   byteRange?: Range;
   encryption?: Encryption;
 }
@@ -36,6 +44,7 @@ export interface Range {
 
 export interface PartialSegment {
   uri: string;
+  resolvedUri: string;
   duration: number;
   byteRange?: Range;
   independent: boolean;
@@ -46,11 +55,15 @@ export interface Segment {
   mediaSequence: number;
   discontinuitySequence: number;
   duration: number;
+  startTime: number;
+  endTime: number;
   title?: string;
-  programDateTime?: number;
+  programDateTimeStart?: number;
+  programDateTimeEnd?: number;
   byteRange?: Range;
   bitrate?: number;
   uri: string;
+  resolvedUri: string;
   isDiscontinuity: boolean;
   isGap: boolean;
   encryption?: Encryption;
@@ -63,6 +76,7 @@ export type RenditionType = 'AUDIO' | 'VIDEO' | 'SUBTITLES' | 'CLOSED-CAPTIONS';
 export interface Rendition {
   type: RenditionType;
   uri?: string;
+  resolvedUri?: string;
   groupId: string;
   language?: string;
   assocLanguage?: string;
@@ -112,6 +126,7 @@ export type CpcRecord = Record<string, Array<string>>;
 
 export interface BaseStreamInf {
   uri: string;
+  resolvedUri: string;
   bandwidth: number;
   averageBandwidth?: number;
   score?: number;
@@ -146,6 +161,7 @@ export type PreloadHintType = 'PART' | 'MAP';
 
 export interface PreloadHint {
   uri: string;
+  resolvedUri: string;
   byteRange?: Range;
 }
 
@@ -156,6 +172,7 @@ export interface PreloadHints {
 
 export interface RenditionReport {
   uri: string;
+  resolvedUri: string;
   lastMsn?: number;
   lastPart?: number;
 }
@@ -164,6 +181,7 @@ export interface SessionData {
   dataId: string;
   value?: string;
   uri?: string;
+  resolvedUri?: string;
   format?: 'JSON' | 'RAW';
   language?: string;
 }
@@ -174,6 +192,7 @@ export interface SessionKey extends Encryption {
 
 export interface ContentSteering {
   serverUri: string;
+  resolvedServerUri: string;
   pathwayId?: string;
 }
 
@@ -189,7 +208,7 @@ export interface ParsedPlaylist {
   // https://datatracker.ietf.org/doc/html/draft-pantos-hls-rfc8216bis#section-4.4.2.2
   start?: Start;
   // https://datatracker.ietf.org/doc/html/draft-pantos-hls-rfc8216bis#section-4.4.2.3
-  // define?: null;
+  define: Define;
   // https://datatracker.ietf.org/doc/html/draft-pantos-hls-rfc8216bis#section-4.4.3.1
   targetDuration?: number;
   // https://datatracker.ietf.org/doc/html/draft-pantos-hls-rfc8216bis#section-4.4.3.2
@@ -206,23 +225,28 @@ export interface ParsedPlaylist {
   partInf?: PartInf;
   // https://datatracker.ietf.org/doc/html/draft-pantos-hls-rfc8216bis#section-4.4.3.8
   serverControl?: ServerControl;
+  // https://datatracker.ietf.org/doc/html/draft-pantos-hls-rfc8216bis/#section-4.4.4.1
   segments: Array<Segment>;
-  custom: Record<string, unknown>;
-  renditionGroups: RenditionGroups;
   // https://datatracker.ietf.org/doc/html/draft-pantos-hls-rfc8216bis#section-4.4.5.1
   dateRanges: Array<DateRange>;
-  variantStreams: Array<VariantStream>;
-  iFramePlaylists: Array<IFramePlaylist>;
   // https://datatracker.ietf.org/doc/html/draft-pantos-hls-rfc8216bis#section-4.4.5.2
   skip?: Skip;
   // https://datatracker.ietf.org/doc/html/draft-pantos-hls-rfc8216bis#section-4.4.5.3
   preloadHints: PreloadHints;
   // https://datatracker.ietf.org/doc/html/draft-pantos-hls-rfc8216bis#section-4.4.5.4
   renditionReports: Array<RenditionReport>;
+  // https://datatracker.ietf.org/doc/html/draft-pantos-hls-rfc8216bis/#section-4.4.6.1
+  renditionGroups: RenditionGroups;
+  // https://datatracker.ietf.org/doc/html/draft-pantos-hls-rfc8216bis/#section-4.4.6.2
+  variantStreams: Array<VariantStream>;
+  // https://datatracker.ietf.org/doc/html/draft-pantos-hls-rfc8216bis/#section-4.4.6.3
+  iFramePlaylists: Array<IFramePlaylist>;
   // https://datatracker.ietf.org/doc/html/draft-pantos-hls-rfc8216bis#section-4.4.6.4
   sessionData: Record<string, SessionData>;
   // https://datatracker.ietf.org/doc/html/draft-pantos-hls-rfc8216bis#section-4.4.6.5
   sessionKey?: SessionKey;
   // https://datatracker.ietf.org/doc/html/draft-pantos-hls-rfc8216bis#section-4.4.6.6
   contentSteering?: ContentSteering;
+  // out of spec, custom tags
+  custom: Record<string, unknown>;
 }

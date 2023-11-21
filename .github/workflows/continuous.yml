@@ -39,7 +39,7 @@ jobs:
         uses: codecov/codecov-action@v3
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          flags: player
-          files: ./packages/player/coverage/coverage-final.json
-          name: player-coverage
+          flags: playback
+          files: ./packages/playback/coverage/coverage-final.json
+          name: playback-coverage
           fail_ci_if_error: true

@@ -12,7 +12,6 @@ type FeatureItem = {
 const FeatureList: Array<FeatureItem> = [
   {
     title: 'Powered by React',
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
     Svg: reactSVG.default,
     description: (
       <>

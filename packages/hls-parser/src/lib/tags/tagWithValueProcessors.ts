@@ -167,7 +167,7 @@ export class ExtXProgramDateTime extends TagWithValueProcessor {
       return this.warnCallback(unableToParseValueWarn(this.tag));
     }
 
-    sharedState.currentSegment.programDateTime = timestamp;
+    sharedState.currentSegment.programDateTimeStart = timestamp;
 
     // If this is the first segment, abort early
     if (!playlist.segments.length) {
@@ -177,14 +177,15 @@ export class ExtXProgramDateTime extends TagWithValueProcessor {
     const previousSegment = playlist.segments[playlist.segments.length - 1];
 
     // If there are preceding segments without programDateTime, we need to backfill them
-    if (!previousSegment.programDateTime) {
-      let currentTimestamp = sharedState.currentSegment.programDateTime;
+    if (!previousSegment.programDateTimeStart) {
+      let currentTimestamp = sharedState.currentSegment.programDateTimeStart;
 
       for (let i = playlist.segments.length - 1; i >= 0; i--) {
         const segment = playlist.segments[i];
 
+        segment.programDateTimeEnd = currentTimestamp;
         currentTimestamp -= segment.duration * 1000;
-        segment.programDateTime = currentTimestamp;
+        segment.programDateTimeStart = currentTimestamp;
       }
     }
   }

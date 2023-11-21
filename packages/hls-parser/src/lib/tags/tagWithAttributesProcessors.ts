@@ -17,7 +17,11 @@ import type {
 } from '../types/parsedPlaylist';
 import type { SharedState } from '../types/sharedState';
 import { TagProcessor } from './base';
-import { missingRequiredAttributeWarn } from '../utils/warn';
+import {
+  failedToResolveUriAttribute,
+  missingRequiredAttributeWarn,
+  missingRequiredVariableForAttributeValueSubstitutionWarn,
+} from '../utils/warn';
 import {
   EXT_X_PART_INF,
   EXT_X_SERVER_CONTROL,
@@ -35,13 +39,14 @@ import {
   EXT_X_SESSION_DATA,
   EXT_X_SESSION_KEY,
   EXT_X_CONTENT_STEERING,
+  EXT_X_DEFINE,
 } from '../consts/tags';
-import { parseBoolean, parseHex } from '../utils/parse';
+import { parseBoolean, parseHex, resolveUri, substituteVariables } from '../utils/parse';
 
 export abstract class TagWithAttributesProcessor extends TagProcessor {
   protected abstract readonly requiredAttributes: Set<string>;
 
-  public process(tagAttributes: Record<string, string>, playlist: ParsedPlaylist, sharedState: SharedState): void {
+  private checkRequiredAttributes(tagAttributes: Record<string, string>): boolean {
     let isRequiredAttributedMissed = false;
 
     this.requiredAttributes.forEach((requiredAttribute) => {
@@ -53,9 +58,34 @@ export abstract class TagWithAttributesProcessor extends TagProcessor {
       }
     });
 
-    if (isRequiredAttributedMissed) {
+    return isRequiredAttributedMissed;
+  }
+
+  private runVariableSubstitution(
+    tagAttributes: Record<string, string>,
+    playlist: ParsedPlaylist,
+    sharedState: SharedState
+  ): void {
+    if (!sharedState.hasVariablesForSubstitution) {
       return;
     }
+
+    for (const attributeKey in tagAttributes) {
+      const attributeValue = tagAttributes[attributeKey];
+      tagAttributes[attributeKey] = substituteVariables(attributeValue, playlist.define, (variableName) => {
+        this.warnCallback(
+          missingRequiredVariableForAttributeValueSubstitutionWarn(this.tag, attributeKey, variableName)
+        );
+      });
+    }
+  }
+
+  public process(tagAttributes: Record<string, string>, playlist: ParsedPlaylist, sharedState: SharedState): void {
+    if (this.checkRequiredAttributes(tagAttributes)) {
+      return;
+    }
+
+    this.runVariableSubstitution(tagAttributes, playlist, sharedState);
 
     return this.safeProcess(tagAttributes, playlist, sharedState);
   }
@@ -65,6 +95,17 @@ export abstract class TagWithAttributesProcessor extends TagProcessor {
     playlist: ParsedPlaylist,
     sharedState: SharedState
   ): void;
+
+  protected resolveUriAttribute(uri: string, baseUrl: string, attributeKey: string): string {
+    let resolved = resolveUri(uri, baseUrl);
+
+    if (resolved === null) {
+      this.warnCallback(failedToResolveUriAttribute(this.tag, attributeKey, uri, baseUrl));
+      resolved = uri;
+    }
+
+    return resolved;
+  }
 }
 
 export class ExtXStart extends TagWithAttributesProcessor {
@@ -141,10 +182,21 @@ abstract class EncryptionTagProcessor extends TagWithAttributesProcessor {
   protected static readonly KEYFORMATVERSIONS = 'KEYFORMATVERSIONS';
   protected readonly requiredAttributes = new Set([EncryptionTagProcessor.METHOD]);
 
-  protected parseEncryptionTag(tagAttributes: Record<string, string>): Encryption | SessionKey {
+  protected parseEncryptionTag(
+    tagAttributes: Record<string, string>,
+    sharedState: SharedState
+  ): Encryption | SessionKey {
+    const uri = tagAttributes[EncryptionTagProcessor.URI];
+
+    let resolvedUri;
+    if (uri) {
+      resolvedUri = this.resolveUriAttribute(uri, sharedState.baseUrl, EncryptionTagProcessor.URI);
+    }
+
     return {
       method: tagAttributes[EncryptionTagProcessor.METHOD] as 'NONE' | 'AES-128' | 'SAMPLE-AES',
-      uri: tagAttributes[EncryptionTagProcessor.URI],
+      uri,
+      resolvedUri,
       iv: tagAttributes[EncryptionTagProcessor.IV],
       keyFormat: tagAttributes[EncryptionTagProcessor.KEYFORMAT] || 'identity',
       keyFormatVersions: tagAttributes[EncryptionTagProcessor.KEYFORMATVERSIONS]
@@ -162,7 +214,7 @@ export class ExtXKey extends EncryptionTagProcessor {
     playlist: ParsedPlaylist,
     sharedState: SharedState
   ): void {
-    const encryption = this.parseEncryptionTag(tagAttributes) as Encryption;
+    const encryption = this.parseEncryptionTag(tagAttributes, sharedState) as Encryption;
 
     // URI attribute is required unless the METHOD is 'NONE'
     if (encryption.method !== 'NONE' && !encryption.uri) {
@@ -193,8 +245,12 @@ export class ExtXMap extends TagWithAttributesProcessor {
       byteRange = { start: offset, end: offset + length - 1 };
     }
 
+    const uri = tagAttributes[ExtXMap.URI];
+    const resolvedUri = this.resolveUriAttribute(uri, sharedState.baseUrl, ExtXMap.URI);
+
     sharedState.currentMap = {
-      uri: tagAttributes[ExtXMap.URI],
+      uri,
+      resolvedUri,
       byteRange,
       encryption: sharedState.currentEncryption,
     };
@@ -216,8 +272,12 @@ export class ExtXPart extends TagWithAttributesProcessor {
     playlist: ParsedPlaylist,
     sharedState: SharedState
   ): void {
+    const uri = tagAttributes[ExtXPart.URI];
+    const resolvedUri = this.resolveUriAttribute(uri, sharedState.baseUrl, ExtXPart.URI);
+
     const part: PartialSegment = {
-      uri: tagAttributes[ExtXPart.URI],
+      uri,
+      resolvedUri,
       duration: Number(tagAttributes[ExtXPart.DURATION]),
       isGap: parseBoolean(tagAttributes[ExtXPart.GAP], false),
       independent: parseBoolean(tagAttributes[ExtXPart.INDEPENDENT], false),
@@ -288,12 +348,24 @@ export class ExtXMedia extends TagWithAttributesProcessor {
   protected readonly requiredAttributes = new Set([ExtXMedia.TYPE, ExtXMedia.GROUP_ID, ExtXMedia.NAME]);
   protected readonly tag = EXT_X_MEDIA;
 
-  protected safeProcess(tagAttributes: Record<string, string>, playlist: ParsedPlaylist): void {
+  protected safeProcess(
+    tagAttributes: Record<string, string>,
+    playlist: ParsedPlaylist,
+    sharedState: SharedState
+  ): void {
+    const uri = tagAttributes[ExtXMedia.URI];
+    let resolvedUri;
+
+    if (uri) {
+      resolvedUri = this.resolveUriAttribute(uri, sharedState.baseUrl, ExtXMedia.URI);
+    }
+
     const rendition: Rendition = {
+      uri,
+      resolvedUri,
       type: tagAttributes[ExtXMedia.TYPE] as RenditionType,
       groupId: tagAttributes[ExtXMedia.GROUP_ID] as GroupId,
       name: tagAttributes[ExtXMedia.NAME],
-      uri: tagAttributes[ExtXMedia.URI],
       language: tagAttributes[ExtXMedia.LANGUAGE],
       assocLanguage: tagAttributes[ExtXMedia.ASSOC_LANGUAGE],
       default: parseBoolean(tagAttributes[ExtXMedia.DEFAULT], false),
@@ -364,6 +436,7 @@ abstract class BaseStreamInfProcessor extends TagWithAttributesProcessor {
   protected parseCommonAttributes(tagAttributes: Record<string, string>): BaseStreamInf {
     return {
       uri: '',
+      resolvedUri: '',
       bandwidth: Number(tagAttributes[BaseStreamInfProcessor.BANDWIDTH]),
       averageBandwidth: tagAttributes[BaseStreamInfProcessor.AVERAGE_BANDWIDTH]
         ? Number(tagAttributes[BaseStreamInfProcessor.AVERAGE_BANDWIDTH])
@@ -421,10 +494,18 @@ export class ExtXIFrameStreamInf extends BaseStreamInfProcessor {
   protected readonly requiredAttributes = new Set([BaseStreamInfProcessor.BANDWIDTH, ExtXIFrameStreamInf.URI]);
   protected readonly tag = EXT_X_I_FRAME_STREAM_INF;
 
-  protected safeProcess(tagAttributes: Record<string, string>, playlist: ParsedPlaylist): void {
+  protected safeProcess(
+    tagAttributes: Record<string, string>,
+    playlist: ParsedPlaylist,
+    sharedState: SharedState
+  ): void {
+    const uri = tagAttributes[ExtXIFrameStreamInf.URI];
+    const resolvedUri = this.resolveUriAttribute(uri, sharedState.baseUrl, ExtXIFrameStreamInf.URI);
+
     const iFrameStreamInf: IFramePlaylist = {
       ...this.parseCommonAttributes(tagAttributes),
-      uri: tagAttributes[ExtXIFrameStreamInf.URI],
+      uri,
+      resolvedUri,
     };
 
     playlist.iFramePlaylists.push(iFrameStreamInf);
@@ -493,9 +574,14 @@ export class ExtXPreloadHint extends TagWithAttributesProcessor {
   protected readonly requiredAttributes = new Set([ExtXPreloadHint.TYPE, ExtXPreloadHint.URI]);
   protected readonly tag = EXT_X_PRELOAD_HINT;
 
-  protected safeProcess(tagAttributes: Record<string, string>, playlist: ParsedPlaylist): void {
+  protected safeProcess(
+    tagAttributes: Record<string, string>,
+    playlist: ParsedPlaylist,
+    sharedState: SharedState
+  ): void {
     const type = tagAttributes[ExtXPreloadHint.TYPE] as PreloadHintType;
     const uri = tagAttributes[ExtXPreloadHint.URI];
+    const resolvedUri = this.resolveUriAttribute(uri, sharedState.baseUrl, ExtXPreloadHint.URI);
     const pStart = tagAttributes[ExtXPreloadHint.BYTERANGE_START];
     const pLength = tagAttributes[ExtXPreloadHint.BYTERANGE_LENGTH];
 
@@ -523,7 +609,7 @@ export class ExtXPreloadHint extends TagWithAttributesProcessor {
       byteRange = { start: 0, end: Number(pLength) - 1 };
     }
 
-    const preloadHint = { uri, byteRange };
+    const preloadHint = { uri, resolvedUri, byteRange };
 
     if (type === 'PART') {
       playlist.preloadHints.part = preloadHint;
@@ -543,9 +629,17 @@ export class ExtXRenditionReport extends TagWithAttributesProcessor {
   protected readonly requiredAttributes = new Set([ExtXRenditionReport.URI]);
   protected readonly tag = EXT_X_RENDITION_REPORT;
 
-  protected safeProcess(tagAttributes: Record<string, string>, playlist: ParsedPlaylist): void {
+  protected safeProcess(
+    tagAttributes: Record<string, string>,
+    playlist: ParsedPlaylist,
+    sharedState: SharedState
+  ): void {
+    const uri = tagAttributes[ExtXRenditionReport.URI];
+    const resolvedUri = this.resolveUriAttribute(uri, sharedState.baseUrl, ExtXRenditionReport.URI);
+
     const renditionReport = {
-      uri: tagAttributes[ExtXRenditionReport.URI],
+      uri,
+      resolvedUri,
       lastMsn: tagAttributes[ExtXRenditionReport.LAST_MSN]
         ? Number(tagAttributes[ExtXRenditionReport.LAST_MSN])
         : undefined,
@@ -568,11 +662,23 @@ export class ExtXSessionData extends TagWithAttributesProcessor {
   protected readonly requiredAttributes = new Set([ExtXSessionData.DATA_ID]);
   protected readonly tag = EXT_X_SESSION_DATA;
 
-  protected safeProcess(tagAttributes: Record<string, string>, playlist: ParsedPlaylist): void {
+  protected safeProcess(
+    tagAttributes: Record<string, string>,
+    playlist: ParsedPlaylist,
+    sharedState: SharedState
+  ): void {
+    const uri = tagAttributes[ExtXSessionData.URI];
+    let resolvedUri;
+
+    if (uri) {
+      resolvedUri = this.resolveUriAttribute(uri, sharedState.baseUrl, ExtXSessionData.URI);
+    }
+
     const sessionData = {
+      uri,
+      resolvedUri,
       dataId: tagAttributes[ExtXSessionData.DATA_ID],
       value: tagAttributes[ExtXSessionData.VALUE],
-      uri: tagAttributes[ExtXSessionData.URI],
       format: tagAttributes[ExtXSessionData.FORMAT] as 'JSON' | 'RAW' | undefined,
       language: tagAttributes[ExtXSessionData.LANGUAGE],
     };
@@ -584,8 +690,12 @@ export class ExtXSessionData extends TagWithAttributesProcessor {
 export class ExtXSessionKey extends EncryptionTagProcessor {
   protected readonly tag = EXT_X_SESSION_KEY;
 
-  protected safeProcess(tagAttributes: Record<string, string>, playlist: ParsedPlaylist): void {
-    playlist.sessionKey = this.parseEncryptionTag(tagAttributes) as SessionKey;
+  protected safeProcess(
+    tagAttributes: Record<string, string>,
+    playlist: ParsedPlaylist,
+    sharedState: SharedState
+  ): void {
+    playlist.sessionKey = this.parseEncryptionTag(tagAttributes, sharedState) as SessionKey;
   }
 }
 
@@ -596,10 +706,92 @@ export class ExtXContentSteering extends TagWithAttributesProcessor {
   protected readonly requiredAttributes = new Set([ExtXContentSteering.SERVER_URI]);
   protected readonly tag = EXT_X_CONTENT_STEERING;
 
-  protected safeProcess(tagAttributes: Record<string, string>, playlist: ParsedPlaylist): void {
+  protected safeProcess(
+    tagAttributes: Record<string, string>,
+    playlist: ParsedPlaylist,
+    sharedState: SharedState
+  ): void {
+    const serverUri = tagAttributes[ExtXContentSteering.SERVER_URI];
+    const resolvedServerUri = this.resolveUriAttribute(serverUri, sharedState.baseUrl, ExtXContentSteering.SERVER_URI);
+
     playlist.contentSteering = {
-      serverUri: tagAttributes[ExtXContentSteering.SERVER_URI],
+      serverUri,
+      resolvedServerUri,
       pathwayId: tagAttributes[ExtXContentSteering.PATHWAY_ID],
     };
+  }
+}
+
+export class ExtXDefine extends TagWithAttributesProcessor {
+  private static readonly NAME = 'NAME';
+  private static readonly VALUE = 'VALUE';
+  private static readonly IMPORT = 'IMPORT';
+  private static readonly QUERYPARAM = 'QUERYPARAM';
+
+  protected readonly requiredAttributes = new Set([]);
+  protected readonly tag = EXT_X_DEFINE;
+
+  protected getValueForImportDefine(importName: string, sharedState: SharedState): string | null {
+    if (!sharedState.baseDefine) {
+      return null;
+    }
+
+    if (sharedState.baseDefine.name[importName]) {
+      return sharedState.baseDefine.name[importName];
+    }
+
+    if (sharedState.baseDefine.import[importName]) {
+      return sharedState.baseDefine.import[importName];
+    }
+
+    if (sharedState.baseDefine.queryParam[importName]) {
+      return sharedState.baseDefine.queryParam[importName];
+    }
+
+    return null;
+  }
+
+  protected getValueForQueryParamDefine(queryParam: string, sharedState: SharedState): string | null {
+    if (!sharedState.baseUrl) {
+      return null;
+    }
+    try {
+      return new URL(sharedState.baseUrl).searchParams.get(queryParam);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  protected safeProcess(
+    tagAttributes: Record<string, string>,
+    playlist: ParsedPlaylist,
+    sharedState: SharedState
+  ): void {
+    if (tagAttributes[ExtXDefine.NAME]) {
+      playlist.define.name[tagAttributes[ExtXDefine.NAME]] = tagAttributes[ExtXDefine.VALUE];
+      sharedState.hasVariablesForSubstitution = true;
+    }
+
+    if (tagAttributes[ExtXDefine.IMPORT]) {
+      playlist.define.import[tagAttributes[ExtXDefine.IMPORT]] = this.getValueForImportDefine(
+        tagAttributes[ExtXDefine.IMPORT],
+        sharedState
+      );
+
+      if (playlist.define.import[tagAttributes[ExtXDefine.IMPORT]] !== null) {
+        sharedState.hasVariablesForSubstitution = true;
+      }
+    }
+
+    if (tagAttributes[ExtXDefine.QUERYPARAM]) {
+      playlist.define.queryParam[tagAttributes[ExtXDefine.QUERYPARAM]] = this.getValueForQueryParamDefine(
+        tagAttributes[ExtXDefine.QUERYPARAM],
+        sharedState
+      );
+
+      if (playlist.define.queryParam[tagAttributes[ExtXDefine.QUERYPARAM]] !== null) {
+        sharedState.hasVariablesForSubstitution = true;
+      }
+    }
   }
 }

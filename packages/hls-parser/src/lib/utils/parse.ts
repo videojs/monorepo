@@ -1,3 +1,5 @@
+import type { Define } from '../types/parsedPlaylist';
+
 export const parseBoolean = (val: string, fallback: boolean): boolean => {
   if (val === 'YES') {
     return true;
@@ -18,4 +20,45 @@ export const parseHex = (val: string): Uint8Array | undefined => {
   }
 
   return new Uint8Array(hexes as unknown as ArrayLike<number>);
+};
+
+const VARIABLE_REPLACEMENT_REGEX = /\{\$([a-zA-Z0-9-_]+)\}/g;
+
+/**
+ * Variable Substitution
+ * @see https://datatracker.ietf.org/doc/html/draft-pantos-hls-rfc8216bis#section-4.3
+ */
+export const substituteVariables = (
+  value: string,
+  define: Define,
+  warnCallback: (variableName: string) => void
+): string => {
+  return value.replace(VARIABLE_REPLACEMENT_REGEX, (match: string): string => {
+    // We expect the match to be the following pattern {$variableName}
+    const variableName = match.slice(2, -1);
+
+    if (define.name[variableName]) {
+      return define.name[variableName] as string;
+    }
+
+    if (define.import[variableName]) {
+      return define.import[variableName] as string;
+    }
+
+    if (define.queryParam[variableName]) {
+      return define.queryParam[variableName] as string;
+    }
+
+    warnCallback(variableName);
+
+    return match;
+  });
+};
+
+export const resolveUri = (uri: string, baseUrl: string): string | null => {
+  try {
+    return new URL(uri, baseUrl).toString();
+  } catch (e) {
+    return null;
+  }
 };

@@ -1,14 +1,16 @@
 import createStateMachine from './stateMachine';
 import type { StateMachineTransition } from './stateMachine';
 import {
+  failedToResolveUri,
   ignoreTagWarn,
+  missingRequiredVariableForUriSubstitutionWarn,
   missingTagValueWarn,
   segmentDurationExceededTargetDuration,
   unsupportedTagWarn,
 } from './utils/warn';
 
 import {
-  // EXT_X_DEFINE,
+  EXT_X_DEFINE,
   EXT_X_DISCONTINUITY_SEQUENCE,
   EXT_X_ENDLIST,
   EXT_X_I_FRAMES_ONLY,
@@ -44,6 +46,7 @@ import {
 import type {
   CustomTagMap,
   DebugCallback,
+  ParseOptions,
   ParserOptions,
   TransformTagAttributes,
   TransformTagValue,
@@ -90,6 +93,7 @@ import {
   ExtXSessionData,
   ExtXSessionKey,
   ExtXContentSteering,
+  ExtXDefine,
 } from './tags/tagWithAttributesProcessors';
 import {
   createDefaultParsedPlaylist,
@@ -97,6 +101,7 @@ import {
   createDefaultSharedState,
   createDefaultVariantStream,
 } from './consts/defaults';
+import { resolveUri, substituteVariables } from './utils/parse';
 
 class Parser {
   private readonly warnCallback: WarnCallback;
@@ -162,6 +167,7 @@ class Parser {
       [EXT_X_SESSION_DATA]: new ExtXSessionData(this.warnCallback),
       [EXT_X_SESSION_KEY]: new ExtXSessionKey(this.warnCallback),
       [EXT_X_CONTENT_STEERING]: new ExtXContentSteering(this.warnCallback),
+      [EXT_X_DEFINE]: new ExtXDefine(this.warnCallback),
     };
   }
 
@@ -214,20 +220,34 @@ class Parser {
   };
 
   protected readonly uriInfoCallback = (uri: string): void => {
+    if (this.sharedState.hasVariablesForSubstitution) {
+      uri = substituteVariables(uri, this.parsedPlaylist.define, (variableName) => {
+        this.warnCallback(missingRequiredVariableForUriSubstitutionWarn(uri, variableName));
+      });
+    }
+
+    let resolvedUri = resolveUri(uri, this.sharedState.baseUrl);
+
+    if (resolvedUri === null) {
+      this.warnCallback(failedToResolveUri(uri, this.sharedState.baseUrl));
+      resolvedUri = uri;
+    }
+
     if (this.sharedState.isMultivariantPlaylist) {
-      this.handleCurrentVariant(uri);
+      this.handleCurrentVariant(uri, resolvedUri);
     } else {
-      this.handleCurrentSegment(uri);
+      this.handleCurrentSegment(uri, resolvedUri);
     }
   };
 
-  private handleCurrentVariant(uri: string): void {
+  private handleCurrentVariant(uri: string, resolvedUri: string): void {
     this.sharedState.currentVariant.uri = uri;
+    this.sharedState.currentVariant.resolvedUri = resolvedUri;
     this.parsedPlaylist.variantStreams.push(this.sharedState.currentVariant);
     this.sharedState.currentVariant = createDefaultVariantStream();
   }
 
-  private handleCurrentSegment(uri: string): void {
+  private handleCurrentSegment(uri: string, resolvedUri: string): void {
     if (
       this.parsedPlaylist.targetDuration !== undefined &&
       this.sharedState.currentSegment.duration > this.parsedPlaylist.targetDuration
@@ -246,9 +266,12 @@ class Parser {
     this.sharedState.currentSegment.encryption = this.sharedState.currentEncryption;
     this.sharedState.currentSegment.map = this.sharedState.currentMap;
     this.sharedState.currentSegment.uri = uri;
+    this.sharedState.currentSegment.resolvedUri = resolvedUri;
+    this.sharedState.currentSegment.startTime = this.sharedState.baseTime;
 
     if (previousSegment) {
       this.sharedState.currentSegment.mediaSequence = previousSegment.mediaSequence + 1;
+      this.sharedState.currentSegment.startTime = previousSegment.endTime;
 
       if (this.sharedState.currentSegment.isDiscontinuity) {
         this.sharedState.currentSegment.discontinuitySequence = previousSegment.discontinuitySequence + 1;
@@ -256,6 +279,9 @@ class Parser {
         this.sharedState.currentSegment.discontinuitySequence = previousSegment.discontinuitySequence;
       }
     }
+
+    this.sharedState.currentSegment.endTime =
+      this.sharedState.currentSegment.startTime + this.sharedState.currentSegment.duration;
 
     // Apply the EXT-X-BITRATE value from previous segments to this segment as well,
     // as long as it doesn't have an EXT-X-BYTERANGE tag applied to it.
@@ -265,9 +291,14 @@ class Parser {
     }
 
     // Extrapolate a program date time value from the previous segment's program date time
-    if (!this.sharedState.currentSegment.programDateTime && previousSegment?.programDateTime) {
-      this.sharedState.currentSegment.programDateTime =
-        previousSegment.programDateTime + previousSegment.duration * 1000;
+    if (!this.sharedState.currentSegment.programDateTimeStart && previousSegment?.programDateTimeStart) {
+      this.sharedState.currentSegment.programDateTimeStart =
+        previousSegment.programDateTimeStart + previousSegment.duration * 1000;
+    }
+
+    if (this.sharedState.currentSegment.programDateTimeStart) {
+      this.sharedState.currentSegment.programDateTimeEnd =
+        this.sharedState.currentSegment.programDateTimeStart + this.sharedState.currentSegment.duration * 1000;
     }
 
     this.parsedPlaylist.segments.push(this.sharedState.currentSegment);
@@ -286,10 +317,18 @@ class Parser {
   protected transitionToNewLine(stateMachine: StateMachineTransition): void {
     stateMachine('\n');
   }
+
+  protected gatherParseOptions(options: ParseOptions): void {
+    this.sharedState.baseDefine = options.baseDefine;
+    this.sharedState.baseUrl = options.baseUrl;
+    this.sharedState.baseTime = options.baseTime || 0;
+  }
 }
 
 export class FullPlaylistParser extends Parser {
-  public parseFullPlaylistString(playlist: string): ParsedPlaylist {
+  public parseFullPlaylistString(playlist: string, options: ParseOptions): ParsedPlaylist {
+    this.gatherParseOptions(options);
+
     const stateMachine = createStateMachine(this.tagInfoCallback, this.uriInfoCallback);
     const length = playlist.length;
 
@@ -302,7 +341,9 @@ export class FullPlaylistParser extends Parser {
     return this.clean();
   }
 
-  public parseFullPlaylistBuffer(playlist: Uint8Array): ParsedPlaylist {
+  public parseFullPlaylistBuffer(playlist: Uint8Array, options: ParseOptions): ParsedPlaylist {
+    this.gatherParseOptions(options);
+
     const stateMachine = createStateMachine(this.tagInfoCallback, this.uriInfoCallback);
     const length = playlist.length;
 
@@ -319,7 +360,9 @@ export class FullPlaylistParser extends Parser {
 export class ProgressiveParser extends Parser {
   private stateMachine: StateMachineTransition | null = null;
 
-  public pushString(chunk: string): void {
+  public pushString(chunk: string, options: ParseOptions): void {
+    this.gatherParseOptions(options);
+
     if (this.stateMachine === null) {
       this.stateMachine = createStateMachine(this.tagInfoCallback, this.uriInfoCallback);
     }
@@ -329,7 +372,9 @@ export class ProgressiveParser extends Parser {
     }
   }
 
-  public pushBuffer(chunk: Uint8Array): void {
+  public pushBuffer(chunk: Uint8Array, options: ParseOptions): void {
+    this.gatherParseOptions(options);
+
     if (this.stateMachine === null) {
       this.stateMachine = createStateMachine(this.tagInfoCallback, this.uriInfoCallback);
     }

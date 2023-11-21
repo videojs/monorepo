@@ -1,22 +1,28 @@
 import { FullPlaylistParser, ProgressiveParser } from '../src';
-import type { ParsedPlaylist } from '../src';
+import type { ParsedPlaylist, ParseOptions } from '../src';
 import { describe, it, expect, beforeEach, jest } from '@jest/globals';
 
 describe('hls-parser spec', () => {
+  const baseUrl = 'https://baseurl.com';
+
   let fullPlaylistParser: FullPlaylistParser;
   let progressivePlaylistParser: ProgressiveParser;
   let warnCallback: jest.Mock<(warn: string) => void>;
 
-  const testAllCombinations = (playlist: string, cb: (parsed: ParsedPlaylist) => void): void => {
+  const testAllCombinations = (
+    playlist: string,
+    cb: (parsed: ParsedPlaylist) => void,
+    options: ParseOptions = { baseUrl }
+  ): void => {
     const buffer = new Uint8Array(playlist.split('').map((char) => char.charCodeAt(0)));
 
-    cb(fullPlaylistParser.parseFullPlaylistString(playlist));
-    cb(fullPlaylistParser.parseFullPlaylistBuffer(buffer));
+    cb(fullPlaylistParser.parseFullPlaylistString(playlist, options));
+    cb(fullPlaylistParser.parseFullPlaylistBuffer(buffer, options));
 
-    progressivePlaylistParser.pushString(playlist);
+    progressivePlaylistParser.pushString(playlist, options);
     cb(progressivePlaylistParser.done());
 
-    progressivePlaylistParser.pushBuffer(buffer);
+    progressivePlaylistParser.pushBuffer(buffer, options);
     cb(progressivePlaylistParser.done());
   };
 
@@ -430,17 +436,89 @@ main.ts
   });
 
   describe('#EXTINF', () => {
-    it('should parse value from a playlist', () => {
-      const playlist = `#EXTM3U
-#EXTINF:9.9766,segment-title
-main.ts
+    it('should parse from a playlist', () => {
+      let playlist = `#EXTM3U
+#EXTINF:5,segment-title-1
+segment-1.ts
+#EXTINF:5,segment-title-2
+segment-2.ts
+#EXTINF:5,segment-title-3
+segment-3.ts
+#EXTINF:5,segment-title-4
+segment-4.ts
 `;
 
       testAllCombinations(playlist, (parsed) => {
-        expect(parsed.segments[0]?.title).toBe('segment-title');
-        expect(parsed.segments[0]?.duration).toBe(9.9766);
+        expect(parsed.segments[0]?.title).toBe('segment-title-1');
+        expect(parsed.segments[0]?.uri).toBe('segment-1.ts');
+        expect(parsed.segments[0]?.duration).toBe(5);
+        expect(parsed.segments[0]?.startTime).toBe(0);
+        expect(parsed.segments[0]?.endTime).toBe(5);
+
+        expect(parsed.segments[1]?.title).toBe('segment-title-2');
+        expect(parsed.segments[1]?.uri).toBe('segment-2.ts');
+        expect(parsed.segments[1]?.duration).toBe(5);
+        expect(parsed.segments[1]?.startTime).toBe(5);
+        expect(parsed.segments[1]?.endTime).toBe(10);
+
+        expect(parsed.segments[2]?.title).toBe('segment-title-3');
+        expect(parsed.segments[2]?.uri).toBe('segment-3.ts');
+        expect(parsed.segments[2]?.duration).toBe(5);
+        expect(parsed.segments[2]?.startTime).toBe(10);
+        expect(parsed.segments[2]?.endTime).toBe(15);
+
+        expect(parsed.segments[3]?.title).toBe('segment-title-4');
+        expect(parsed.segments[3]?.uri).toBe('segment-4.ts');
+        expect(parsed.segments[3]?.duration).toBe(5);
+        expect(parsed.segments[3]?.startTime).toBe(15);
+        expect(parsed.segments[3]?.endTime).toBe(20);
       });
+
+      playlist = `#EXTM3U
+#EXTINF:5,segment-title-1
+segment-1.ts
+#EXTINF:5,segment-title-2
+segment-2.ts
+#EXTINF:5,segment-title-3
+segment-3.ts
+#EXTINF:5,segment-title-4
+segment-4.ts
+`;
+
+      testAllCombinations(
+        playlist,
+        (parsed) => {
+          expect(parsed.segments[0]?.title).toBe('segment-title-1');
+          expect(parsed.segments[0]?.uri).toBe('segment-1.ts');
+          expect(parsed.segments[0]?.duration).toBe(5);
+          expect(parsed.segments[0]?.startTime).toBe(25);
+          expect(parsed.segments[0]?.endTime).toBe(30);
+
+          expect(parsed.segments[1]?.title).toBe('segment-title-2');
+          expect(parsed.segments[1]?.uri).toBe('segment-2.ts');
+          expect(parsed.segments[1]?.duration).toBe(5);
+          expect(parsed.segments[1]?.startTime).toBe(30);
+          expect(parsed.segments[1]?.endTime).toBe(35);
+
+          expect(parsed.segments[2]?.title).toBe('segment-title-3');
+          expect(parsed.segments[2]?.uri).toBe('segment-3.ts');
+          expect(parsed.segments[2]?.duration).toBe(5);
+          expect(parsed.segments[2]?.startTime).toBe(35);
+          expect(parsed.segments[2]?.endTime).toBe(40);
+
+          expect(parsed.segments[3]?.title).toBe('segment-title-4');
+          expect(parsed.segments[3]?.uri).toBe('segment-4.ts');
+          expect(parsed.segments[3]?.duration).toBe(5);
+          expect(parsed.segments[3]?.startTime).toBe(40);
+          expect(parsed.segments[3]?.endTime).toBe(45);
+        },
+        {
+          baseTime: 25,
+          baseUrl,
+        }
+      );
     });
+
     it('should fallback to 0, if value is invalid', () => {
       const playlist = `#EXTM3U
 #EXTINF:X
@@ -797,9 +875,12 @@ segment-3.ts
 `;
 
       testAllCombinations(playlist, (parsed) => {
-        expect(parsed.segments[0].programDateTime).toBeUndefined();
-        expect(parsed.segments[1].programDateTime).toBeUndefined();
-        expect(parsed.segments[2].programDateTime).toBeUndefined();
+        expect(parsed.segments[0].programDateTimeStart).toBeUndefined();
+        expect(parsed.segments[0].programDateTimeEnd).toBeUndefined();
+        expect(parsed.segments[1].programDateTimeStart).toBeUndefined();
+        expect(parsed.segments[1].programDateTimeEnd).toBeUndefined();
+        expect(parsed.segments[2].programDateTimeStart).toBeUndefined();
+        expect(parsed.segments[2].programDateTimeEnd).toBeUndefined();
       });
     });
 
@@ -814,9 +895,12 @@ segment-2.ts
 segment-3.ts
 `;
       testAllCombinations(playlist, (parsed) => {
-        expect(parsed.segments[0].programDateTime).toBe(1698516684010);
-        expect(parsed.segments[1].programDateTime).toBe(1698516684010 + 4000);
-        expect(parsed.segments[2].programDateTime).toBe(1698516684010 + 4000 + 4000);
+        expect(parsed.segments[0].programDateTimeStart).toBe(1698516684010);
+        expect(parsed.segments[0].programDateTimeEnd).toBe(1698516684010 + 4000);
+        expect(parsed.segments[1].programDateTimeStart).toBe(1698516684010 + 4000);
+        expect(parsed.segments[1].programDateTimeEnd).toBe(1698516684010 + 4000 + 4000);
+        expect(parsed.segments[2].programDateTimeStart).toBe(1698516684010 + 4000 + 4000);
+        expect(parsed.segments[2].programDateTimeEnd).toBe(1698516684010 + 4000 + 4000 + 4000);
       });
     });
 
@@ -832,9 +916,12 @@ segment-3.ts
 `;
 
       testAllCombinations(playlist, (parsed) => {
-        expect(parsed.segments[0].programDateTime).toBe(1698516684010 - 4000 - 4000);
-        expect(parsed.segments[1].programDateTime).toBe(1698516684010 - 4000);
-        expect(parsed.segments[2].programDateTime).toBe(1698516684010);
+        expect(parsed.segments[0].programDateTimeStart).toBe(1698516684010 - 4000 - 4000);
+        expect(parsed.segments[0].programDateTimeEnd).toBe(1698516684010 - 4000);
+        expect(parsed.segments[1].programDateTimeStart).toBe(1698516684010 - 4000);
+        expect(parsed.segments[1].programDateTimeEnd).toBe(1698516684010);
+        expect(parsed.segments[2].programDateTimeStart).toBe(1698516684010);
+        expect(parsed.segments[2].programDateTimeEnd).toBe(1698516684010 + 4000);
       });
     });
   });
@@ -1071,8 +1158,8 @@ segment-3.mp4
       testAllCombinations(playlist, (parsed) => {
         // range: entire resource
         expect(parsed.preloadHints).toEqual({
-          map: { uri: 'preload-hint-uri-map' },
-          part: { uri: 'preload-hint-uri' },
+          map: { uri: 'preload-hint-uri-map', resolvedUri: `${baseUrl}/preload-hint-uri-map` },
+          part: { uri: 'preload-hint-uri', resolvedUri: `${baseUrl}/preload-hint-uri` },
         });
       });
 
@@ -1085,10 +1172,12 @@ segment-3.mp4
         expect(parsed.preloadHints).toEqual({
           map: {
             uri: 'preload-hint-uri-map',
+            resolvedUri: `${baseUrl}/preload-hint-uri-map`,
             byteRange: { start: 5, end: Number.MAX_SAFE_INTEGER },
           },
           part: {
             uri: 'preload-hint-uri',
+            resolvedUri: `${baseUrl}/preload-hint-uri`,
             byteRange: { start: 10, end: Number.MAX_SAFE_INTEGER },
           },
         });
@@ -1103,10 +1192,12 @@ segment-3.mp4
         expect(parsed.preloadHints).toEqual({
           map: {
             uri: 'preload-hint-uri-map',
+            resolvedUri: `${baseUrl}/preload-hint-uri-map`,
             byteRange: { start: 5, end: 14 },
           },
           part: {
             uri: 'preload-hint-uri',
+            resolvedUri: `${baseUrl}/preload-hint-uri`,
             byteRange: { start: 10, end: 29 },
           },
         });
@@ -1121,10 +1212,12 @@ segment-3.mp4
         expect(parsed.preloadHints).toEqual({
           map: {
             uri: 'preload-hint-uri-map',
+            resolvedUri: `${baseUrl}/preload-hint-uri-map`,
             byteRange: { start: 0, end: 19 },
           },
           part: {
             uri: 'preload-hint-uri',
+            resolvedUri: `${baseUrl}/preload-hint-uri`,
             byteRange: { start: 0, end: 19 },
           },
         });
@@ -1148,9 +1241,9 @@ segment-3.mp4
 `;
       testAllCombinations(playlist, (parsed) => {
         expect(parsed.renditionReports).toEqual([
-          { uri: 'rendition-1', lastMsn: 10, lastPart: 2 },
-          { uri: 'rendition-2', lastMsn: 10 },
-          { uri: 'rendition-3' },
+          { uri: 'rendition-1', resolvedUri: `${baseUrl}/rendition-1`, lastMsn: 10, lastPart: 2 },
+          { uri: 'rendition-2', resolvedUri: `${baseUrl}/rendition-2`, lastMsn: 10 },
+          { uri: 'rendition-3', resolvedUri: `${baseUrl}/rendition-3` },
         ]);
       });
     });
@@ -1175,6 +1268,7 @@ stream-2.m3u8
         expect(parsed.variantStreams.length).toBe(2);
         expect(parsed.variantStreams[0]).toEqual({
           uri: 'stream-1.m3u8',
+          resolvedUri: `${baseUrl}/stream-1.m3u8`,
           bandwidth: 123,
           averageBandwidth: 123,
           score: 2.5,
@@ -1200,6 +1294,7 @@ stream-2.m3u8
         });
         expect(parsed.variantStreams[1]).toEqual({
           uri: 'stream-2.m3u8',
+          resolvedUri: `${baseUrl}/stream-2.m3u8`,
           bandwidth: 234,
           codecs: [],
           supplementalCodecs: [],
@@ -1226,6 +1321,7 @@ stream-2.m3u8
         expect(parsed.iFramePlaylists.length).toBe(2);
         expect(parsed.iFramePlaylists[0]).toEqual({
           uri: 'stream-1.m3u8',
+          resolvedUri: `${baseUrl}/stream-1.m3u8`,
           bandwidth: 123,
           averageBandwidth: 123,
           score: 2.5,
@@ -1247,6 +1343,7 @@ stream-2.m3u8
         });
         expect(parsed.iFramePlaylists[1]).toEqual({
           uri: 'stream-2.m3u8',
+          resolvedUri: `${baseUrl}/stream-2.m3u8`,
           bandwidth: 234,
           codecs: [],
           supplementalCodecs: [],
@@ -1275,6 +1372,7 @@ stream-2.m3u8
             dataId: 'com.example.movie.title',
             value: 'data-value-1',
             uri: 'data-uri.json',
+            resolvedUri: `${baseUrl}/data-uri.json`,
             format: 'JSON',
             language: 'en',
           },
@@ -1282,6 +1380,7 @@ stream-2.m3u8
             dataId: 'com.example.movie.subtitle',
             value: 'data-value-2',
             uri: 'data-uri.bin',
+            resolvedUri: `${baseUrl}/data-uri.bin`,
             format: 'RAW',
             language: 'en',
           },
@@ -1396,6 +1495,114 @@ segment-2.mp4
         expect(parsed.renditionGroups.subtitles['group-sub'].length).toBe(1);
         expect(parsed.renditionGroups.subtitles['group-sub'][0].language).toBe('eng');
       });
+    });
+  });
+
+  describe('#EXT-X-DEFINE', () => {
+    it('should be empty by default', () => {
+      const playlist = `#EXTM3U`;
+      testAllCombinations(playlist, (parsed) => {
+        expect(parsed.define.name).toEqual({});
+        expect(parsed.define.import).toEqual({});
+        expect(parsed.define.queryParam).toEqual({});
+      });
+    });
+
+    it('should parse from a playlist', () => {
+      const playlist = `#EXTM3U
+#EXT-X-DEFINE:NAME="token",VALUE="my-token-123"
+#EXT-X-DEFINE:IMPORT="key"
+#EXT-X-DEFINE:IMPORT="key1"
+#EXT-X-DEFINE:IMPORT="key2"
+#EXT-X-DEFINE:IMPORT="key3"
+#EXT-X-DEFINE:QUERYPARAM="customerId"
+`;
+      testAllCombinations(
+        playlist,
+        (parsed) => {
+          expect(parsed.define.name).toEqual({ token: 'my-token-123' });
+          expect(parsed.define.import).toEqual({
+            key: 'my-key-123',
+            key1: 'my-key1-123',
+            key2: 'my-key2-123',
+            key3: null,
+          });
+          expect(parsed.define.queryParam).toEqual({ customerId: 'my-customer-id-123' });
+        },
+        {
+          baseDefine: {
+            name: { key: 'my-key-123' },
+            import: { key1: 'my-key1-123' },
+            queryParam: { key2: 'my-key2-123' },
+          },
+          baseUrl: 'https://baseurl.com?customerId=my-customer-id-123',
+        }
+      );
+    });
+
+    it('should substitute variables in a playlist', () => {
+      let playlist = `#EXTM3U
+#EXT-X-DEFINE:NAME="token",VALUE="my-token-123"
+#EXT-X-DEFINE:IMPORT="key"
+#EXT-X-DEFINE:QUERYPARAM="customerId"
+#EXT-X-MAP:URI=https://host.com?token={$token}&key={$key}&customerId={$customerId}
+#EXTINF:5
+https://host.com/segment.ts?token={$token}&key={$key}&customerId={$customerId}
+`;
+
+      testAllCombinations(
+        playlist,
+        (parsed) => {
+          expect(parsed.segments[0].map).toEqual({
+            uri: 'https://host.com?token=my-token-123&key=my-key-123&customerId=my-customer-id-123',
+            resolvedUri: 'https://host.com/?token=my-token-123&key=my-key-123&customerId=my-customer-id-123',
+            byteRange: undefined,
+            encryption: undefined,
+          });
+          expect(parsed.segments[0].uri).toBe(
+            'https://host.com/segment.ts?token=my-token-123&key=my-key-123&customerId=my-customer-id-123'
+          );
+          expect(parsed.segments[0].resolvedUri).toBe(
+            'https://host.com/segment.ts?token=my-token-123&key=my-key-123&customerId=my-customer-id-123'
+          );
+        },
+        {
+          baseDefine: { name: { key: 'my-key-123' }, import: {}, queryParam: {} },
+          baseUrl: 'https://baseurl.com?customerId=my-customer-id-123',
+        }
+      );
+
+      playlist = `#EXTM3U
+#EXT-X-DEFINE:NAME="token",VALUE="my-token-123"
+#EXT-X-DEFINE:IMPORT="key"
+#EXT-X-DEFINE:QUERYPARAM="customerId"
+#EXT-X-MAP:URI=https://host.com?token={$token}&key={$key}&customerId={$customerId}
+#EXTINF:5
+https://host.com/segment.ts?token={$token}&key={$key}&customerId={$customerId}
+      `;
+
+      testAllCombinations(
+        playlist,
+        (parsed) => {
+          expect(parsed.segments[0].map).toEqual({
+            uri: 'https://host.com?token=my-token-123&key={$key}&customerId={$customerId}',
+            resolvedUri: 'https://host.com/?token=my-token-123&key={$key}&customerId={$customerId}',
+            byteRange: undefined,
+            encryption: undefined,
+          });
+          expect(parsed.segments[0].uri).toBe(
+            'https://host.com/segment.ts?token=my-token-123&key={$key}&customerId={$customerId}'
+          );
+          expect(parsed.segments[0].resolvedUri).toBe(
+            'https://host.com/segment.ts?token=my-token-123&key={$key}&customerId={$customerId}'
+          );
+        },
+        {
+          baseUrl,
+        }
+      );
+
+      expect(warnCallback).toHaveBeenCalledTimes(16);
     });
   });
 });
