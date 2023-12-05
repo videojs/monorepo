@@ -9,6 +9,10 @@
     "test": "bunx jest",
     "test:coverage": "bunx jest --coverage=true"
   },
+  "dependencies": {
+    "@videojs/hls-parser": "*",
+    "@videojs/dash-parser": "*"
+  },
   "exports": {
     "./player": {
       "types": "./dist/player.d.ts",
