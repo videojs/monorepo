@@ -481,6 +481,8 @@ export default class Player {
   }
 
   public dispose(): void {
+    this.detach();
+    this.removeAllEventListeners();
     // TODO
   }
 
