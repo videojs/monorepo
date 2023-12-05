@@ -1,3 +1,4 @@
+import { describe, it, expect } from '@jest/globals';
 import PlayerTimeRange from '../../src/lib/utils/timeRanges';
 
 class MockTimeRange implements TimeRanges {

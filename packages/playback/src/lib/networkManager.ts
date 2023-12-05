@@ -160,7 +160,7 @@ export default class NetworkManager {
     headersReceived
       .then((response) => this.applyResponseHandlers(type, response))
       .catch((e) => {
-        this.logger.debug('Error cached from response handlers: ', e);
+        this.logger.debug('Error catched from response handlers: ', e);
       });
 
     return { done, abort };
@@ -205,7 +205,7 @@ export default class NetworkManager {
     headersReceived
       .then((response) => this.applyResponseHandlers(type, response))
       .catch((e) => {
-        this.logger.debug('Error cached from response handlers: ', e);
+        this.logger.debug('Error catched from response handlers: ', e);
       });
 
     return { done, abort };

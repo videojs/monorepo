@@ -1,4 +1,4 @@
-type Callback<T> = (data: T) => void;
+export type Callback<T> = (data: T) => void;
 
 export default class EventEmitter<M> {
   private events = new Map<keyof M, Set<Callback<unknown>>>();
