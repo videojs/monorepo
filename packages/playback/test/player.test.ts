@@ -143,4 +143,67 @@ describe('Player', () => {
       });
     });
   });
+
+  describe('mute/unmute', () => {
+    describe('getIsMuted', () => {
+      it('should log attempt message if video element is not attached and return fallback', () => {
+        const warnSpy = jest.spyOn(logger, 'warn');
+        const isMuted = player.getIsMuted();
+        expect(isMuted).toBe(false);
+        expect(warnSpy).toHaveBeenNthCalledWith(
+          1,
+          'Attempt to call "getIsMuted", but no video element attached. Call "attach" first.'
+        );
+      });
+
+      it('should return default value', () => {
+        player.attach(videoElement);
+        expect(player.getIsMuted()).toBe(false);
+      });
+    });
+
+    describe('mute', () => {
+      it('should log attempt message if video element is not attached', () => {
+        const warnSpy = jest.spyOn(logger, 'warn');
+        player.mute();
+        expect(warnSpy).toHaveBeenNthCalledWith(
+          1,
+          'Attempt to call "mute", but no video element attached. Call "attach" first.'
+        );
+      });
+
+      it('should mute player', () => {
+        player.addEventListener(Player.Events.MutedStatusChanged, (event) => {
+          expect(event.type).toBe(Player.Events.MutedStatusChanged);
+          expect(event.isMuted).toBe(true);
+        });
+        player.attach(videoElement);
+        player.mute();
+        expect(player.getIsMuted()).toBe(true);
+      });
+    });
+
+    describe('unmute', () => {
+      it('should log attempt message if video element is not attached', () => {
+        const warnSpy = jest.spyOn(logger, 'warn');
+        player.unmute();
+        expect(warnSpy).toHaveBeenNthCalledWith(
+          1,
+          'Attempt to call "unmute", but no video element attached. Call "attach" first.'
+        );
+      });
+
+      it('should unmute player', () => {
+        player.attach(videoElement);
+        player.mute();
+        expect(player.getIsMuted()).toBe(true);
+        player.addEventListener(Player.Events.MutedStatusChanged, (event) => {
+          expect(event.type).toBe(Player.Events.MutedStatusChanged);
+          expect(event.isMuted).toBe(false);
+        });
+        player.unmute();
+        expect(player.getIsMuted()).toBe(false);
+      });
+    });
+  });
 });

@@ -11,6 +11,7 @@ import {
   ErrorEvent,
   VolumeChangedEvent,
   LoggerLevelChangedEvent,
+  MutedStatusChangedEvent,
 } from './events';
 import type { EventToTypeMap } from './events';
 import type Pipeline from './pipelines/basePipeline';
@@ -243,11 +244,39 @@ export default class Player {
   }
 
   public mute(): void {
-    return this.safeAttemptOnVideoElement('mute', (videoElement) => void (videoElement.muted = true), undefined);
+    return this.safeAttemptOnVideoElement(
+      'mute',
+      (videoElement) => {
+        const isMuted = videoElement.muted;
+
+        if (isMuted) {
+          //already muted
+          return;
+        }
+
+        videoElement.muted = true;
+        this.eventEmitter.emit(Events.MutedStatusChanged, new MutedStatusChangedEvent(true));
+      },
+      undefined
+    );
   }
 
   public unmute(): void {
-    return this.safeAttemptOnVideoElement('mute', (videoElement) => void (videoElement.muted = false), undefined);
+    return this.safeAttemptOnVideoElement(
+      'unmute',
+      (videoElement) => {
+        const isMuted = videoElement.muted;
+
+        if (!isMuted) {
+          // already un-muted
+          return;
+        }
+
+        videoElement.muted = false;
+        this.eventEmitter.emit(Events.MutedStatusChanged, new MutedStatusChangedEvent(false));
+      },
+      undefined
+    );
   }
 
   public getIsMuted(): boolean {

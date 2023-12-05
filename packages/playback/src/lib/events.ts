@@ -6,6 +6,7 @@ export const Events = {
   LeavePictureInPictureMode: 'LeavePictureInPictureMode',
   VolumeChanged: 'VolumeChanged',
   LoggerLevelChanged: 'LoggerLevelChanged',
+  MutedStatusChanged: 'MutedStatusChanged',
   Error: 'Error',
 } as const;
 
@@ -20,6 +21,16 @@ export class VolumeChangedEvent extends PlayerEvent {
   public constructor(volume: number) {
     super();
     this.volume = volume;
+  }
+}
+
+export class MutedStatusChangedEvent extends PlayerEvent {
+  public readonly type = Events.MutedStatusChanged;
+  public readonly isMuted: boolean;
+
+  public constructor(isMuted: boolean) {
+    super();
+    this.isMuted = isMuted;
   }
 }
 
@@ -54,6 +65,7 @@ export class ErrorEvent extends PlayerEvent {
 export interface EventToTypeMap {
   [Events.LoggerLevelChanged]: LoggerLevelChangedEvent;
   [Events.VolumeChanged]: VolumeChangedEvent;
+  [Events.MutedStatusChanged]: MutedStatusChangedEvent;
   [Events.EnterPictureInPictureMode]: EnterPictureInPictureModeEvent;
   [Events.LeavePictureInPictureMode]: LeavePictureInPictureModeEvent;
   [Events.Error]: ErrorEvent;
