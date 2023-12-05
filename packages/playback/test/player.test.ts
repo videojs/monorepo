@@ -59,6 +59,27 @@ describe('Player', () => {
     });
   });
 
+  describe('loggerLevel', () => {
+    describe('setLoggerLevel', () => {
+      it('should set logger level', () => {
+        player.addEventListener(Player.Events.LoggerLevelChanged, (event) => {
+          expect(event.type).toBe(Player.Events.LoggerLevelChanged);
+          expect(event.level).toBe(Player.LoggerLevel.Info);
+        });
+
+        player.setLoggerLevel(Player.LoggerLevel.Info);
+        expect(player.getLoggerLevel()).toBe(Player.LoggerLevel.Info);
+      });
+    });
+
+    describe('getLoggerLevel', () => {
+      it('should return default logger level', () => {
+        const level = player.getLoggerLevel();
+        expect(level).toBe(Player.LoggerLevel.Debug);
+      });
+    });
+  });
+
   describe('volume', () => {
     describe('setVolumeLevel', () => {
       it('should log attempt message if video element is not attached', () => {

@@ -1,9 +1,11 @@
 import type PlayerError from './errors';
+import type { LoggerLevel } from './utils/logger';
 
 export const Events = {
   EnterPictureInPictureMode: 'EnterPictureInPictureMode',
   LeavePictureInPictureMode: 'LeavePictureInPictureMode',
   VolumeChanged: 'VolumeChanged',
+  LoggerLevelChanged: 'LoggerLevelChanged',
   Error: 'Error',
 } as const;
 
@@ -18,6 +20,16 @@ export class VolumeChangedEvent extends PlayerEvent {
   public constructor(volume: number) {
     super();
     this.volume = volume;
+  }
+}
+
+export class LoggerLevelChangedEvent extends PlayerEvent {
+  public readonly type = Events.LoggerLevelChanged;
+  public readonly level: LoggerLevel;
+
+  public constructor(level: LoggerLevel) {
+    super();
+    this.level = level;
   }
 }
 
@@ -40,6 +52,7 @@ export class ErrorEvent extends PlayerEvent {
 }
 
 export interface EventToTypeMap {
+  [Events.LoggerLevelChanged]: LoggerLevelChangedEvent;
   [Events.VolumeChanged]: VolumeChangedEvent;
   [Events.EnterPictureInPictureMode]: EnterPictureInPictureModeEvent;
   [Events.LeavePictureInPictureMode]: LeavePictureInPictureModeEvent;

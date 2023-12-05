@@ -10,6 +10,7 @@ import {
   LeavePictureInPictureModeEvent,
   ErrorEvent,
   VolumeChangedEvent,
+  LoggerLevelChangedEvent,
 } from './events';
 import type { EventToTypeMap } from './events';
 import type Pipeline from './pipelines/basePipeline';
@@ -254,7 +255,8 @@ export default class Player {
   }
 
   public setLoggerLevel(level: LoggerLevel): void {
-    return this.logger.setLoggerLevel(level);
+    this.logger.setLoggerLevel(level);
+    this.eventEmitter.emit(Events.LoggerLevelChanged, new LoggerLevelChangedEvent(this.getLoggerLevel()));
   }
 
   public addEventListener<K extends keyof EventToTypeMap>(event: K, callback: Callback<EventToTypeMap[K]>): void {
