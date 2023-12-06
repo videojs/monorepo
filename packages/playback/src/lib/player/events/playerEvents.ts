@@ -1,17 +1,9 @@
-import type PlayerError from './errors';
-import type { LoggerLevel } from './utils/logger';
-
-export const Events = {
-  EnterPictureInPictureMode: 'EnterPictureInPictureMode',
-  LeavePictureInPictureMode: 'LeavePictureInPictureMode',
-  VolumeChanged: 'VolumeChanged',
-  LoggerLevelChanged: 'LoggerLevelChanged',
-  MutedStatusChanged: 'MutedStatusChanged',
-  Error: 'Error',
-} as const;
+import { Events } from '../consts/events';
+import type { LoggerLevel } from '../../utils/logger';
+import type PlayerError from '../errors/basePlayerError';
 
 abstract class PlayerEvent {
-  public abstract readonly type: (typeof Events)[keyof typeof Events];
+  public abstract readonly type: keyof typeof Events;
 }
 
 export class VolumeChangedEvent extends PlayerEvent {
@@ -60,13 +52,4 @@ export class ErrorEvent extends PlayerEvent {
     super();
     this.error = error;
   }
-}
-
-export interface EventToTypeMap {
-  [Events.LoggerLevelChanged]: LoggerLevelChangedEvent;
-  [Events.VolumeChanged]: VolumeChangedEvent;
-  [Events.MutedStatusChanged]: MutedStatusChangedEvent;
-  [Events.EnterPictureInPictureMode]: EnterPictureInPictureModeEvent;
-  [Events.LeavePictureInPictureMode]: LeavePictureInPictureModeEvent;
-  [Events.Error]: ErrorEvent;
 }

@@ -1,25 +1,23 @@
-import type { PlayerConfiguration } from './configuration';
-import Logger, { LoggerLevel } from './utils/logger';
-import { createDefaultConfiguration } from './configuration';
-import type { Callback } from './utils/eventEmitter';
-import EventEmitter from './utils/eventEmitter';
-
+import type { PlayerConfiguration } from './configuration/configuration';
+import Logger, { LoggerLevel } from '../utils/logger';
+import { createDefaultConfiguration } from './configuration/configuration';
+import type { Callback } from '../utils/eventEmitter';
+import EventEmitter from '../utils/eventEmitter';
+import type { EventTypeToEventMap } from './events/eventTypeToEventMap';
+import { Events } from './consts/events';
+import NetworkManager, { RequestType } from '../network/networkManager';
+import type Pipeline from '../pipelines/basePipeline';
+import PlayerTimeRange from '../utils/timeRanges';
 import {
-  Events,
   EnterPictureInPictureModeEvent,
   LeavePictureInPictureModeEvent,
-  ErrorEvent,
-  VolumeChangedEvent,
   LoggerLevelChangedEvent,
   MutedStatusChangedEvent,
-} from './events';
-import type { EventToTypeMap } from './events';
-import type Pipeline from './pipelines/basePipeline';
-import NativePipeline from './pipelines/native/nativePipeline';
-import { NoSupportedPipelineError } from './errors';
-import type NetworkManager from './networkManager';
-import { RequestType } from './networkManager';
-import PlayerTimeRange from './utils/timeRanges';
+  VolumeChangedEvent,
+  ErrorEvent,
+} from './events/playerEvents';
+import NativePipeline from '../pipelines/native/nativePipeline';
+import { NoSupportedPipelineError } from './errors/pipelinePlayerErrors';
 
 enum PlaybackState {
   Playing = 'Playing',
@@ -45,7 +43,7 @@ interface PlayerStats {}
 
 interface PlayerDependencies {
   logger: Logger;
-  eventEmitter: EventEmitter<EventToTypeMap>;
+  eventEmitter: EventEmitter<EventTypeToEventMap>;
 }
 
 export default class Player {
@@ -57,16 +55,18 @@ export default class Player {
 
   public static createPlayer(): Player {
     const logger = new Logger(console, 'Player');
-    const eventEmitter = new EventEmitter<EventToTypeMap>();
+    const networkManager = new NetworkManager(logger);
+    const eventEmitter = new EventEmitter<EventTypeToEventMap>();
 
-    return new Player({
-      logger,
-      eventEmitter,
-    });
+    const player = new Player({ logger, eventEmitter });
+    player.registerNetworkManager('http', networkManager);
+    player.registerNetworkManager('https', networkManager);
+
+    return player;
   }
 
   private readonly logger: Logger;
-  private readonly eventEmitter: EventEmitter<EventToTypeMap>;
+  private readonly eventEmitter: EventEmitter<EventTypeToEventMap>;
 
   private videoElement: HTMLVideoElement | null = null;
   private pictureInPictureWindow: PictureInPictureWindow | null = null;
@@ -288,19 +288,25 @@ export default class Player {
     this.eventEmitter.emit(Events.LoggerLevelChanged, new LoggerLevelChangedEvent(this.getLoggerLevel()));
   }
 
-  public addEventListener<K extends keyof EventToTypeMap>(event: K, callback: Callback<EventToTypeMap[K]>): void {
+  public addEventListener<K extends keyof EventTypeToEventMap>(
+    event: K,
+    callback: Callback<EventTypeToEventMap[K]>
+  ): void {
     return this.eventEmitter.on(event, callback);
   }
 
-  public once<K extends keyof EventToTypeMap>(event: K, callback: Callback<EventToTypeMap[K]>): void {
+  public once<K extends keyof EventTypeToEventMap>(event: K, callback: Callback<EventTypeToEventMap[K]>): void {
     return this.eventEmitter.once(event, callback);
   }
 
-  public removeEventListener<K extends keyof EventToTypeMap>(event: K, callback: Callback<EventToTypeMap[K]>): void {
+  public removeEventListener<K extends keyof EventTypeToEventMap>(
+    event: K,
+    callback: Callback<EventTypeToEventMap[K]>
+  ): void {
     return this.eventEmitter.off(event, callback);
   }
 
-  public removeAllEventListenersForType<K extends keyof EventToTypeMap>(event: K): void {
+  public removeAllEventListenersForType<K extends keyof EventTypeToEventMap>(event: K): void {
     return this.eventEmitter.offAllFor(event);
   }
 
