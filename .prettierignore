@@ -1,7 +1,11 @@
 **/*.toml
 **/*.puml
 **/*.svg
+**/*.png
+**/*.jpg
+**/*.ico
 .husky
 .prettierignore
 .gitignore
+.nojekyll
 bun.lockb
