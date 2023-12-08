@@ -39,9 +39,10 @@
         "ts": "never",
         "tsx": "never"
       }
-    ]
+    ],
+    "import/no-unresolved": [2, { "ignore": ["^@theme", "^@docusaurus", "^@site"] }]
   },
-  "ignorePatterns": ["dist", "node_modules", "examples", "coverage"],
+  "ignorePatterns": ["dist", "node_modules", "examples", "coverage", ".docusaurus", "build"],
   "settings": {
     "import/resolver": {
       "typescript": true

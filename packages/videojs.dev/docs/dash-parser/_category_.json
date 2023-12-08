@@ -1,0 +1,8 @@
+{
+  "label": "DASH Parser",
+  "position": 3,
+  "link": {
+    "type": "generated-index",
+    "description": "Parses mpd files based on the DASH spec."
+  }
+}

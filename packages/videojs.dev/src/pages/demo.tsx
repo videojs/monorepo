@@ -1,4 +1,5 @@
-/* eslint-disable no-console */
+import Layout from '@theme/Layout';
+import ExecutionEnvironment from '@docusaurus/ExecutionEnvironment';
 import { FullPlaylistParser as HlsFullParser, ProgressiveParser as HlsProgressiveParser } from '@videojs/hls-parser';
 import { FullManifestParser as DashFullParser, ProgressiveParser as DashProgressiveParser } from '@videojs/dash-parser';
 import { Player } from '@videojs/playback/player';
@@ -22,14 +23,17 @@ const hlsProgressiveParser = new HlsProgressiveParser({});
 const dashFullParser = new DashFullParser({});
 const dashProgressiveParser = new DashProgressiveParser({});
 
-window.Player = Player;
-window.player = player;
-window.hlsFullParser = hlsFullParser;
-window.hlsProgressiveParser = hlsProgressiveParser;
-window.dashFullParser = dashFullParser;
-window.dashProgressiveParser = dashProgressiveParser;
+if (ExecutionEnvironment.canUseDOM) {
+  window.Player = Player;
+  window.player = player;
+  window.hlsFullParser = hlsFullParser;
+  window.hlsProgressiveParser = hlsProgressiveParser;
+  window.dashFullParser = dashFullParser;
+  window.dashProgressiveParser = dashProgressiveParser;
+}
 
 /**
+ * We created a new project called web-media-box https://github.com/dzianis-dashkevich/web-media-box
  * Our goal is to create a fully typed/robust/next-gen player
  * During hack week we implemented NetworkManager, Hls-Parser, Dash-Parser
  * NetworkManager:
@@ -311,3 +315,12 @@ window.dashProgressiveParser = dashProgressiveParser;
 //   () => console.log('Parsed Dash Manifest: ', dashProgressiveParser.done()),
 //   (networkManagerError) => console.error('Error: ', networkManagerError)
 // );
+
+export default function MyReactPage(): JSX.Element {
+  return (
+    <Layout>
+      <h1>My React page</h1>
+      <p>This will be the demo</p>
+    </Layout>
+  );
+}
