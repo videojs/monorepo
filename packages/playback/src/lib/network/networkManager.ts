@@ -40,14 +40,22 @@ interface NetworkRequestWithProgressiveResponse {
   done: Promise<void>;
 }
 
+interface NetworkManagerDependencies {
+  logger: Logger;
+}
+
 export default class NetworkManager {
+  public static create(dependencies: NetworkManagerDependencies): NetworkManager {
+    return new NetworkManager(dependencies);
+  }
+
   private readonly requestInterceptors = new Map<RequestType, Array<RequestInterceptor>>();
   private readonly responseHandlers = new Map<RequestType, Array<ResponseHandler>>();
 
   private readonly logger: Logger;
 
-  public constructor(logger: Logger) {
-    this.logger = logger.createSubLogger('NetworkManager');
+  public constructor(dependencies: NetworkManagerDependencies) {
+    this.logger = dependencies.logger;
   }
 
   private add<T>(type: RequestType, interceptor: T, interceptors: Map<RequestType, Array<T>>): void {
