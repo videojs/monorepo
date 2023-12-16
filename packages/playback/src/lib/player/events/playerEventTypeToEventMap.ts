@@ -8,7 +8,7 @@ import type {
   ErrorEvent,
 } from './playerEvents';
 
-export interface EventTypeToEventMap {
+export interface PlayerEventTypeToEventMap {
   [Events.LoggerLevelChanged]: LoggerLevelChangedEvent;
   [Events.VolumeChanged]: VolumeChangedEvent;
   [Events.MutedStatusChanged]: MutedStatusChangedEvent;

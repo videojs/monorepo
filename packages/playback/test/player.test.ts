@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach } from '@jest/globals';
 import { Player } from '../src/player';
 import Logger from '../src/lib/utils/logger';
 import NetworkManager from '../src/lib/network/networkManager';
-import type { EventTypeToEventMap } from '../src/lib/player/events/eventTypeToEventMap';
+import type { PlayerEventTypeToEventMap } from '../src/lib/player/events/PlayerEventTypeToEventMap';
 import EventEmitter from '../src/lib/utils/eventEmitter';
 import { DashPipeline, HlsPipeline } from '../src/lib/pipelines/mse';
 
@@ -12,13 +12,13 @@ describe('Player', () => {
   let videoElement: HTMLVideoElement;
   let dashPipeline: DashPipeline;
   let hlsPipeline: HlsPipeline;
-  let eventEmitter: EventEmitter<EventTypeToEventMap>;
+  let eventEmitter: EventEmitter<PlayerEventTypeToEventMap>;
   let player: Player;
 
   beforeEach(() => {
     logger = new Logger(console, 'Player');
     networkManager = new NetworkManager(logger);
-    eventEmitter = new EventEmitter<EventTypeToEventMap>();
+    eventEmitter = new EventEmitter<PlayerEventTypeToEventMap>();
     videoElement = document.createElement('video');
     dashPipeline = new DashPipeline();
     hlsPipeline = new HlsPipeline();

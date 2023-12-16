@@ -1,6 +1,17 @@
 import type NetworkManager from '../network/networkManager';
+import type Logger from '../utils/logger';
+
+interface PipelineDependencies {
+  logger: Logger;
+}
 
 export default abstract class Pipeline {
+  private readonly logger: Logger;
+
+  public constructor(dependencies: PipelineDependencies) {
+    this.logger = dependencies.logger;
+  }
+
   protected mapProtocolToNetworkManager = new Map<string, NetworkManager>();
 
   public loadRemoteAsset(uri: URL): void {

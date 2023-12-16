@@ -3,7 +3,6 @@ import Logger, { LoggerLevel } from '../utils/logger';
 import { createDefaultConfiguration } from './configuration/configuration';
 import type { Callback } from '../utils/eventEmitter';
 import EventEmitter from '../utils/eventEmitter';
-import type { EventTypeToEventMap } from './events/eventTypeToEventMap';
 import { Events } from './consts/events';
 import NetworkManager, { RequestType } from '../network/networkManager';
 import type Pipeline from '../pipelines/basePipeline';
@@ -18,6 +17,7 @@ import {
 } from './events/playerEvents';
 import NativePipeline from '../pipelines/native/nativePipeline';
 import { NoSupportedPipelineError } from './errors/pipelinePlayerErrors';
+import type { PlayerEventTypeToEventMap } from './events/playerEventTypeToEventMap';
 
 enum PlaybackState {
   Playing = 'Playing',
@@ -43,7 +43,7 @@ interface PlayerStats {}
 
 interface PlayerDependencies {
   logger: Logger;
-  eventEmitter: EventEmitter<EventTypeToEventMap>;
+  eventEmitter: EventEmitter<PlayerEventTypeToEventMap>;
 }
 
 export default class Player {
@@ -55,8 +55,8 @@ export default class Player {
 
   public static createPlayer(): Player {
     const logger = new Logger(console, 'Player');
-    const networkManager = new NetworkManager(logger);
-    const eventEmitter = new EventEmitter<EventTypeToEventMap>();
+    const networkManager = new NetworkManager({ logger: logger.createSubLogger('NetworkManager') });
+    const eventEmitter = new EventEmitter<PlayerEventTypeToEventMap>();
 
     const player = new Player({ logger, eventEmitter });
     player.registerNetworkManager('http', networkManager);
@@ -66,7 +66,7 @@ export default class Player {
   }
 
   private readonly logger: Logger;
-  private readonly eventEmitter: EventEmitter<EventTypeToEventMap>;
+  private readonly eventEmitter: EventEmitter<PlayerEventTypeToEventMap>;
 
   private videoElement: HTMLVideoElement | null = null;
   private pictureInPictureWindow: PictureInPictureWindow | null = null;
@@ -153,8 +153,6 @@ export default class Player {
     } else {
       level = volumeLevel;
     }
-
-    // console.log('level: ', level);
 
     return this.safeAttemptOnVideoElement(
       'setVolumeLevel',
@@ -288,25 +286,28 @@ export default class Player {
     this.eventEmitter.emit(Events.LoggerLevelChanged, new LoggerLevelChangedEvent(this.getLoggerLevel()));
   }
 
-  public addEventListener<K extends keyof EventTypeToEventMap>(
+  public addEventListener<K extends keyof PlayerEventTypeToEventMap>(
     event: K,
-    callback: Callback<EventTypeToEventMap[K]>
+    callback: Callback<PlayerEventTypeToEventMap[K]>
   ): void {
     return this.eventEmitter.on(event, callback);
   }
 
-  public once<K extends keyof EventTypeToEventMap>(event: K, callback: Callback<EventTypeToEventMap[K]>): void {
+  public once<K extends keyof PlayerEventTypeToEventMap>(
+    event: K,
+    callback: Callback<PlayerEventTypeToEventMap[K]>
+  ): void {
     return this.eventEmitter.once(event, callback);
   }
 
-  public removeEventListener<K extends keyof EventTypeToEventMap>(
+  public removeEventListener<K extends keyof PlayerEventTypeToEventMap>(
     event: K,
-    callback: Callback<EventTypeToEventMap[K]>
+    callback: Callback<PlayerEventTypeToEventMap[K]>
   ): void {
     return this.eventEmitter.off(event, callback);
   }
 
-  public removeAllEventListenersForType<K extends keyof EventTypeToEventMap>(event: K): void {
+  public removeAllEventListenersForType<K extends keyof PlayerEventTypeToEventMap>(event: K): void {
     return this.eventEmitter.offAllFor(event);
   }
 
@@ -512,7 +513,7 @@ export default class Player {
     let pipeline = this.mimeTypeToPipelineMap.get(mimeType);
 
     if (!pipeline && this.videoElement?.canPlayType(mimeType)) {
-      pipeline = new NativePipeline();
+      pipeline = new NativePipeline({ logger: this.logger.createSubLogger('NativePipeline') });
     }
 
     if (pipeline) {
