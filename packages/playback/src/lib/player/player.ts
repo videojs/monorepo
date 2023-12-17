@@ -44,6 +44,7 @@ interface PlayerStats {}
 interface PlayerDependencies {
   logger: Logger;
   configurationManager: ConfigurationManager;
+  networkManager: NetworkManager;
   eventEmitter: EventEmitter<PlayerEventTypeToEventMap>;
 }
 
@@ -60,27 +61,24 @@ export default class Player {
     const eventEmitter = new EventEmitter<PlayerEventTypeToEventMap>();
     const configurationManager = new ConfigurationManager();
 
-    const player = new Player({ logger, eventEmitter, configurationManager });
-    player.registerNetworkManager('http', networkManager);
-    player.registerNetworkManager('https', networkManager);
-
-    return player;
+    return new Player({ logger, eventEmitter, configurationManager, networkManager });
   }
 
   private readonly logger: Logger;
   private readonly configurationManager: ConfigurationManager;
   private readonly eventEmitter: EventEmitter<PlayerEventTypeToEventMap>;
 
+  private networkManager: NetworkManager;
   private videoElement: HTMLVideoElement | null = null;
   private pictureInPictureWindow: PictureInPictureWindow | null = null;
   private playbackState: PlaybackState = PlaybackState.Idle;
 
   private readonly mimeTypeToPipelineMap = new Map<string, Pipeline>();
-  private readonly protocolToNetworkManagerMap = new Map<string, NetworkManager>();
 
   public constructor(dependencies: PlayerDependencies) {
     this.logger = dependencies.logger;
     this.configurationManager = dependencies.configurationManager;
+    this.networkManager = dependencies.networkManager;
     this.eventEmitter = dependencies.eventEmitter;
   }
 
@@ -92,20 +90,16 @@ export default class Player {
     this.mimeTypeToPipelineMap.set(mimeType, pipeline);
   }
 
-  public registerNetworkManager(protocol: string, networkManager: NetworkManager): void {
-    if (this.protocolToNetworkManagerMap.has(protocol)) {
-      this.logger.warn(`Overriding existing networkManager for "${protocol}" protocol.`);
-    }
-
-    this.protocolToNetworkManagerMap.set(protocol, networkManager);
-  }
-
   public getPipelineForMimeType(mimeType: string): Pipeline | undefined {
     return this.mimeTypeToPipelineMap.get(mimeType);
   }
 
-  public getNetworkManagerForProtocol(protocol: string): NetworkManager | undefined {
-    return this.protocolToNetworkManagerMap.get(protocol);
+  public getNetworkManager(): NetworkManager {
+    return this.networkManager;
+  }
+
+  public setNetworkManager(networkManager: NetworkManager): void {
+    this.networkManager = networkManager;
   }
 
   public getVideoElement(): HTMLVideoElement | null {
