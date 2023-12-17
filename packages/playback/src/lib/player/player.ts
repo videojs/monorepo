@@ -48,6 +48,10 @@ interface PlayerDependencies {
   eventEmitter: EventEmitter<PlayerEventTypeToEventMap>;
 }
 
+interface PipelineFactory {
+  create(): Pipeline;
+}
+
 export default class Player {
   public static readonly Events = Events;
 
@@ -70,10 +74,11 @@ export default class Player {
 
   private networkManager: NetworkManager;
   private videoElement: HTMLVideoElement | null = null;
+  private activePipeline: Pipeline | null = null;
   private pictureInPictureWindow: PictureInPictureWindow | null = null;
   private playbackState: PlaybackState = PlaybackState.Idle;
 
-  private readonly mimeTypeToPipelineMap = new Map<string, Pipeline>();
+  private readonly mimeTypeToPipelineFactoryMap = new Map<string, PipelineFactory>();
 
   public constructor(dependencies: PlayerDependencies) {
     this.logger = dependencies.logger;
@@ -82,16 +87,12 @@ export default class Player {
     this.eventEmitter = dependencies.eventEmitter;
   }
 
-  public registerPipeline(mimeType: string, pipeline: Pipeline): void {
-    if (this.mimeTypeToPipelineMap.has(mimeType)) {
-      this.logger.warn(`Overriding existing pipeline for "${mimeType}" mimeType.`);
+  public registerPipelineFactory(mimeType: string, pipelineFactory: PipelineFactory): void {
+    if (this.mimeTypeToPipelineFactoryMap.has(mimeType)) {
+      this.logger.warn(`Overriding existing pipeline factory for "${mimeType}" mimeType.`);
     }
 
-    this.mimeTypeToPipelineMap.set(mimeType, pipeline);
-  }
-
-  public getPipelineForMimeType(mimeType: string): Pipeline | undefined {
-    return this.mimeTypeToPipelineMap.get(mimeType);
+    this.mimeTypeToPipelineFactoryMap.set(mimeType, pipelineFactory);
   }
 
   public getNetworkManager(): NetworkManager {
@@ -415,30 +416,27 @@ export default class Player {
   }
 
   public loadRemoteAsset(uri: URL, mimeType: string): void {
-    if (this.videoElement === null) {
-      return this.warnAttempt('loadRemoteAsset');
-    }
-
-    return this.load(mimeType, (pipeline) => pipeline.loadRemoteAsset(uri));
+    return this.safeVoidAttemptOnVideoElement('loadRemoteAsset', (videoElement) => {
+      return this.load(mimeType, videoElement, (pipeline) => pipeline.loadRemoteAsset(uri));
+    });
   }
 
   public loadLocalAsset(asset: string | ArrayBuffer, mimeType: string): void {
-    if (this.videoElement === null) {
-      return this.warnAttempt('loadLocalAsset');
-    }
-
-    return this.load(mimeType, (pipeline) => pipeline.loadLocalAsset(asset));
+    return this.safeVoidAttemptOnVideoElement('loadLocalAsset', (videoElement) => {
+      return this.load(mimeType, videoElement, (pipeline) => pipeline.loadLocalAsset(asset));
+    });
   }
 
-  private load(mimeType: string, pipelineHandler: (pipeline: Pipeline) => void): void {
-    let pipeline = this.mimeTypeToPipelineMap.get(mimeType);
+  private load(mimeType: string, videoElement: HTMLVideoElement, pipelineHandler: (pipeline: Pipeline) => void): void {
+    let pipelineFactory = this.mimeTypeToPipelineFactoryMap.get(mimeType);
 
-    if (!pipeline && this.videoElement?.canPlayType(mimeType)) {
-      pipeline = new NativePipeline({ logger: this.logger.createSubLogger('NativePipeline') });
+    if (!pipelineFactory && videoElement.canPlayType(mimeType)) {
+      pipelineFactory = NativePipeline;
     }
 
-    if (pipeline) {
-      pipeline.setMapProtocolToNetworkManager(this.protocolToNetworkManagerMap);
+    if (pipelineFactory) {
+      const pipeline = pipelineFactory.create();
+      this.activePipeline = pipeline;
       return pipelineHandler(pipeline);
     }
 
