@@ -5,7 +5,7 @@ import type { Callback } from '../utils/eventEmitter';
 import EventEmitter from '../utils/eventEmitter';
 import { Events } from './consts/events';
 import NetworkManager, { RequestType } from '../network/networkManager';
-import type Pipeline from '../pipelines/basePipeline';
+import type { Pipeline, PipelineDependencies } from '../pipelines/basePipeline';
 import PlayerTimeRange from '../utils/timeRanges';
 import {
   EnterPictureInPictureModeEvent,
@@ -49,7 +49,7 @@ interface PlayerDependencies {
 }
 
 interface PipelineFactory {
-  create(): Pipeline;
+  create(dependencies: PipelineDependencies): Pipeline;
 }
 
 export default class Player {
@@ -435,7 +435,10 @@ export default class Player {
     }
 
     if (pipelineFactory) {
-      const pipeline = pipelineFactory.create();
+      const pipeline = pipelineFactory.create({
+        logger: this.logger.createSubLogger('Pipeline'),
+        networkManager: this.networkManager,
+      });
       this.activePipeline = pipeline;
       return pipelineHandler(pipeline);
     }

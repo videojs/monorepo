@@ -1,12 +1,18 @@
-import Pipeline from '../basePipeline';
-import type NetworkManager from '../../network/networkManager';
+import type { PipelineDependencies } from '../basePipeline';
+import { Pipeline } from '../basePipeline';
 
 export default class NativePipeline extends Pipeline {
+  public static create(dependencies: PipelineDependencies): NativePipeline {
+    return new NativePipeline(dependencies);
+  }
+
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   public loadLocalAsset(asset: string | ArrayBuffer): void {
     //TODO
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  public loadRemoteAssetWithNetworkManager(uri: URL, networkManager: NetworkManager): void {}
+  public loadRemoteAsset(uri: URL): void {
+    //TODO
+  }
 }

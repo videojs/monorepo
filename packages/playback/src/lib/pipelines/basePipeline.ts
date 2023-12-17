@@ -1,35 +1,21 @@
 import type NetworkManager from '../network/networkManager';
 import type Logger from '../utils/logger';
 
-interface PipelineDependencies {
+export interface PipelineDependencies {
   logger: Logger;
+  networkManager: NetworkManager;
 }
 
-export default abstract class Pipeline {
-  private readonly logger: Logger;
+export abstract class Pipeline {
+  protected readonly logger: Logger;
+  protected readonly networkManager: NetworkManager;
 
-  public constructor(dependencies: PipelineDependencies) {
+  protected constructor(dependencies: PipelineDependencies) {
     this.logger = dependencies.logger;
+    this.networkManager = dependencies.networkManager;
   }
 
-  protected mapProtocolToNetworkManager = new Map<string, NetworkManager>();
-
-  public loadRemoteAsset(uri: URL): void {
-    const networkManager = this.mapProtocolToNetworkManager.get(uri.protocol);
-
-    if (!networkManager) {
-      // trigger error;
-      return;
-    }
-
-    return this.loadRemoteAssetWithNetworkManager(uri, networkManager);
-  }
-
-  public abstract loadRemoteAssetWithNetworkManager(uri: URL, networkManager: NetworkManager): void;
+  public abstract loadRemoteAsset(uri: URL): void;
 
   public abstract loadLocalAsset(asset: string | ArrayBuffer): void;
-
-  public setMapProtocolToNetworkManager(map: Map<string, NetworkManager>): void {
-    this.mapProtocolToNetworkManager = map;
-  }
 }

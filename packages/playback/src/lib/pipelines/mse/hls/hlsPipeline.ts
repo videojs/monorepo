@@ -1,8 +1,12 @@
 import type { FullPlaylistParser, ProgressiveParser } from '@videojs/hls-parser';
 import MsePipeLine from '../msePipeline';
-import type NetworkManager from '../../../network/networkManager';
+import type { PipelineDependencies } from '../../basePipeline';
 
 export default class HlsPipeline extends MsePipeLine {
+  public static create(dependencies: PipelineDependencies): HlsPipeline {
+    return new HlsPipeline(dependencies);
+  }
+
   private progressiveParser: ProgressiveParser | null = null;
   private fullPlaylistParser: FullPlaylistParser | null = null;
 
@@ -15,7 +19,7 @@ export default class HlsPipeline extends MsePipeLine {
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  public loadRemoteAssetWithNetworkManager(uri: URL, networkManager: NetworkManager): void {
+  public loadRemoteAsset(uri: URL): void {
     if (this.progressiveParser) {
       // load and parse progressively
     }

@@ -1,9 +1,13 @@
 import MsePipeLine from '../msePipeline';
-import type NetworkManager from '../../../network/networkManager';
+import type { PipelineDependencies } from '../../basePipeline';
 
 export default class DashPipeline extends MsePipeLine {
+  public static create(dependencies: PipelineDependencies): DashPipeline {
+    return new DashPipeline(dependencies);
+  }
+
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  public loadRemoteAssetWithNetworkManager(uri: URL, networkManager: NetworkManager): void {
+  public loadRemoteAsset(uri: URL): void {
     // if (this.progressiveParser) {
     // load and parse progressively
     // }
