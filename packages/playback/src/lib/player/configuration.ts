@@ -1,26 +1,9 @@
-type DeepPartial<T> = T extends object
-  ? {
-      [P in keyof T]?: DeepPartial<T[P]>;
-    }
-  : T;
-
-interface NetworkConfiguration {
-  maxAttempts: number;
-  delay: number;
-  delayFactor: number;
-  fuzzFactor: number;
-  timeout: number;
-}
-
-export interface PlayerConfiguration {
-  network: {
-    manifest: NetworkConfiguration;
-    segment: NetworkConfiguration;
-    license: NetworkConfiguration;
-  };
-}
-
-export type PlayerConfigurationChunk = DeepPartial<PlayerConfiguration>;
+import type {
+  NetworkConfiguration,
+  NetworkConfigurationChunk,
+  PlayerConfiguration,
+  PlayerConfigurationChunk,
+} from '../types/configuration';
 
 abstract class Configuration<T> {
   public abstract update(chunk: Partial<T>): void;
@@ -51,7 +34,7 @@ class NetworkConfigurationImpl extends Configuration<NetworkConfiguration> {
     this.configuration = configuration;
   }
 
-  public update(chunk: DeepPartial<NetworkConfiguration>): void {
+  public update(chunk: NetworkConfigurationChunk): void {
     if (chunk.maxAttempts !== undefined) {
       this.configuration.maxAttempts = chunk.maxAttempts;
     }
@@ -106,7 +89,7 @@ class PlayerConfigurationImpl extends Configuration<PlayerConfiguration> {
     this.network = configuration.network;
   }
 
-  public update(chunk: DeepPartial<PlayerConfiguration>): void {
+  public update(chunk: PlayerConfigurationChunk): void {
     if (chunk.network?.manifest) {
       this.network.manifest.update(chunk.network.manifest);
     }

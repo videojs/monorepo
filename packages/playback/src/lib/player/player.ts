@@ -1,4 +1,4 @@
-import type { PlayerConfiguration, PlayerConfigurationChunk } from './configuration';
+import type { PlayerConfiguration, PlayerConfigurationChunk } from '../types/configuration';
 import Logger, { LoggerLevel } from '../utils/logger';
 import ConfigurationManager from './configuration';
 import type { Callback } from '../utils/eventEmitter';
@@ -18,28 +18,14 @@ import {
 import NativePipeline from '../pipelines/native/nativePipeline';
 import { NoSupportedPipelineError } from './errors/pipelinePlayerErrors';
 import type { PlayerEventTypeToEventMap } from './events/playerEventTypeToEventMap';
-
-enum PlaybackState {
-  Playing = 'Playing',
-  Paused = 'Paused',
-  Buffering = 'Buffering',
-  Idle = 'Idle',
-}
-
-// TODO: text tracks
-interface PlayerTextTrack {}
-
-// TODO: audio tracks
-interface PlayerAudioTrack {}
-
-// TODO: image tracks
-interface PlayerImageTrack {}
-
-// TODO video tracks (quality levels)
-interface PlayerVideoTrack {}
-
-// TODO player stats
-interface PlayerStats {}
+import type {
+  PlayerAudioTrack,
+  PlayerImageTrack,
+  PlayerStats,
+  PlayerTextTrack,
+  PlayerVideoTrack,
+} from '../types/player';
+import { PlaybackState } from '../types/player';
 
 interface PlayerDependencies {
   logger: Logger;
@@ -186,45 +172,59 @@ export default class Player {
   }
 
   public getTextTracks(): Array<PlayerTextTrack> {
-    // TODO: should be from the current pipeline
+    if (this.activePipeline) {
+      return this.activePipeline.getTextTracks();
+    }
+
     return [];
   }
 
   public getAudioTracks(): Array<PlayerAudioTrack> {
-    // TODO: should be from the current pipeline
+    if (this.activePipeline) {
+      return this.activePipeline.getAudioTracks();
+    }
+
     return [];
   }
 
   public getImageTracks(): Array<PlayerImageTrack> {
-    // TODO: should be from the current pipeline
+    if (this.activePipeline) {
+      return this.activePipeline.getImageTracks();
+    }
+
     return [];
   }
 
   public getVideoTracks(): Array<PlayerVideoTrack> {
-    // TODO: should be from the current pipeline
+    if (this.activePipeline) {
+      return this.activePipeline.getVideoTracks();
+    }
+
     return [];
   }
 
   public getStats(): PlayerStats {
-    // TODO: should be from the current pipeline
+    if (this.activePipeline) {
+      return this.activePipeline.getStats();
+    }
+
     return {};
   }
 
-  public selectVideoTrack(): void {
-    // TODO: forward to the current pipeline
-    // TODO: we should disable abr here, if it is not "auto" (probably should be separate method)
+  public selectVideoTrack(videoTrack: PlayerVideoTrack): void {
+    return this.activePipeline?.selectVideoTrack(videoTrack);
   }
 
-  public selectImageTrack(): void {
-    // TODO: forward to the current pipeline
+  public selectImageTrack(imageTrack: PlayerImageTrack): void {
+    return this.activePipeline?.selectImageTrack(imageTrack);
   }
 
-  public selectAudioTrack(): void {
-    // TODO: forward to the current pipeline
+  public selectAudioTrack(audioTrack: PlayerAudioTrack): void {
+    return this.activePipeline?.selectAudioTrack(audioTrack);
   }
 
-  public selectTextTrack(): void {
-    // TODO: forward to the current pipeline
+  public selectTextTrack(textTrack: PlayerTextTrack): void {
+    return this.activePipeline?.selectTextTrack(textTrack);
   }
 
   public mute(): void {
@@ -402,7 +402,11 @@ export default class Player {
   };
 
   public updateConfiguration(configurationChunk: PlayerConfigurationChunk): void {
-    return this.configurationManager.updateConfiguration(configurationChunk);
+    this.configurationManager.updateConfiguration(configurationChunk);
+
+    if (this.activePipeline) {
+      this.activePipeline.updateConfiguration(this.getConfiguration());
+    }
   }
 
   public resetConfiguration(): void {
@@ -412,6 +416,8 @@ export default class Player {
   public dispose(): void {
     this.detach();
     this.removeAllEventListeners();
+    this.activePipeline?.dispose();
+    this.activePipeline = null;
     // TODO
   }
 
@@ -438,6 +444,7 @@ export default class Player {
       const pipeline = pipelineFactory.create({
         logger: this.logger.createSubLogger('Pipeline'),
         networkManager: this.networkManager,
+        playerConfiguration: this.getConfiguration(),
       });
       this.activePipeline = pipeline;
       return pipelineHandler(pipeline);
