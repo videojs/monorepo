@@ -1,12 +1,54 @@
-import Pipeline from '../basePipeline';
-import type NetworkManager from '../../network/networkManager';
+import type {
+  PlayerTextTrack,
+  PlayerAudioTrack,
+  PlayerImageTrack,
+  PlayerVideoTrack,
+  PlayerStats,
+} from '../../types/player';
+import type { PipelineDependencies } from '../basePipeline';
+import { Pipeline } from '../basePipeline';
 
 export default class NativePipeline extends Pipeline {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  public loadLocalAsset(asset: string | ArrayBuffer): void {
-    //TODO
+  public static create(dependencies: PipelineDependencies): NativePipeline {
+    return new NativePipeline(dependencies);
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  public loadRemoteAssetWithNetworkManager(uri: URL, networkManager: NetworkManager): void {}
+  public loadLocalAsset(asset: string | ArrayBuffer): void {
+    throw new Error('Method not implemented.');
+  }
+
+  public loadRemoteAsset(uri: URL): void {
+    throw new Error('Method not implemented.');
+  }
+
+  public selectTextTrack(textTrack: PlayerTextTrack): void {
+    throw new Error('Method not implemented.');
+  }
+  public selectAudioTrack(audioTrack: PlayerAudioTrack): void {
+    throw new Error('Method not implemented.');
+  }
+  public selectImageTrack(imageTrack: PlayerImageTrack): void {
+    throw new Error('Method not implemented.');
+  }
+  public selectVideoTrack(videoTrack: PlayerVideoTrack): void {
+    throw new Error('Method not implemented.');
+  }
+  public getTextTracks(): Array<PlayerTextTrack> {
+    throw new Error('Method not implemented.');
+  }
+  public getAudioTracks(): Array<PlayerAudioTrack> {
+    throw new Error('Method not implemented.');
+  }
+  public getImageTracks(): Array<PlayerImageTrack> {
+    throw new Error('Method not implemented.');
+  }
+  public getVideoTracks(): Array<PlayerVideoTrack> {
+    throw new Error('Method not implemented.');
+  }
+  public getStats(): PlayerStats {
+    throw new Error('Method not implemented.');
+  }
+  public dispose(): void {
+    throw new Error('Method not implemented.');
+  }
 }

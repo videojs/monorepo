@@ -1,11 +1,11 @@
-import type { PlayerConfiguration } from './configuration/configuration';
+import type { PlayerConfiguration, PlayerConfigurationChunk } from '../types/configuration';
 import Logger, { LoggerLevel } from '../utils/logger';
-import { createDefaultConfiguration } from './configuration/configuration';
+import ConfigurationManager from './configuration';
 import type { Callback } from '../utils/eventEmitter';
 import EventEmitter from '../utils/eventEmitter';
 import { Events } from './consts/events';
 import NetworkManager, { RequestType } from '../network/networkManager';
-import type Pipeline from '../pipelines/basePipeline';
+import type { Pipeline, PipelineDependencies } from '../pipelines/basePipeline';
 import PlayerTimeRange from '../utils/timeRanges';
 import {
   EnterPictureInPictureModeEvent,
@@ -18,32 +18,24 @@ import {
 import NativePipeline from '../pipelines/native/nativePipeline';
 import { NoSupportedPipelineError } from './errors/pipelinePlayerErrors';
 import type { PlayerEventTypeToEventMap } from './events/playerEventTypeToEventMap';
-
-enum PlaybackState {
-  Playing = 'Playing',
-  Paused = 'Paused',
-  Buffering = 'Buffering',
-  Idle = 'Idle',
-}
-
-// TODO: text tracks
-interface PlayerTextTrack {}
-
-// TODO: audio tracks
-interface PlayerAudioTrack {}
-
-// TODO: image tracks
-interface PlayerImageTrack {}
-
-// TODO video tracks (quality levels)
-interface PlayerVideoTrack {}
-
-// TODO player stats
-interface PlayerStats {}
+import type {
+  PlayerAudioTrack,
+  PlayerImageTrack,
+  PlayerStats,
+  PlayerTextTrack,
+  PlayerVideoTrack,
+} from '../types/player';
+import { PlaybackState } from '../types/player';
 
 interface PlayerDependencies {
   logger: Logger;
+  configurationManager: ConfigurationManager;
+  networkManager: NetworkManager;
   eventEmitter: EventEmitter<PlayerEventTypeToEventMap>;
+}
+
+interface PipelineFactory {
+  create(dependencies: PipelineDependencies): Pipeline;
 }
 
 export default class Player {
@@ -53,56 +45,48 @@ export default class Player {
 
   public static readonly LoggerLevel = LoggerLevel;
 
-  public static createPlayer(): Player {
+  public static create(): Player {
     const logger = new Logger(console, 'Player');
     const networkManager = new NetworkManager({ logger: logger.createSubLogger('NetworkManager') });
     const eventEmitter = new EventEmitter<PlayerEventTypeToEventMap>();
+    const configurationManager = new ConfigurationManager();
 
-    const player = new Player({ logger, eventEmitter });
-    player.registerNetworkManager('http', networkManager);
-    player.registerNetworkManager('https', networkManager);
-
-    return player;
+    return new Player({ logger, eventEmitter, configurationManager, networkManager });
   }
 
   private readonly logger: Logger;
+  private readonly configurationManager: ConfigurationManager;
   private readonly eventEmitter: EventEmitter<PlayerEventTypeToEventMap>;
 
+  private networkManager: NetworkManager;
   private videoElement: HTMLVideoElement | null = null;
+  private activePipeline: Pipeline | null = null;
   private pictureInPictureWindow: PictureInPictureWindow | null = null;
-  private configuration: PlayerConfiguration = createDefaultConfiguration();
   private playbackState: PlaybackState = PlaybackState.Idle;
 
-  private readonly mimeTypeToPipelineMap = new Map<string, Pipeline>();
-  private readonly protocolToNetworkManagerMap = new Map<string, NetworkManager>();
+  private readonly mimeTypeToPipelineFactoryMap = new Map<string, PipelineFactory>();
 
   public constructor(dependencies: PlayerDependencies) {
     this.logger = dependencies.logger;
+    this.configurationManager = dependencies.configurationManager;
+    this.networkManager = dependencies.networkManager;
     this.eventEmitter = dependencies.eventEmitter;
   }
 
-  public registerPipeline(mimeType: string, pipeline: Pipeline): void {
-    if (this.mimeTypeToPipelineMap.has(mimeType)) {
-      this.logger.warn(`Overriding existing pipeline for "${mimeType}" mimeType.`);
+  public registerPipelineFactory(mimeType: string, pipelineFactory: PipelineFactory): void {
+    if (this.mimeTypeToPipelineFactoryMap.has(mimeType)) {
+      this.logger.warn(`Overriding existing pipeline factory for "${mimeType}" mimeType.`);
     }
 
-    this.mimeTypeToPipelineMap.set(mimeType, pipeline);
+    this.mimeTypeToPipelineFactoryMap.set(mimeType, pipelineFactory);
   }
 
-  public registerNetworkManager(protocol: string, networkManager: NetworkManager): void {
-    if (this.protocolToNetworkManagerMap.has(protocol)) {
-      this.logger.warn(`Overriding existing networkManager for "${protocol}" protocol.`);
-    }
-
-    this.protocolToNetworkManagerMap.set(protocol, networkManager);
+  public getNetworkManager(): NetworkManager {
+    return this.networkManager;
   }
 
-  public getPipelineForMimeType(mimeType: string): Pipeline | undefined {
-    return this.mimeTypeToPipelineMap.get(mimeType);
-  }
-
-  public getNetworkManagerForProtocol(protocol: string): NetworkManager | undefined {
-    return this.protocolToNetworkManagerMap.get(protocol);
+  public setNetworkManager(networkManager: NetworkManager): void {
+    this.networkManager = networkManager;
   }
 
   public getVideoElement(): HTMLVideoElement | null {
@@ -110,7 +94,7 @@ export default class Player {
   }
 
   public getConfiguration(): PlayerConfiguration {
-    return structuredClone(this.configuration);
+    return this.configurationManager.getConfiguration();
   }
 
   public getLoggerLevel(): LoggerLevel {
@@ -123,22 +107,6 @@ export default class Player {
 
   public getVolumeLevel(): number {
     return this.safeAttemptOnVideoElement('getVolumeLevel', (videoElement) => videoElement.volume, 0);
-  }
-
-  public getPlaybackRate(): number {
-    return this.safeAttemptOnVideoElement('getPlaybackRate', (videoElement) => videoElement.playbackRate, 0);
-  }
-
-  public getCurrentTime(): number {
-    return this.safeAttemptOnVideoElement('getCurrentTime', (videoElement) => videoElement.currentTime, 0);
-  }
-
-  public setPlaybackRate(rate: number): void {
-    return this.safeAttemptOnVideoElement(
-      'setPlaybackRate',
-      (videoElement) => void (videoElement.playbackRate = rate),
-      undefined
-    );
   }
 
   public setVolumeLevel(volumeLevel: number): void {
@@ -154,33 +122,37 @@ export default class Player {
       level = volumeLevel;
     }
 
-    return this.safeAttemptOnVideoElement(
-      'setVolumeLevel',
-      (videoElement) => void (videoElement.volume = level),
-      undefined
-    );
+    return this.safeVoidAttemptOnVideoElement('setVolumeLevel', (videoElement) => void (videoElement.volume = level));
+  }
+
+  public getPlaybackRate(): number {
+    return this.safeAttemptOnVideoElement('getPlaybackRate', (videoElement) => videoElement.playbackRate, 0);
+  }
+
+  public setPlaybackRate(rate: number): void {
+    return this.safeVoidAttemptOnVideoElement('setPlaybackRate', (videoElement) => (videoElement.playbackRate = rate));
+  }
+
+  public getCurrentTime(): number {
+    return this.safeAttemptOnVideoElement('getCurrentTime', (videoElement) => videoElement.currentTime, 0);
   }
 
   public seek(seekTarget: number): void {
-    return this.safeAttemptOnVideoElement(
-      'seek',
-      (videoElement) => {
-        const seekableRanges = this.getSeekableRanges();
-        const isValidSeekTarget = seekableRanges.some((timeRange) => timeRange.isInRangeInclusive(seekTarget));
+    return this.safeVoidAttemptOnVideoElement('seek', (videoElement) => {
+      const seekableRanges = this.getSeekableRanges();
+      const isValidSeekTarget = seekableRanges.some((timeRange) => timeRange.isInRangeInclusive(seekTarget));
 
-        if (!isValidSeekTarget) {
-          this.logger.warn(
-            `provided seek target (${seekTarget}) is out of available seekable time ranges: `,
-            seekableRanges
-          );
-          return;
-        }
+      if (!isValidSeekTarget) {
+        this.logger.warn(
+          `provided seek target (${seekTarget}) is out of available seekable time ranges: `,
+          seekableRanges
+        );
+        return;
+      }
 
-        videoElement.currentTime = seekTarget;
-        // TODO: should we interact with pipeline here? Or "seeking" event will be enough
-      },
-      undefined
-    );
+      videoElement.currentTime = seekTarget;
+      // TODO: should we interact with pipeline here? Or "seeking" event will be enough
+    });
   }
 
   public getSeekableRanges(): Array<PlayerTimeRange> {
@@ -200,81 +172,87 @@ export default class Player {
   }
 
   public getTextTracks(): Array<PlayerTextTrack> {
-    // TODO: should be from the current pipeline
+    if (this.activePipeline) {
+      return this.activePipeline.getTextTracks();
+    }
+
     return [];
   }
 
   public getAudioTracks(): Array<PlayerAudioTrack> {
-    // TODO: should be from the current pipeline
+    if (this.activePipeline) {
+      return this.activePipeline.getAudioTracks();
+    }
+
     return [];
   }
 
   public getImageTracks(): Array<PlayerImageTrack> {
-    // TODO: should be from the current pipeline
+    if (this.activePipeline) {
+      return this.activePipeline.getImageTracks();
+    }
+
     return [];
   }
 
   public getVideoTracks(): Array<PlayerVideoTrack> {
-    // TODO: should be from the current pipeline
+    if (this.activePipeline) {
+      return this.activePipeline.getVideoTracks();
+    }
+
     return [];
   }
 
   public getStats(): PlayerStats {
-    // TODO: should be from the current pipeline
+    if (this.activePipeline) {
+      return this.activePipeline.getStats();
+    }
+
     return {};
   }
 
-  public selectVideoTrack(): void {
-    // TODO: forward to the current pipeline
-    // TODO: we should disable abr here, if it is not "auto" (probably should be separate method)
+  public selectVideoTrack(videoTrack: PlayerVideoTrack): void {
+    return this.activePipeline?.selectVideoTrack(videoTrack);
   }
 
-  public selectImageTrack(): void {
-    // TODO: forward to the current pipeline
+  public selectImageTrack(imageTrack: PlayerImageTrack): void {
+    return this.activePipeline?.selectImageTrack(imageTrack);
   }
 
-  public selectAudioTrack(): void {
-    // TODO: forward to the current pipeline
+  public selectAudioTrack(audioTrack: PlayerAudioTrack): void {
+    return this.activePipeline?.selectAudioTrack(audioTrack);
   }
 
-  public selectTextTrack(): void {
-    // TODO: forward to the current pipeline
+  public selectTextTrack(textTrack: PlayerTextTrack): void {
+    return this.activePipeline?.selectTextTrack(textTrack);
   }
 
   public mute(): void {
-    return this.safeAttemptOnVideoElement(
-      'mute',
-      (videoElement) => {
-        const isMuted = videoElement.muted;
+    return this.safeVoidAttemptOnVideoElement('mute', (videoElement) => {
+      const isMuted = videoElement.muted;
 
-        if (isMuted) {
-          //already muted
-          return;
-        }
+      if (isMuted) {
+        //already muted
+        return;
+      }
 
-        videoElement.muted = true;
-        this.eventEmitter.emit(Events.MutedStatusChanged, new MutedStatusChangedEvent(true));
-      },
-      undefined
-    );
+      videoElement.muted = true;
+      this.eventEmitter.emit(Events.MutedStatusChanged, new MutedStatusChangedEvent(true));
+    });
   }
 
   public unmute(): void {
-    return this.safeAttemptOnVideoElement(
-      'unmute',
-      (videoElement) => {
-        const isMuted = videoElement.muted;
+    return this.safeVoidAttemptOnVideoElement('unmute', (videoElement) => {
+      const isMuted = videoElement.muted;
 
-        if (!isMuted) {
-          // already un-muted
-          return;
-        }
+      if (!isMuted) {
+        // already un-muted
+        return;
+      }
 
-        videoElement.muted = false;
-        this.eventEmitter.emit(Events.MutedStatusChanged, new MutedStatusChangedEvent(false));
-      },
-      undefined
-    );
+      videoElement.muted = false;
+      this.eventEmitter.emit(Events.MutedStatusChanged, new MutedStatusChangedEvent(false));
+    });
   }
 
   public getIsMuted(): boolean {
@@ -315,61 +293,44 @@ export default class Player {
     return this.eventEmitter.reset();
   }
 
-  public readonly on = this.addEventListener;
-
-  public readonly off = this.removeEventListener;
-
   public play(): void {
-    if (this.videoElement === null) {
-      return this.warnAttempt('play');
-    }
-
-    this.videoElement.play().catch((reason) => {
-      // TODO: should we fallback to mute?
-      this.logger.warn('player request was unsuccessful. Reason: ', reason);
-    });
+    return this.safeVoidAttemptOnVideoElement('play', (videoElement) => videoElement.play());
   }
 
   public pause(): void {
-    if (this.videoElement === null) {
-      return this.warnAttempt('pause');
-    }
-
-    this.videoElement.pause();
+    return this.safeVoidAttemptOnVideoElement('pause', (videoElement) => videoElement.pause());
   }
 
   public requestPictureInPicture(): void {
-    if (this.videoElement === null) {
-      return this.warnAttempt('requestPictureInPicture');
-    }
-
     if (!window.document.pictureInPictureEnabled) {
       return this.logger.warn(
         'User agent does not support pictureInPicture. document.pictureInPictureEnabled is false.'
       );
     }
 
-    if (this.videoElement.disablePictureInPicture) {
-      return this.logger.warn(
-        'pictureInPicture is disabled for this videoElement. Set videoElement.disablePictureInPicture to false to enable pictureInPicture'
-      );
-    }
+    return this.safeVoidAttemptOnVideoElement('requestPictureInPicture', (videoElement) => {
+      if (videoElement.disablePictureInPicture) {
+        return this.logger.warn(
+          'pictureInPicture is disabled for this videoElement. Set videoElement.disablePictureInPicture to false to enable pictureInPicture'
+        );
+      }
 
-    if (this.getIsInPictureInPictureMode()) {
-      return this.logger.warn('This videoElement is already in pictureInPicture mode.');
-    }
+      if (this.getIsInPictureInPictureMode()) {
+        return this.logger.warn('This videoElement is already in pictureInPicture mode.');
+      }
 
-    this.videoElement
-      .requestPictureInPicture()
-      .then((pictureInPictureWindow) => {
-        this.pictureInPictureWindow = pictureInPictureWindow;
+      videoElement
+        .requestPictureInPicture()
+        .then((pictureInPictureWindow) => {
+          this.pictureInPictureWindow = pictureInPictureWindow;
 
-        this.pictureInPictureWindow.addEventListener('resize', this.handlePictureAndPictureSize);
-        this.handlePictureAndPictureSize();
-      })
-      .catch((error) => {
-        this.logger.warn('pictureInPicture request failed, see reason: ', error);
-      });
+          this.pictureInPictureWindow.addEventListener('resize', this.handlePictureAndPictureSize);
+          this.handlePictureAndPictureSize();
+        })
+        .catch((error) => {
+          this.logger.warn('pictureInPicture request failed, see reason: ', error);
+        });
+    });
   }
 
   public getIsInPictureInPictureMode(): boolean {
@@ -440,84 +401,52 @@ export default class Player {
     this.eventEmitter.emit(Events.LeavePictureInPictureMode, new LeavePictureInPictureModeEvent());
   };
 
-  public configure(receivedConfigChunk: Partial<PlayerConfiguration>): void {
-    return this.deepCloneForConfiguration(receivedConfigChunk, this.configuration as Record<string, unknown>, '');
-  }
+  public updateConfiguration(configurationChunk: PlayerConfigurationChunk): void {
+    this.configurationManager.updateConfiguration(configurationChunk);
 
-  private deepCloneForConfiguration(
-    received: Record<string, unknown>,
-    current: Record<string, unknown>,
-    path: string
-  ): void {
-    for (const key in received) {
-      if (!Object.hasOwn(received, key)) {
-        continue;
-      }
-
-      if (!Object.hasOwn(current, key)) {
-        this.logger.warn(`Skipping setting ${path}${key}. Reason: Unsupported setting.`);
-        continue;
-      }
-
-      const receivedValue = received[key];
-      const currentValue = current[key];
-
-      if (typeof receivedValue !== typeof currentValue) {
-        this.logger.warn(
-          `Skipping setting ${path}${key}. Reason: Type does not match. Received: ${typeof receivedValue}. Required: ${typeof currentValue}.`
-        );
-        continue;
-      }
-
-      const isNested = typeof receivedValue === 'object' && receivedValue !== null && !Array.isArray(receivedValue);
-
-      if (isNested) {
-        this.deepCloneForConfiguration(
-          receivedValue as Record<string, unknown>,
-          currentValue as Record<string, unknown>,
-          `${path}${key}.`
-        );
-      }
-
-      current[key] = structuredClone(receivedValue);
+    if (this.activePipeline) {
+      this.activePipeline.updateConfiguration(this.getConfiguration());
     }
   }
 
   public resetConfiguration(): void {
-    this.configuration = createDefaultConfiguration();
+    return this.configurationManager.reset();
   }
 
   public dispose(): void {
     this.detach();
     this.removeAllEventListeners();
+    this.activePipeline?.dispose();
+    this.activePipeline = null;
     // TODO
   }
 
   public loadRemoteAsset(uri: URL, mimeType: string): void {
-    if (this.videoElement === null) {
-      return this.warnAttempt('loadRemoteAsset');
-    }
-
-    return this.load(mimeType, (pipeline) => pipeline.loadRemoteAsset(uri));
+    return this.safeVoidAttemptOnVideoElement('loadRemoteAsset', (videoElement) => {
+      return this.load(mimeType, videoElement, (pipeline) => pipeline.loadRemoteAsset(uri));
+    });
   }
 
   public loadLocalAsset(asset: string | ArrayBuffer, mimeType: string): void {
-    if (this.videoElement === null) {
-      return this.warnAttempt('loadLocalAsset');
-    }
-
-    return this.load(mimeType, (pipeline) => pipeline.loadLocalAsset(asset));
+    return this.safeVoidAttemptOnVideoElement('loadLocalAsset', (videoElement) => {
+      return this.load(mimeType, videoElement, (pipeline) => pipeline.loadLocalAsset(asset));
+    });
   }
 
-  private load(mimeType: string, pipelineHandler: (pipeline: Pipeline) => void): void {
-    let pipeline = this.mimeTypeToPipelineMap.get(mimeType);
+  private load(mimeType: string, videoElement: HTMLVideoElement, pipelineHandler: (pipeline: Pipeline) => void): void {
+    let pipelineFactory = this.mimeTypeToPipelineFactoryMap.get(mimeType);
 
-    if (!pipeline && this.videoElement?.canPlayType(mimeType)) {
-      pipeline = new NativePipeline({ logger: this.logger.createSubLogger('NativePipeline') });
+    if (!pipelineFactory && videoElement.canPlayType(mimeType)) {
+      pipelineFactory = NativePipeline;
     }
 
-    if (pipeline) {
-      pipeline.setMapProtocolToNetworkManager(this.protocolToNetworkManagerMap);
+    if (pipelineFactory) {
+      const pipeline = pipelineFactory.create({
+        logger: this.logger.createSubLogger('Pipeline'),
+        networkManager: this.networkManager,
+        playerConfiguration: this.getConfiguration(),
+      });
+      this.activePipeline = pipeline;
       return pipelineHandler(pipeline);
     }
 
@@ -537,6 +466,10 @@ export default class Player {
     }
 
     return executor(this.videoElement);
+  }
+
+  private safeVoidAttemptOnVideoElement(methodName: string, executor: (videoElement: HTMLVideoElement) => void): void {
+    return this.safeAttemptOnVideoElement(methodName, executor, undefined);
   }
 
   private warnAttempt(method: string): void {
