@@ -326,6 +326,10 @@ class Parser {
 }
 
 export class FullPlaylistParser extends Parser {
+  public static create(options: ParserOptions): FullPlaylistParser {
+    return new FullPlaylistParser(options);
+  }
+
   public parseFullPlaylistString(playlist: string, options: ParseOptions): ParsedPlaylist {
     this.gatherParseOptions(options);
 
@@ -358,6 +362,10 @@ export class FullPlaylistParser extends Parser {
 }
 
 export class ProgressiveParser extends Parser {
+  public static create(options: ParserOptions): ProgressiveParser {
+    return new ProgressiveParser(options);
+  }
+
   private stateMachine: StateMachineTransition | null = null;
 
   public pushString(chunk: string, options: ParseOptions): void {

@@ -7,33 +7,42 @@ import type {
   PlayerVideoTrack,
   PlayerStats,
 } from '../../../types/player';
+import type { ParserOptions } from '@videojs/dash-parser';
+import { ProgressiveParser } from '@videojs/dash-parser';
+
+interface DashParserFactory {
+  create(options: ParserOptions): ProgressiveParser;
+}
+
+interface DashPipelineDependencies extends PipelineDependencies {
+  parser: ProgressiveParser;
+}
 
 export default class DashPipeline extends MsePipeLine {
+  private static parserFactory: DashParserFactory = ProgressiveParser;
+
+  public static setParserFactory(parserFactory: DashParserFactory): void {
+    DashPipeline.parserFactory = parserFactory;
+  }
+
   public static create(dependencies: PipelineDependencies): DashPipeline {
-    return new DashPipeline(dependencies);
+    const parser = DashPipeline.parserFactory.create({}); // TODO options
+
+    return new DashPipeline({ ...dependencies, parser });
+  }
+
+  private readonly parser: ProgressiveParser;
+
+  protected constructor(dashPipelineDependencies: DashPipelineDependencies) {
+    super(dashPipelineDependencies);
+    this.parser = dashPipelineDependencies.parser;
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  public loadRemoteAsset(uri: URL): void {
-    // if (this.progressiveParser) {
-    // load and parse progressively
-    // }
-    // if (this.fullPlaylistParser) {
-    // load and parse sequentially
-    // }
-    //trigger error;
-  }
+  public loadRemoteAsset(uri: URL): void {}
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  public loadLocalAsset(asset: string | ArrayBuffer): void {
-    // if (this.fullPlaylistParser) {
-    // just parse
-    // }
-    // if (this.progressiveParser) {
-    // push
-    // }
-    // trigger error;
-  }
+  public loadLocalAsset(asset: string | ArrayBuffer): void {}
 
   public selectTextTrack(textTrack: PlayerTextTrack): void {
     throw new Error('Method not implemented.');

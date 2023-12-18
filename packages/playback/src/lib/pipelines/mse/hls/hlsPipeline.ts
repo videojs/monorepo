@@ -1,4 +1,5 @@
-import type { FullPlaylistParser, ProgressiveParser } from '@videojs/hls-parser';
+import type { ParserOptions } from '@videojs/hls-parser';
+import { ProgressiveParser } from '@videojs/hls-parser';
 import MsePipeLine from '../msePipeline';
 import type { PipelineDependencies } from '../../basePipeline';
 import type {
@@ -9,47 +10,39 @@ import type {
   PlayerStats,
 } from '../../../types/player';
 
+interface HlsParserFactory {
+  create(options: ParserOptions): ProgressiveParser;
+}
+
+interface HlsPipelineDependencies extends PipelineDependencies {
+  parser: ProgressiveParser;
+}
+
 export default class HlsPipeline extends MsePipeLine {
+  private static parserFactory: HlsParserFactory = ProgressiveParser;
+
+  public static setParserFactory(parserFactory: HlsParserFactory): void {
+    HlsPipeline.parserFactory = parserFactory;
+  }
+
   public static create(dependencies: PipelineDependencies): HlsPipeline {
-    return new HlsPipeline(dependencies);
+    const parser = HlsPipeline.parserFactory.create({}); // TODO options
+
+    return new HlsPipeline({ ...dependencies, parser });
   }
 
-  private progressiveParser: ProgressiveParser | null = null;
-  private fullPlaylistParser: FullPlaylistParser | null = null;
+  private readonly parser: ProgressiveParser;
 
-  public setProgressiveParser(parser: ProgressiveParser): void {
-    this.progressiveParser = parser;
-  }
-
-  public setFullPlaylistParser(parser: FullPlaylistParser): void {
-    this.fullPlaylistParser = parser;
-  }
-
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  public loadRemoteAsset(uri: URL): void {
-    if (this.progressiveParser) {
-      // load and parse progressively
-    }
-
-    if (this.fullPlaylistParser) {
-      // load and parse sequentially
-    }
-
-    //trigger error;
+  protected constructor(hlsPipelineDependencies: HlsPipelineDependencies) {
+    super(hlsPipelineDependencies);
+    this.parser = hlsPipelineDependencies.parser;
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  public loadLocalAsset(asset: string | ArrayBuffer): void {
-    if (this.fullPlaylistParser) {
-      // just parse
-    }
+  public loadRemoteAsset(uri: URL): void {}
 
-    if (this.progressiveParser) {
-      // push
-    }
-
-    // trigger error;
-  }
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  public loadLocalAsset(asset: string | ArrayBuffer): void {}
 
   public selectTextTrack(textTrack: PlayerTextTrack): void {
     throw new Error('Method not implemented.');

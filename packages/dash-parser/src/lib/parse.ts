@@ -117,6 +117,10 @@ class Parser {
 }
 
 export class FullManifestParser extends Parser {
+  public static create(options: ParserOptions): FullManifestParser {
+    return new FullManifestParser(options);
+  }
+
   public parseFullManifestString(manifest: string): ParsedManifest {
     const stateMachine = createStateMachine(this.tagInfoCallback);
     const length = manifest.length;
@@ -141,6 +145,10 @@ export class FullManifestParser extends Parser {
 }
 
 export class ProgressiveParser extends Parser {
+  public static create(options: ParserOptions): ProgressiveParser {
+    return new ProgressiveParser(options);
+  }
+
   private stateMachine: StateMachineTransition | null = null;
 
   public pushString(chunk: string): void {
