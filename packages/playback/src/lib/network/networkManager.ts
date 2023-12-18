@@ -9,15 +9,7 @@ import {
 import type { RetryWrapperOptions } from '../utils/retryWrapper';
 import RetryWrapper from '../utils/retryWrapper';
 import type Logger from '../utils/logger';
-
-export enum RequestType {
-  InitSegment,
-  Segment,
-  DashManifest,
-  HlsPlaylist,
-  LicenseCertificate,
-  LicenseKey,
-}
+import type { RequestType } from '../types/network.ts';
 
 export type RequestInterceptor = (request: Request) => Promise<Request>;
 export type ResponseHandler = (response: Response) => void;

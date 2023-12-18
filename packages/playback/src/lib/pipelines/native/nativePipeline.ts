@@ -10,10 +10,12 @@ import { Pipeline } from '../basePipeline';
 
 export default class NativePipeline extends Pipeline {
   public static create(dependencies: PipelineDependencies): NativePipeline {
+    dependencies.logger = dependencies.logger.createSubLogger('NativePipeline');
+
     return new NativePipeline(dependencies);
   }
 
-  public loadLocalAsset(asset: string | ArrayBuffer): void {
+  public loadLocalAsset(asset: string | ArrayBuffer, baseUrl: string): void {
     throw new Error('Method not implemented.');
   }
 

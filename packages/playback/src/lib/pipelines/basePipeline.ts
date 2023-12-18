@@ -53,5 +53,5 @@ export abstract class Pipeline {
 
   public abstract loadRemoteAsset(uri: URL): void;
 
-  public abstract loadLocalAsset(asset: string | ArrayBuffer): void;
+  public abstract loadLocalAsset(asset: string | ArrayBuffer, baseUrl: string): void;
 }
