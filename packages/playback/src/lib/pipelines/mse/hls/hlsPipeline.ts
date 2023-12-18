@@ -1,14 +1,15 @@
-import type { ParserOptions } from '@videojs/hls-parser';
+import type { ParsedPlaylist, ParserOptions } from '@videojs/hls-parser';
 import { ProgressiveParser } from '@videojs/hls-parser';
 import MsePipeLine from '../msePipeline';
 import type { PipelineDependencies } from '../../basePipeline';
 import type {
-  PlayerTextTrack,
   PlayerAudioTrack,
   PlayerImageTrack,
-  PlayerVideoTrack,
   PlayerStats,
+  PlayerTextTrack,
+  PlayerVideoTrack,
 } from '../../../types/player';
+import { RequestType } from '../../../types/network';
 
 interface HlsParserFactory {
   create(options: ParserOptions): ProgressiveParser;
@@ -26,7 +27,10 @@ export default class HlsPipeline extends MsePipeLine {
   }
 
   public static create(dependencies: PipelineDependencies): HlsPipeline {
-    const parser = HlsPipeline.parserFactory.create({}); // TODO options
+    dependencies.logger = dependencies.logger.createSubLogger('HlsPipeline');
+    const parser = HlsPipeline.parserFactory.create({
+      warnCallback: (warn) => dependencies.logger.warn(warn),
+    });
 
     return new HlsPipeline({ ...dependencies, parser });
   }
@@ -39,10 +43,45 @@ export default class HlsPipeline extends MsePipeLine {
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  public loadRemoteAsset(uri: URL): void {}
+  public loadRemoteAsset(uri: URL): void {
+    const { abort, done } = this.networkManager.getProgressive(
+      uri.toString(),
+      RequestType.HlsPlaylist,
+      {},
+      this.playerConfiguration.network.manifest,
+      this.playerConfiguration.network.manifest.timeout,
+      (chunk) => {
+        this.parser.pushBuffer(chunk, { baseUrl: uri.toString() });
+      }
+    );
+
+    done.then(
+      () => {
+        const parsed = this.parser.done();
+
+        // TODO: initialize Presentations
+      },
+      (error) => {
+        //TODO: check abort
+        //TODO: trigger error
+      }
+    );
+  }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  public loadLocalAsset(asset: string | ArrayBuffer): void {}
+  public loadLocalAsset(asset: string | ArrayBuffer, baseUrl: string): void {
+    let parsed: ParsedPlaylist;
+
+    if (typeof asset === 'string') {
+      this.parser.pushString(asset, { baseUrl });
+    } else {
+      this.parser.pushBuffer(new Uint8Array(asset), { baseUrl });
+    }
+
+    parsed = this.parser.done();
+
+    // TODO: initialize Presentations
+  }
 
   public selectTextTrack(textTrack: PlayerTextTrack): void {
     throw new Error('Method not implemented.');
@@ -72,6 +111,7 @@ export default class HlsPipeline extends MsePipeLine {
     throw new Error('Method not implemented.');
   }
   public dispose(): void {
+    // TODO: abort pending initial request
     throw new Error('Method not implemented.');
   }
 }

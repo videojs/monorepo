@@ -26,7 +26,10 @@ export default class DashPipeline extends MsePipeLine {
   }
 
   public static create(dependencies: PipelineDependencies): DashPipeline {
-    const parser = DashPipeline.parserFactory.create({}); // TODO options
+    dependencies.logger = dependencies.logger.createSubLogger('DashPipeline');
+    const parser = DashPipeline.parserFactory.create({
+      warnCallback: (warn) => dependencies.logger.warn(warn),
+    });
 
     return new DashPipeline({ ...dependencies, parser });
   }
@@ -42,7 +45,7 @@ export default class DashPipeline extends MsePipeLine {
   public loadRemoteAsset(uri: URL): void {}
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  public loadLocalAsset(asset: string | ArrayBuffer): void {}
+  public loadLocalAsset(asset: string | ArrayBuffer, baseUrl: string): void {}
 
   public selectTextTrack(textTrack: PlayerTextTrack): void {
     throw new Error('Method not implemented.');

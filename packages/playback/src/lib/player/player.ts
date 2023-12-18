@@ -4,7 +4,7 @@ import ConfigurationManager from './configuration';
 import type { Callback } from '../utils/eventEmitter';
 import EventEmitter from '../utils/eventEmitter';
 import { Events } from './consts/events';
-import NetworkManager, { RequestType } from '../network/networkManager';
+import NetworkManager from '../network/networkManager';
 import type { Pipeline, PipelineDependencies } from '../pipelines/basePipeline';
 import PlayerTimeRange from '../utils/timeRanges';
 import {
@@ -26,6 +26,7 @@ import type {
   PlayerVideoTrack,
 } from '../types/player';
 import { PlaybackState } from '../types/player';
+import { RequestType } from '../types/network';
 
 interface PlayerDependencies {
   logger: Logger;
@@ -427,9 +428,9 @@ export default class Player {
     });
   }
 
-  public loadLocalAsset(asset: string | ArrayBuffer, mimeType: string): void {
+  public loadLocalAsset(asset: string | ArrayBuffer, baseUrl: string, mimeType: string): void {
     return this.safeVoidAttemptOnVideoElement('loadLocalAsset', (videoElement) => {
-      return this.load(mimeType, videoElement, (pipeline) => pipeline.loadLocalAsset(asset));
+      return this.load(mimeType, videoElement, (pipeline) => pipeline.loadLocalAsset(asset, baseUrl));
     });
   }
 
@@ -442,7 +443,7 @@ export default class Player {
 
     if (pipelineFactory) {
       const pipeline = pipelineFactory.create({
-        logger: this.logger.createSubLogger('Pipeline'),
+        logger: this.logger,
         networkManager: this.networkManager,
         playerConfiguration: this.getConfiguration(),
       });
