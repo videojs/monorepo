@@ -1,18 +1,11 @@
 {
+  "exclude": ["**/dist"],
   "compilerOptions": {
     "lib": ["ESNext", "dom"],
-    "module": "esnext",
-    "target": "esnext",
-    "moduleResolution": "bundler",
-    "moduleDetection": "force",
-    "allowImportingTsExtensions": true,
-    "noEmit": true,
-    "strict": true,
-    "declaration": true,
-    "downlevelIteration": true,
-    "jsx": "react-jsx",
-    "allowSyntheticDefaultImports": true,
-    "forceConsistentCasingInFileNames": true,
-    "allowJs": false
+    "target": "ES2015",
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "moduleResolution": "Bundler",
+    "strict": true
   }
 }
