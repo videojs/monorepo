@@ -1,8 +1,0 @@
-{
-  "label": "HLS Parser",
-  "position": 2,
-  "link": {
-    "type": "generated-index",
-    "description": "Parses m3u8 files based on the HLS spec."
-  }
-}
