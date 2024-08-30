@@ -8,19 +8,21 @@ jobs:
     name: Quality Gates
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
-      - name: Install Bun
-        uses: oven-sh/setup-bun@v1
+        uses: actions/checkout@v4
+      - name: Install Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
       - name: Install Dependencies
-        run: bun install
-      - name: Build All Packages
-        run: bun run build
+        run: npm ci
       - name: Lint All Packages
-        run: bun run lint
+        run: npm run lint
+      - name: Build All Packages
+        run: npm run build
       - name: Test All Packages
-        run: bun run test:coverage
+        run: npm run test:coverage
       - name: Upload Hls-Parser Coverage
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v4
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           flags: hls-parser
@@ -28,7 +30,7 @@ jobs:
           name: hls-parser-coverage
           fail_ci_if_error: true
       - name: Upload Dash-Parser Coverage
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v4
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           flags: dash-parser
@@ -36,7 +38,7 @@ jobs:
           name: dash-parser-coverage
           fail_ci_if_error: true
       - name: Upload Player Coverage
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v4
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           flags: playback
