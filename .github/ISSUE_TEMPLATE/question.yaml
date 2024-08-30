@@ -1,0 +1,10 @@
+name: Question
+description: Need help with something not related to a Bug or Feature Request?
+labels: [Question, Needs Triage]
+body:
+  - type: textarea
+    id: question
+    attributes:
+      label: Question
+    validations:
+      required: true
