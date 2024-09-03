@@ -5,6 +5,11 @@ import prettier from 'eslint-plugin-prettier/recommended';
 import jest from 'eslint-plugin-jest';
 
 /**
+ * most of the configurations are glob-based,
+ * use https://globster.xyz/ to test your glob pattern
+ */
+
+/**
  * We export an array of different config chunks.
  * Eslint will merge them into a single object.
  */
