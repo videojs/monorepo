@@ -1,10 +1,10 @@
 import type { WarnCallback } from '../types/parserOptions';
 
 export abstract class TagProcessor {
-  protected readonly warnCallback: WarnCallback;
-  protected abstract readonly tag: string;
+  protected readonly warnCallback_: WarnCallback;
+  protected abstract readonly tag_: string;
 
   public constructor(warnCallback: WarnCallback) {
-    this.warnCallback = warnCallback;
+    this.warnCallback_ = warnCallback;
   }
 }

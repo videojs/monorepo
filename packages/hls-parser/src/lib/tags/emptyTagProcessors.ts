@@ -15,7 +15,7 @@ export abstract class EmptyTagProcessor extends TagProcessor {
 }
 
 export class ExtM3u extends EmptyTagProcessor {
-  protected readonly tag = EXTM3U;
+  protected readonly tag_ = EXTM3U;
 
   public process(playlist: ParsedPlaylist): void {
     playlist.m3u = true;
@@ -23,7 +23,7 @@ export class ExtM3u extends EmptyTagProcessor {
 }
 
 export class ExtXIndependentSegments extends EmptyTagProcessor {
-  protected readonly tag = EXT_X_INDEPENDENT_SEGMENTS;
+  protected readonly tag_ = EXT_X_INDEPENDENT_SEGMENTS;
 
   public process(playlist: ParsedPlaylist): void {
     playlist.independentSegments = true;
@@ -31,7 +31,7 @@ export class ExtXIndependentSegments extends EmptyTagProcessor {
 }
 
 export class ExtXEndList extends EmptyTagProcessor {
-  protected readonly tag = EXT_X_ENDLIST;
+  protected readonly tag_ = EXT_X_ENDLIST;
 
   public process(playlist: ParsedPlaylist): void {
     playlist.endList = true;
@@ -39,7 +39,7 @@ export class ExtXEndList extends EmptyTagProcessor {
 }
 
 export class ExtXIframesOnly extends EmptyTagProcessor {
-  protected readonly tag = EXT_X_I_FRAMES_ONLY;
+  protected readonly tag_ = EXT_X_I_FRAMES_ONLY;
 
   public process(playlist: ParsedPlaylist): void {
     playlist.iFramesOnly = true;
@@ -47,15 +47,15 @@ export class ExtXIframesOnly extends EmptyTagProcessor {
 }
 
 export class ExtXDiscontinuity extends EmptyTagProcessor {
-  protected readonly tag = EXT_X_DISCONTINUITY;
+  protected readonly tag_ = EXT_X_DISCONTINUITY;
 
   public process(playlist: ParsedPlaylist, sharedState: SharedState): void {
     sharedState.currentSegment.isDiscontinuity = true;
   }
 }
 
-export class ExtXGap extends TagProcessor {
-  protected readonly tag = EXT_X_GAP;
+export class ExtXGap extends EmptyTagProcessor {
+  protected readonly tag_ = EXT_X_GAP;
 
   public process(playlist: ParsedPlaylist, sharedState: SharedState): void {
     sharedState.currentSegment.isGap = true;

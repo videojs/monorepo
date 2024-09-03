@@ -8,8 +8,9 @@
     "build": "bun run build:source && bun run build:types",
     "build:types": "dts-bundle-generator --project ../../tsconfig.json -o ./dist/index.d.ts ./src/index.ts",
     "build:source": "bun run bun.build.ts",
-    "test": "bunx jest",
-    "test:coverage": "bunx jest --coverage=true"
+    "test": "jest",
+    "test:coverage": "jest --coverage=true",
+    "lint": "eslint ."
   },
   "keywords": [
     "videojs",
