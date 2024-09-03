@@ -2,6 +2,7 @@ import js from '@eslint/js';
 import ts from 'typescript-eslint';
 import jsdoc from 'eslint-plugin-jsdoc';
 import prettier from 'eslint-plugin-prettier/recommended';
+import jest from 'eslint-plugin-jest';
 
 /**
  * We export an array of different config chunks.
@@ -35,6 +36,14 @@ export default [
    * single config with prettier recommended rules.
    */
   prettier,
+
+  /**
+   * single config with jest recommended rules
+   */
+  {
+    files: ['**/test/**/*.ts'],
+    ...jest.configs['flat/recommended'],
+  },
 
   /**
    * list of ignores:

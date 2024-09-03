@@ -20,6 +20,7 @@
     "@types/jest": "^29.5.8",
     "eslint": "^9.9.1",
     "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-jest": "^28.8.2",
     "eslint-plugin-jsdoc": "^50.2.2",
     "eslint-plugin-prettier": "^5.2.1",
     "husky": "^9.1.5",
