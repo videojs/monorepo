@@ -1,5 +1,4 @@
-/** @type {import('ts-jest').JestConfigWithTsJest} */
-const config = {
+export default {
   preset: 'ts-jest',
   testEnvironment: 'jsdom',
   coverageThreshold: {
@@ -10,5 +9,3 @@ const config = {
     },
   },
 };
-
-export default config;
