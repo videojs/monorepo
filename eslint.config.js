@@ -3,6 +3,7 @@ import ts from 'typescript-eslint';
 import jsdoc from 'eslint-plugin-jsdoc';
 import prettier from 'eslint-plugin-prettier/recommended';
 import jest from 'eslint-plugin-jest';
+import globals from 'globals';
 
 /**
  * most of the configurations are glob-based,
@@ -69,8 +70,10 @@ export default [
       },
       ecmaVersion: 'latest',
       sourceType: 'module',
-      // TODO: update globals
-      globals: {},
+      globals: {
+        ...globals.browser,
+        ...globals.node,
+      },
     },
   },
 
@@ -114,7 +117,8 @@ export default [
    * Other rules:
    */
   {
-    // TODO: update this list
-    rules: {},
+    rules: {
+      'no-console': 'error',
+    },
   },
 ];
