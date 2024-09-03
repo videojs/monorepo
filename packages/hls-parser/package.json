@@ -1,10 +1,11 @@
 {
   "name": "@videojs/hls-parser",
   "version": "0.0.0",
-  "description": "hls parser",
+  "description": "HLS parser",
   "type": "module",
   "main": "./dist/index.js",
   "scripts": {
+    "clean": "rimraf ./dist/*",
     "build": "bun run build:source && bun run build:types",
     "build:types": "dts-bundle-generator --project ../../tsconfig.json -o ./dist/index.d.ts ./src/index.ts",
     "build:source": "bun run bun.build.ts",
@@ -25,6 +26,7 @@
   "author": "Brightcove, Inc",
   "license": "Apache-2.0",
   "files": [
-    "./dist/"
+    "./dist/",
+    "CHANGELOG.md"
   ]
 }
