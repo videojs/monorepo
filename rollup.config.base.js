@@ -1,4 +1,4 @@
-/* eslint-disable no-console */
+/* eslint-disable no-console,jsdoc/no-types */
 import { execSync } from 'node:child_process';
 import { basename } from 'node:path';
 import { writeFileSync } from 'node:fs';
@@ -28,6 +28,11 @@ export class Configuration {
     DiagnosticsStats: 'index.diagnostic-stats.html',
   };
 
+  /**
+   *
+   * @param {{ name: string, input: string, version: string }} deps - required deps
+   * @param {{ folder?: string, experimental?: boolean, includeDiagnostics?: boolean }} [options] - optional options
+   */
   constructor(deps, options = {}) {
     const { name, input, version } = deps;
     const { folder = '', experimental = false, includeDiagnostics = false } = options;

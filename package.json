@@ -42,6 +42,7 @@
     "rollup-plugin-dts": "^6.1.1",
     "rollup-plugin-visualizer": "^5.12.0",
     "ts-jest": "^29.1.1",
+    "typedoc": "^0.26.6",
     "typescript": "~5.5.4",
     "typescript-eslint": "^8.4.0"
   }

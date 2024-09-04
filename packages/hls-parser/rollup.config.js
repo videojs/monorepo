@@ -8,4 +8,8 @@ const deps = {
   input: './src/index.ts',
 };
 
-export default [new Configuration(deps).rawRollupConfig, new DtsConfiguration(deps).rawRollupConfig];
+export default [
+  // or new Configuration(deps, { includeDiagnostics: true }).rawRollupConfig
+  new Configuration(deps).rawRollupConfig,
+  new DtsConfiguration(deps).rawRollupConfig,
+];
