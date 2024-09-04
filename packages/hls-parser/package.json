@@ -6,9 +6,9 @@
   "main": "./dist/index.js",
   "scripts": {
     "clean": "rimraf ./dist/*",
-    "build": "npm run clean && rollup -c rollup.config.js && npm run build:apiReference",
-    "build:apiReference": "npx typedoc --options typedoc.json",
-    "verify:bundlesize": "npx bundlesize --config bundlesize.json",
+    "build": "npm run clean && rollup -c rollup.config.js && npm run build:api-reference",
+    "build:api-reference": "npx typedoc --options typedoc.json",
+    "verify:bundle-size": "npx bundlesize --config bundlesize.json",
     "test": "jest",
     "test:coverage": "jest --coverage=true",
     "lint": "eslint ."
