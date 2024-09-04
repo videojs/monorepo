@@ -55,8 +55,7 @@ export default [
    * list of ignores:
    */
   {
-    // TODO: update ignores
-    ignores: [],
+    ignores: ['node_modules/**', '**/rollup.config.js', '**/dist/**'],
   },
 
   /**

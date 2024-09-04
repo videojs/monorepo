@@ -10,6 +10,7 @@
     "test:coverage": "npx nx run-many -t test:coverage",
     "lint": "npx nx run-many -t lint",
     "build": "npx nx run-many -t build",
+    "verify:bundlesize": "npx nx run-many -t verify:bundlesize",
     "prepare": "husky"
   },
   "devDependencies": {
@@ -23,6 +24,7 @@
     "@rollup/plugin-typescript": "^11.1.6",
     "@types/eslint__js": "^8.42.3",
     "@types/jest": "^29.5.8",
+    "bundlesize": "^0.18.2",
     "eslint": "^9.9.1",
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-jest": "^28.8.2",

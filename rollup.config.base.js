@@ -1,5 +1,7 @@
 /* eslint-disable no-console */
-import { execSync } from 'child_process';
+import { execSync } from 'node:child_process';
+import { basename } from 'node:path';
+import { writeFileSync } from 'node:fs';
 import { nodeResolve } from '@rollup/plugin-node-resolve';
 import { dts } from 'rollup-plugin-dts';
 import { visualizer } from 'rollup-plugin-visualizer';
@@ -17,18 +19,23 @@ const commitHash = (() => {
   }
 })();
 
-class Configuration {
+export class Configuration {
   static Format_ = { Es: 'es', Cjs: 'cjs', Iife: 'iife' };
+  static FileName_ = {
+    Min: 'index.min.js',
+    Debug: 'index.debug.js',
+    Diagnostics: 'index.diagnostics.js',
+    DiagnosticsStats: 'index.diagnostic-stats.html',
+  };
 
-  constructor({ folder, name, input, experimental, version }) {
+  constructor(deps, options = {}) {
+    const { name, input, version } = deps;
+    const { folder = '', experimental = false, includeDiagnostics = false } = options;
+
     /**
      * package version is injected as global __VERSION property in the bundle
      */
     this.version_ = version;
-    /**
-     * optional sub folder in the dist.
-     */
-    this.folder_ = folder;
     /**
      * global namespace for iife build
      */
@@ -37,13 +44,29 @@ class Configuration {
      * target input for the build
      */
     this.input_ = input;
+
     /**
+     * optional
      * experimental build will have __EXPERIMENTAL property as true in the bundle
      */
     this.experimental_ = experimental;
+    /**
+     * optional
+     * when true, diagnostics bundles will be generated
+     */
+    this.includeDiagnostics_ = includeDiagnostics;
+    /**
+     * optional
+     * sub folder in the dist.
+     */
+    this.folder_ = folder;
 
-    this.externals_ = {};
+    this.externals_ = [];
     this.globals_ = {};
+
+    this.bundleSize_ = {
+      files: [],
+    };
   }
 
   get input() {
@@ -55,18 +78,170 @@ class Configuration {
   }
 
   get output() {
-    const { es, cjs, iife } = this.createOutput_();
+    return [
+      /**
+       * es/index.debug.js
+       * es/index.diagnostics.js (optional)
+       * es/index.diagnostics-stats.html (optional)
+       * es/index.min.js
+       */
+      this.createEsMinBundle_(),
+      this.createEsDebugBundle_(),
+      this.includeDiagnostics_ ? this.createEsDiagnosticsBundle_() : null,
+      /**
+       * cjs/index.debug.js
+       * cjs/index.diagnostics.js (optional)
+       * cjs/index.diagnostics-stats.html (optional)
+       * cjs/index.min.js
+       */
+      this.createCjsMinBundle_(),
+      this.createCjsDebugBundle_(),
+      this.includeDiagnostics_ ? this.createCjsDiagnosticsBundle_() : null,
+      /**
+       * iife/index.debug.js
+       * iife/index.diagnostics.js (optional)
+       * iife/index.diagnostics-stats.html (optional)
+       * iife/index.min.js
+       */
+      this.createIifeMinBundle_(),
+      this.createIifeDebugBundle_(),
+      this.includeDiagnostics_ ? this.createIifeDiagnosticsBundle_() : null,
+    ].filter((output) => output !== null);
+  }
 
-    es.file = this.withBasePath_(es.file);
-    es.format = Configuration.Format_.Es;
+  createEsMinBundle_() {
+    const { FileName_, Format_ } = Configuration;
 
-    cjs.file = this.withBasePath_(cjs.file);
-    cjs.format = Configuration.Format_.cjs;
+    return {
+      file: this.withBasePath_(`${Format_.Es}/${FileName_.Min}`),
+      format: Configuration.Format_.Es,
+      exports: 'auto',
+      plugins: [
+        terser({
+          keep_classnames: true,
+          keep_fnames: true,
+        }),
+      ],
+    };
+  }
 
-    iife.file = this.withBasePath_(iife.file);
-    iife.format = Configuration.Format_.iife;
+  createEsDebugBundle_() {
+    const { FileName_, Format_ } = Configuration;
 
-    return [es, cjs, iife];
+    return {
+      file: this.withBasePath_(`${Format_.Es}/${FileName_.Debug}`),
+      format: Configuration.Format_.Es,
+      exports: 'auto',
+      sourcemap: 'inline',
+    };
+  }
+
+  createEsDiagnosticsBundle_() {
+    const { FileName_, Format_ } = Configuration;
+
+    return {
+      file: this.withBasePath_(`${Format_.Es}/${FileName_.Diagnostics}`),
+      format: Configuration.Format_.Es,
+      exports: 'auto',
+      plugins: [
+        visualizer({
+          gzipSize: true,
+          open: false,
+          filename: this.withBasePath_(`${Format_.Es}/${FileName_.DiagnosticsStats}`),
+        }),
+      ],
+    };
+  }
+
+  createCjsMinBundle_() {
+    const { FileName_, Format_ } = Configuration;
+
+    return {
+      file: this.withBasePath_(`${Format_.Cjs}/${FileName_.Min}`),
+      format: Configuration.Format_.Cjs,
+      exports: 'auto',
+      plugins: [
+        terser({
+          keep_classnames: true,
+          keep_fnames: true,
+        }),
+      ],
+    };
+  }
+
+  createCjsDebugBundle_() {
+    const { FileName_, Format_ } = Configuration;
+
+    return {
+      file: this.withBasePath_(`${Format_.Cjs}/${FileName_.Debug}`),
+      format: Configuration.Format_.Cjs,
+      exports: 'auto',
+      sourcemap: 'inline',
+    };
+  }
+
+  createCjsDiagnosticsBundle_() {
+    const { FileName_, Format_ } = Configuration;
+
+    return {
+      file: this.withBasePath_(`${Format_.Cjs}/${FileName_.Diagnostics}`),
+      format: Configuration.Format_.Cjs,
+      exports: 'auto',
+      plugins: [
+        visualizer({
+          gzipSize: true,
+          open: false,
+          filename: this.withBasePath_(`${Format_.Cjs}/${FileName_.DiagnosticsStats}`),
+        }),
+      ],
+    };
+  }
+
+  createIifeMinBundle_() {
+    const { FileName_, Format_ } = Configuration;
+
+    return {
+      file: this.withBasePath_(`${Format_.Iife}/${FileName_.Min}`),
+      format: Configuration.Format_.Iife,
+      globals: this.globals_,
+      name: this.name_,
+      plugins: [
+        terser({
+          keep_classnames: true,
+          keep_fnames: true,
+        }),
+      ],
+    };
+  }
+
+  createIifeDebugBundle_() {
+    const { FileName_, Format_ } = Configuration;
+
+    return {
+      file: this.withBasePath_(`${Format_.Iife}/${FileName_.Debug}`),
+      format: Configuration.Format_.Iife,
+      globals: this.globals_,
+      name: this.name_,
+      sourcemap: 'inline',
+    };
+  }
+
+  createIifeDiagnosticsBundle_() {
+    const { FileName_, Format_ } = Configuration;
+
+    return {
+      file: this.withBasePath_(`${Format_.Iife}/${FileName_.Diagnostics}`),
+      format: Configuration.Format_.Iife,
+      globals: this.globals_,
+      name: this.name_,
+      plugins: [
+        visualizer({
+          gzipSize: true,
+          open: false,
+          filename: this.withBasePath_(`${Format_.Iife}/${FileName_.DiagnosticsStats}`),
+        }),
+      ],
+    };
   }
 
   withBasePath_(filename) {
@@ -78,128 +253,56 @@ class Configuration {
   }
 
   get plugins() {
+    const bundleSize = this.bundleSize_;
+
     return [
       nodeResolve(),
       commonjs(),
       replace({
-        __COMMIT_HASH: JSON.stringify(commitHash),
-        __VERSION: JSON.stringify(this.version_),
-        __EXPERIMENTAL: this.experimental_,
+        preventAssignment: true,
+        values: {
+          __COMMIT_HASH: JSON.stringify(commitHash),
+          __VERSION: JSON.stringify(this.version_),
+          __EXPERIMENTAL: this.experimental_,
+        },
       }),
       typescript(),
+      // custom plugin to generate bundlesize config
+      {
+        name: 'rollup-plugin-bundle-size',
+        generateBundle(options, bundle) {
+          const file = basename(options.file);
+          const size = bundle[file].code.length;
+          const maxSize = Math.ceil(size / 1024);
+
+          bundleSize.files.push({
+            path: options.file,
+            maxSize,
+            compression: 'none',
+          });
+
+          console.log(`Generate bundle ${options.file} → ~${maxSize} Kb.`);
+        },
+        closeBundle() {
+          writeFileSync('./dist/bundlesize.json', JSON.stringify(bundleSize, null, 2));
+        },
+      },
     ];
   }
 
-  createOutput_() {
-    throw new Error('You must implement create output method!');
-  }
-}
-
-export class MinifiedConfiguration extends Configuration {
-  createOutput_() {
+  get rawRollupConfig() {
     return {
-      es: {
-        file: 'index.es.min.js',
-        exports: 'auto',
-        plugins: [terser()],
-      },
-
-      cjs: {
-        file: 'index.cjs.min.js',
-        exports: 'auto',
-        plugins: [terser()],
-      },
-
-      iife: {
-        file: 'index.iife.min.js',
-        globals: this.globals_,
-        name: this.name_,
-        plugins: [terser()],
-      },
+      input: this.input,
+      output: this.output,
+      plugins: this.plugins,
+      external: this.external,
     };
   }
 }
 
-export class DebugConfiguration extends Configuration {
-  createOutput_() {
-    return {
-      es: {
-        file: 'index.es.debug.js',
-        exports: 'auto',
-        sourcemap: 'inline',
-      },
-
-      cjs: {
-        file: 'index.cjs.debug.js',
-        exports: 'auto',
-        sourcemap: 'inline',
-      },
-
-      iife: {
-        file: 'index.iife.debug.js',
-        globals: this.globals_,
-        name: this.name_,
-        sourcemap: 'inline',
-      },
-    };
-  }
-}
-
-export class DiagnosticsConfiguration extends Configuration {
-  createOutput_() {
-    return {
-      es: {
-        file: 'index.es.diagnostics.js',
-        exports: 'auto',
-        plugins: [
-          visualizer({
-            gzipSize: true,
-            open: false,
-            filename: this.withBasePath_('index.es.diagnostics-stats.html'),
-          }),
-        ],
-      },
-
-      cjs: {
-        file: 'index.cjs.diagnostics.js',
-        exports: 'auto',
-        plugins: [
-          visualizer({
-            gzipSize: true,
-            open: false,
-            filename: this.withBasePath_('index.cjs.diagnostics-stats.html'),
-          }),
-        ],
-      },
-
-      iife: {
-        file: 'index.iife.diagnostics.js',
-        globals: this.globals_,
-        name: this.name_,
-        plugins: [
-          visualizer({
-            gzipSize: true,
-            open: false,
-            filename: this.withBasePath_('index.iife.diagnostics-stats.html'),
-          }),
-        ],
-      },
-    };
-  }
-}
-
-export class DtsConfiguration {
-  constructor({ declarationsInput, folder }) {
-    this.input_ = declarationsInput;
-    this.folder_ = folder;
-  }
-
-  get input() {
-    return this.input_;
-  }
-
+export class DtsConfiguration extends Configuration {
   get output() {
-    return [{ file: `dist/${this.folder_}/index.d.ts`, format: 'es' }];
+    return [{ file: this.withBasePath_('types/index.d.ts'), format: 'es' }];
   }
 
   get plugins() {

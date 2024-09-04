@@ -1,0 +1,34 @@
+{
+  "files": [
+    {
+      "path": "dist/es/index.debug.js",
+      "maxSize": 201,
+      "compression": "none"
+    },
+    {
+      "path": "dist/cjs/index.debug.js",
+      "maxSize": 202,
+      "compression": "none"
+    },
+    {
+      "path": "dist/iife/index.debug.js",
+      "maxSize": 207,
+      "compression": "none"
+    },
+    {
+      "path": "dist/cjs/index.min.js",
+      "maxSize": 30,
+      "compression": "none"
+    },
+    {
+      "path": "dist/es/index.min.js",
+      "maxSize": 30,
+      "compression": "none"
+    },
+    {
+      "path": "dist/iife/index.min.js",
+      "maxSize": 30,
+      "compression": "none"
+    }
+  ]
+}
