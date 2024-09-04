@@ -10,10 +10,11 @@
     "test:coverage": "npx nx run-many -t test:coverage",
     "lint": "npx nx run-many -t lint",
     "build": "npx nx run-many -t build",
+    "pack": "npx nx run-many -t pack",
     "verify:bundle-size": "npx nx run-many -t verify:bundle-size",
     "prepare": "husky",
-    "pre-release:prepare": "npx nx release --specifier prerelease --skip-publish",
-    "release:prepare": "npx nx release --skip-publish",
+    "prepare-pre-release": "npx nx release --specifier prerelease --skip-publish",
+    "prepare-release": "npx nx release --skip-publish",
     "release:publish": "npx nx release publish"
   },
   "devDependencies": {

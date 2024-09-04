@@ -1,0 +1,61 @@
+name: release
+on:
+  push:
+    tags:
+      # match semver versions
+      - "v[0-9]+.[0-9]+.[0-9]+"
+      # match semver pre-releases
+      - "v[0-9]+.[0-9]+.[0-9]+-*"
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write # needed for provenance data generation
+    name: Release
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # Install node version from .nvmrc
+      - name: Install Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          registry-url: https://registry.npmjs.org/
+
+      # Install deps
+      - name: Install Dependencies
+        run: npm ci
+
+      # Print nx env info
+      - name: Print Environment Info
+        run: npx nx report
+
+      # Publish to NPM via NX
+      - name: Publish to NPM
+        run: npm run release:publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NPM_CONFIG_PROVENANCE: true
+
+      # Generate release-info-latest.md file for GitHub releases
+      - name: Generate release-info-latest.md
+        run: node cli/generate-release-info-latest.js > RELEASE-INFO-LATEST.md
+
+      # Create GitHub release
+      - name: Create Github release
+        uses: softprops/action-gh-release@v2
+        with:
+          body_path: RELEASE-INFO-LATEST.md
+          token: ${{github.token}}
+          files: |
+            packages/dash-parser/videojs-dash-parser-*.tgz
+            packages/hls-parser/videojs-hls-parser-*.tgz
+            packages/playback/videojs-playback-*.tgz
+
+      # Deploy Demo apps to netlify (TBD)
+      # Deploy API references to netlify (TBD)
+      # Deploy IIFE bundles to CDN (TBD)
