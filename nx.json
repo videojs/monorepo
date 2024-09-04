@@ -15,6 +15,7 @@
     }
   },
   "release": {
+    "projects": ["packages/dash-parser", "packages/hls-parser", "packages/playback"],
     "conventionalCommits": {
       "types": {
         "chore": {
