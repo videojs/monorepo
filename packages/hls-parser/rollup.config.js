@@ -4,6 +4,7 @@ import { Configuration, DtsConfiguration } from '../../rollup.config.base.js';
 
 const deps = {
   version: packageJson.version,
+  packageName: packageJson.name,
   name: 'HlsParserNamespace',
   input: './src/index.ts',
 };

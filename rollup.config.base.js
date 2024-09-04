@@ -9,6 +9,7 @@ import commonjs from '@rollup/plugin-commonjs';
 import replace from '@rollup/plugin-replace';
 import typescript from '@rollup/plugin-typescript';
 import terser from '@rollup/plugin-terser';
+import copy from 'rollup-plugin-copy';
 
 const commitHash = (() => {
   try {
@@ -30,15 +31,16 @@ export class Configuration {
 
   /**
    *
-   * @param {{ name: string, input: string, version: string }} deps - required deps
+   * @param {{ name: string, input: string, version: string, packageName: string }} deps - required deps
    * @param {{ folder?: string, experimental?: boolean, includeDiagnostics?: boolean }} [options] - optional options
    */
   constructor(deps, options = {}) {
-    const { name, input, version } = deps;
+    const { name, packageName, input, version } = deps;
     const { folder = '', experimental = false, includeDiagnostics = false } = options;
 
     /**
      * package version is injected as global __VERSION property in the bundle
+     * package version is included in the license banner
      */
     this.version_ = version;
     /**
@@ -49,6 +51,10 @@ export class Configuration {
      * target input for the build
      */
     this.input_ = input;
+    /**
+     * package name for license banner
+     */
+    this.packageName_ = packageName;
 
     /**
      * optional
@@ -83,6 +89,14 @@ export class Configuration {
   }
 
   get output() {
+    const licenseBanner = `/**
+ * @license
+ * ${this.packageName_} ${this.version_}
+ * Copyright Brightcove, Inc. <https://www.brightcove.com/>
+ * Available under Apache License Version 2.0
+ * <https://github.com/videojs/monorepo/blob/main/LICENSE>
+ */`;
+
     return [
       /**
        * es/index.debug.js
@@ -111,7 +125,12 @@ export class Configuration {
       this.createIifeMinBundle_(),
       this.createIifeDebugBundle_(),
       this.includeDiagnostics_ ? this.createIifeDiagnosticsBundle_() : null,
-    ].filter((output) => output !== null);
+    ]
+      .filter((output) => output !== null)
+      .map((output) => {
+        output.banner = licenseBanner;
+        return output;
+      });
   }
 
   createEsMinBundle_() {
@@ -292,6 +311,10 @@ export class Configuration {
           writeFileSync('./dist/bundlesize.json', JSON.stringify(bundleSize, null, 2));
         },
       },
+      // each sub package must place rollup.config.js at it's own root
+      copy({
+        targets: [{ src: '../../LICENSE', dest: 'dist' }],
+      }),
     ];
   }
 
