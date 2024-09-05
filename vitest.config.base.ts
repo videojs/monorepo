@@ -8,5 +8,8 @@ export default defineConfig({
       name: 'chromium',
       headless: true,
     },
+    coverage: {
+      include: ['src/**'],
+    },
   },
 });
