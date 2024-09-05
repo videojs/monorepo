@@ -6,6 +6,7 @@
   ],
   "scripts": {
     "clean": "npx nx run-many -t clean",
+    "clean:install": "npm run clean && rimraf node_modules .nx package-lock.json && npm i",
     "test": "npx nx run-many -t test",
     "test:coverage": "npx nx run-many -t test:coverage",
     "lint": "npx nx run-many -t lint",
