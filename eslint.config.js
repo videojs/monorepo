@@ -2,7 +2,7 @@ import js from '@eslint/js';
 import ts from 'typescript-eslint';
 import jsdoc from 'eslint-plugin-jsdoc';
 import prettier from 'eslint-plugin-prettier/recommended';
-import jest from 'eslint-plugin-jest';
+import vitest from 'eslint-plugin-vitest';
 import globals from 'globals';
 
 /**
@@ -44,18 +44,24 @@ export default [
   prettier,
 
   /**
-   * single config with jest recommended rules
+   * single config with vitest recommended rules
    */
   {
     files: ['**/test/**/*.ts'],
-    ...jest.configs['flat/recommended'],
+    plugins: {
+      vitest,
+    },
+    rules: {
+      // you can also use vitest.configs.all.rules to enable all rules
+      ...vitest.configs.recommended.rules,
+    },
   },
 
   /**
    * list of ignores:
    */
   {
-    ignores: ['node_modules/**', '**/rollup.config.js', '**/dist/**'],
+    ignores: ['node_modules/**', '**/rollup.config.js', '**/dist/**', '**/dist-api-reference/**', '**/coverage/**'],
   },
 
   /**

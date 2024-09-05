@@ -1,11 +1,12 @@
 import { FullManifestParser, ProgressiveParser } from '../src';
 import type { ParsedManifest } from '../src';
-import { describe, it, expect, jest, beforeEach } from '@jest/globals';
+import type { Mock } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 describe('dash-parser spec', () => {
   let fullManifestParser: FullManifestParser;
   let progressiveManifestParser: ProgressiveParser;
-  let warnCallback: jest.Mock<(warn: string) => void>;
+  let warnCallback: Mock<(warn: string) => void>;
 
   const testAllCombinations = (manifest: string, cb: (parsed: ParsedManifest) => void): void => {
     const buffer = new Uint8Array(manifest.split('').map((char) => char.charCodeAt(0)));
@@ -21,7 +22,7 @@ describe('dash-parser spec', () => {
   };
 
   beforeEach(() => {
-    warnCallback = jest.fn(() => {});
+    warnCallback = vi.fn(() => {});
 
     fullManifestParser = new FullManifestParser({
       warnCallback,

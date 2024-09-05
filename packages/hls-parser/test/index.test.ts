@@ -1,13 +1,14 @@
 import { FullPlaylistParser, ProgressiveParser } from '../src';
 import type { ParsedPlaylist, ParseOptions } from '../src';
-import { describe, it, expect, beforeEach, jest } from '@jest/globals';
+import type { Mock } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 describe('hls-parser spec', () => {
   const baseUrl = 'https://baseurl.com';
 
   let fullPlaylistParser: FullPlaylistParser;
   let progressivePlaylistParser: ProgressiveParser;
-  let warnCallback: jest.Mock<(warn: string) => void>;
+  let warnCallback: Mock<(warn: string) => void>;
 
   const testAllCombinations = (
     playlist: string,
@@ -27,7 +28,7 @@ describe('hls-parser spec', () => {
   };
 
   beforeEach(() => {
-    warnCallback = jest.fn(() => {});
+    warnCallback = vi.fn(() => {});
 
     fullPlaylistParser = new FullPlaylistParser({
       warnCallback,
