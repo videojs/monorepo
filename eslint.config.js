@@ -30,7 +30,7 @@ export default [
    */
   ...ts.configs.recommended.map((config) => ({
     ...config,
-    files: ['**/*.ts'],
+    files: ['**/*.{ts,tsx}'],
   })),
 
   /**
@@ -86,7 +86,7 @@ export default [
    * typescript specific rules:
    */
   {
-    files: ['**/*.ts'],
+    files: ['**/*.{ts,tsx}'],
     rules: {
       '@typescript-eslint/explicit-member-accessibility': 'error',
       '@typescript-eslint/explicit-function-return-type': 'error',
