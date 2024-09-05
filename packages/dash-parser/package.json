@@ -1,13 +1,47 @@
 {
   "name": "@videojs/dash-parser",
   "version": "0.0.0",
+  "description": "DASH parser",
   "type": "module",
-  "main": "./dist/index.js",
   "scripts": {
-    "build": "bun run build:source && bun run build:types",
-    "build:types": "dts-bundle-generator --project ../../tsconfig.json -o ./dist/index.d.ts ./src/index.ts",
-    "build:source": "bun run bun.build.ts",
-    "test": "npx jest",
-    "test:coverage": "npx jest --coverage=true"
+    "clean": "rimraf ./dist ./dist-api-reference ./*.tgz ./coverage",
+    "build": "npm run clean && rollup -c rollup.config.js && npm run build:api-reference",
+    "build:api-reference": "npx typedoc --options typedoc.json",
+    "verify:bundle-size": "npx bundlesize --config bundlesize.json",
+    "test": "jest",
+    "test:coverage": "jest --coverage=true",
+    "lint": "eslint .",
+    "pack": "npm pack"
+  },
+  "keywords": [
+    "videojs",
+    "mpeg-dash",
+    "mpeg",
+    "dash-parser",
+    "mpeg-dash-parser",
+    "video",
+    "streaming"
+  ],
+  "author": "Brightcove, Inc",
+  "license": "Apache-2.0",
+  "files": [
+    "./dist/",
+    "CHANGELOG.md"
+  ],
+  "main": "./dist/cjs/index.min.js",
+  "module": "./dist/es/index.min.js",
+  "es2015": "./dist/es/index.min.js",
+  "types": "./dist/types/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/types/index.d.ts",
+      "require": "./dist/cjs/index.min.js",
+      "import": "./dist/es/index.min.js"
+    },
+    "./debug": {
+      "types": "./dist/types/index.d.ts",
+      "require": "./dist/cjs/index.debug.js",
+      "import": "./dist/es/index.debug.js"
+    }
   }
 }

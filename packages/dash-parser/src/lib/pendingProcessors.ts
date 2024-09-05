@@ -4,28 +4,28 @@ import type { TagProcessor } from './tags/base';
 // import type { SharedState } from '@/dash-parser/types/sharedState';
 
 export class PendingProcessors {
-  private readonly pendingMap = new Map<TagInfo, PendingProcess>();
+  private readonly pendingMap_ = new Map<TagInfo, PendingProcess>();
 
   public getPendingProcessFor(tagInfo: TagInfo): PendingProcess | null {
-    const pendingProcess = this.pendingMap.get(tagInfo);
+    const pendingProcess = this.pendingMap_.get(tagInfo);
 
     return pendingProcess ?? null;
   }
 
   public setPendingProcessFor(tagInfo: TagInfo, pendingProcess: PendingProcess): void {
-    this.pendingMap.set(tagInfo, pendingProcess);
+    this.pendingMap_.set(tagInfo, pendingProcess);
   }
 
   public removePendingProcessFor(tagInfo: TagInfo): void {
-    this.pendingMap.delete(tagInfo);
+    this.pendingMap_.delete(tagInfo);
   }
 }
 
 export class PendingProcess {
-  private readonly waitingForMap = new Map<string, TagInfo | null>();
-  private readonly tagProcessor: TagProcessor;
-  private readonly tagInfo: TagInfo;
-  private readonly parentTagInfo: TagInfo | null;
+  private readonly waitingForMap_ = new Map<string, TagInfo | null>();
+  private readonly tagProcessor_: TagProcessor;
+  private readonly tagInfo_: TagInfo;
+  private readonly parentTagInfo_: TagInfo | null;
 
   public constructor(
     tagProcessor: TagProcessor,
@@ -33,24 +33,24 @@ export class PendingProcess {
     parentTagInfo: TagInfo | null,
     waitingForSet: Set<string>
   ) {
-    this.tagProcessor = tagProcessor;
-    this.tagInfo = tagInfo;
-    this.parentTagInfo = parentTagInfo;
+    this.tagProcessor_ = tagProcessor;
+    this.tagInfo_ = tagInfo;
+    this.parentTagInfo_ = parentTagInfo;
     waitingForSet.forEach((tagKey) => {
-      this.waitingForMap.set(tagKey, null);
+      this.waitingForMap_.set(tagKey, null);
     });
   }
 
   public isRequiredChild(tagInfo: TagInfo): boolean {
-    return this.waitingForMap.has(tagInfo.tagKey);
+    return this.waitingForMap_.has(tagInfo.tagKey);
   }
 
   public updateChildAvailability(tagInfo: TagInfo): void {
-    this.waitingForMap.set(tagInfo.tagKey, tagInfo);
+    this.waitingForMap_.set(tagInfo.tagKey, tagInfo);
   }
 
   public getIsAllRequiredDataAvailable(): boolean {
-    for (const val of this.waitingForMap.values()) {
+    for (const val of this.waitingForMap_.values()) {
       if (val === null) {
         return false;
       }
@@ -62,6 +62,6 @@ export class PendingProcess {
   // public process(parsedManifest: ParsedManifest, sharedState: SharedState): void {
   public process(): void {
     // this.tagProcessor.processPending(this.tagInfo, this.parentTagInfo, this.waitingForMap, parsedManifest, sharedState);
-    return this.tagProcessor.processPending();
+    return this.tagProcessor_.processPending();
   }
 }

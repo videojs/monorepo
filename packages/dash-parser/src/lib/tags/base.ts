@@ -27,9 +27,9 @@ import { segmentsFromTemplate } from '../segments/segmentParser';
 import { resolveURL } from '../segments/resolveUrl';
 
 export abstract class TagProcessor {
-  protected readonly warnCallback: WarnCallback;
-  protected abstract readonly tag: string;
-  protected abstract readonly requiredAttributes: Set<string>;
+  protected readonly warnCallback_: WarnCallback;
+  protected abstract readonly tag_: string;
+  protected readonly requiredAttributes_ = new Set<string>();
 
   public process(
     tagInfo: TagInfo,
@@ -40,21 +40,20 @@ export abstract class TagProcessor {
   ): void {
     let isRequiredAttributedMissed = false;
 
-    this.requiredAttributes &&
-      this.requiredAttributes.forEach((requiredAttribute) => {
-        const hasRequiredAttribute = requiredAttribute in tagInfo.tagAttributes;
+    this.requiredAttributes_.forEach((requiredAttribute) => {
+      const hasRequiredAttribute = requiredAttribute in tagInfo.tagAttributes;
 
-        if (!hasRequiredAttribute) {
-          this.warnCallback(missingRequiredAttributeWarn(this.tag, requiredAttribute));
-          isRequiredAttributedMissed = true;
-        }
-      });
+      if (!hasRequiredAttribute) {
+        this.warnCallback_(missingRequiredAttributeWarn(this.tag_, requiredAttribute));
+        isRequiredAttributedMissed = true;
+      }
+    });
 
     if (isRequiredAttributedMissed) {
       return;
     }
 
-    return this.safeProcess(tagInfo, parentTagInfo, parsedManifest, sharedState, pendingProcessors);
+    return this.safeProcess_(tagInfo, parentTagInfo, parsedManifest, sharedState, pendingProcessors);
   }
 
   public processPending() // tagInfo: TagInfo,
@@ -64,7 +63,7 @@ export abstract class TagProcessor {
     // specific processor will override
   }
 
-  protected abstract safeProcess(
+  protected abstract safeProcess_(
     tagInfo: TagInfo,
     parentTagInfo: TagInfo | null,
     parsedManifest: ParsedManifest,
@@ -73,23 +72,23 @@ export abstract class TagProcessor {
   ): void;
 
   public constructor(warnCallback: WarnCallback) {
-    this.warnCallback = warnCallback;
+    this.warnCallback_ = warnCallback;
   }
 }
 
 export class Mpd extends TagProcessor {
-  private static readonly ID = 'id';
-  private static readonly PROFILES = 'profiles';
-  private static readonly TYPE = 'type';
-  private static readonly AVAILABILITY_START_TIME = 'availabilityStartTime';
-  private static readonly PUBLISH_TIME = 'publishTime';
-  private static readonly MEDIA_PRESENTATION_TIME = 'mediaPresentationDuration';
-  private static readonly MIN_BUFFER_TIME = 'minBufferTime';
+  private static readonly ID_ = 'id';
+  private static readonly PROFILES_ = 'profiles';
+  private static readonly TYPE_ = 'type';
+  private static readonly AVAILABILITY_START_TIME_ = 'availabilityStartTime';
+  private static readonly PUBLISH_TIME_ = 'publishTime';
+  private static readonly MEDIA_PRESENTATION_TIME_ = 'mediaPresentationDuration';
+  private static readonly MIN_BUFFER_TIME_ = 'minBufferTime';
 
-  protected readonly requiredAttributes = new Set([Mpd.PROFILES, Mpd.MIN_BUFFER_TIME]);
-  protected readonly tag = MPD;
+  protected readonly requiredAttributes_ = new Set([Mpd.PROFILES_, Mpd.MIN_BUFFER_TIME_]);
+  protected readonly tag_ = MPD;
 
-  protected safeProcess(
+  protected safeProcess_(
     tagInfo: TagInfo,
     parentTagInfo: TagInfo | null,
     parsedManifest: ParsedManifest,
@@ -98,27 +97,27 @@ export class Mpd extends TagProcessor {
   ): void {
     const attributes = parseAttributes(tagInfo.tagAttributes);
     sharedState.mpdAttributes = {
-      id: attributes[Mpd.ID],
-      profiles: attributes[Mpd.PROFILES],
-      type: attributes[Mpd.TYPE] || 'static',
-      availabilityStartTime: attributes[Mpd.AVAILABILITY_START_TIME],
-      publishTime: attributes[Mpd.PUBLISH_TIME],
-      mediaPresentationDuration: attributes[Mpd.MEDIA_PRESENTATION_TIME],
+      id: attributes[Mpd.ID_],
+      profiles: attributes[Mpd.PROFILES_],
+      type: attributes[Mpd.TYPE_] || 'static',
+      availabilityStartTime: attributes[Mpd.AVAILABILITY_START_TIME_],
+      publishTime: attributes[Mpd.PUBLISH_TIME_],
+      mediaPresentationDuration: attributes[Mpd.MEDIA_PRESENTATION_TIME_],
     };
   }
 }
 
 export class Period extends TagProcessor {
-  private static readonly ID = 'id';
-  private static readonly START = 'start';
-  private static readonly DURATION = 'duration';
+  private static readonly ID_ = 'id';
+  private static readonly START_ = 'start';
+  private static readonly DURATION_ = 'duration';
 
-  protected readonly tag = PERIOD;
+  protected readonly tag_ = PERIOD;
 
   // TODO:
-  protected readonly requiredAttributes = new Set<string>();
+  protected readonly requiredAttributes_ = new Set<string>();
 
-  protected safeProcess(
+  protected safeProcess_(
     tagInfo: TagInfo,
     parentTagInfo: TagInfo | null,
     parsedManifest: ParsedManifest,
@@ -127,22 +126,22 @@ export class Period extends TagProcessor {
   ): void {
     const attributes = parseAttributes(tagInfo.tagAttributes);
     sharedState.periodAttributes = {
-      id: attributes[Period.ID],
-      start: attributes[Period.START],
-      duration: attributes[Period.DURATION],
+      id: attributes[Period.ID_],
+      start: attributes[Period.START_],
+      duration: attributes[Period.DURATION_],
     };
   }
 }
 
 export class AdaptationSet extends TagProcessor {
-  private static readonly MIME_TYPE = 'mimeType';
-  private static readonly CONTENT_TYPE = 'contentType';
-  private static readonly SUBSEGMENT_ALIGNMENT = 'subsegmentAlignment';
+  private static readonly MIME_TYPE_ = 'mimeType';
+  private static readonly CONTENT_TYPE_ = 'contentType';
+  private static readonly SUBSEGMENT_ALIGNMENT_ = 'subsegmentAlignment';
 
-  protected readonly requiredAttributes = new Set([AdaptationSet.MIME_TYPE, AdaptationSet.CONTENT_TYPE]);
-  protected readonly tag = ADAPTATION_SET;
+  protected readonly requiredAttributes_ = new Set([AdaptationSet.MIME_TYPE_, AdaptationSet.CONTENT_TYPE_]);
+  protected readonly tag_ = ADAPTATION_SET;
 
-  protected safeProcess(
+  protected safeProcess_(
     tagInfo: TagInfo,
     parentTagInfo: TagInfo | null,
     parsedManifest: ParsedManifest,
@@ -151,25 +150,25 @@ export class AdaptationSet extends TagProcessor {
   ): void {
     const attributes = parseAttributes(tagInfo.tagAttributes);
     sharedState.adaptationSetAttributes = {
-      mimeType: attributes[AdaptationSet.MIME_TYPE],
-      contentType: attributes[AdaptationSet.CONTENT_TYPE],
-      subsegmentAlignment: attributes[AdaptationSet.SUBSEGMENT_ALIGNMENT],
+      mimeType: attributes[AdaptationSet.MIME_TYPE_],
+      contentType: attributes[AdaptationSet.CONTENT_TYPE_],
+      subsegmentAlignment: attributes[AdaptationSet.SUBSEGMENT_ALIGNMENT_],
     };
   }
 }
 
 export class BaseUrl extends TagProcessor {
-  private static readonly SERVICE_LOCATION = 'serviceLocation';
-  private static readonly BYTE_RANGE = 'byteRange';
-  private static readonly AVAILABILITY_TIME_OFFSET = 'availabilityTimeOffset';
-  private static readonly AVAILABILITY_TIME_COMPLETE = 'availabilityTimeComplete';
-  private static readonly TIMESHIFT_BUFFER_DEPTH = 'timeShiftBufferDepth';
-  private static readonly RANGE_ACCESS = 'rangeAccess';
+  private static readonly SERVICE_LOCATION_ = 'serviceLocation';
+  private static readonly BYTE_RANGE_ = 'byteRange';
+  private static readonly AVAILABILITY_TIME_OFFSET_ = 'availabilityTimeOffset';
+  private static readonly AVAILABILITY_TIME_COMPLETE_ = 'availabilityTimeComplete';
+  private static readonly TIMESHIFT_BUFFER_DEPTH_ = 'timeShiftBufferDepth';
+  private static readonly RANGE_ACCESS_ = 'rangeAccess';
 
-  protected readonly requiredAttributes = new Set<string>();
-  protected readonly tag = BASE_URL;
+  protected readonly requiredAttributes_ = new Set<string>();
+  protected readonly tag_ = BASE_URL;
 
-  protected safeProcess(
+  protected safeProcess_(
     tagInfo: TagInfo,
     parentTagInfo: TagInfo | null,
     parsedManifest: ParsedManifest,
@@ -223,32 +222,32 @@ export class BaseUrl extends TagProcessor {
 }
 
 export class Representation extends TagProcessor {
-  private static readonly ID = 'id';
-  private static readonly CODECS = 'codecs';
-  private static readonly BANDWIDTH = 'bandwidth';
-  private static readonly WIDTH = 'width';
-  private static readonly HEIGHT = 'height';
-  private static readonly FRAME_RATE = 'frameRate';
-  private static readonly SAR = 'sar';
-  private static readonly SCAN_TYPE = 'scanType';
-  private static readonly PROFILES = 'profiles';
-  private static readonly AUDIO_SAMPLING_RATE = 'audioSamplingRate';
-  private static readonly MIME_TYPE = 'mimeType';
-  private static readonly SEGMENT_PROFILES = 'segmentProfiles';
-  private static readonly CONTAINER_PROFILES = 'containerProfiles';
-  private static readonly MAXIMUM_SAP_PERIOD = 'maximumSAPPeriod';
-  private static readonly START_WITH_SAP = 'startWithSAP';
-  private static readonly MAX_PLAYOUT_RATE = 'maxPlayoutRate';
-  private static readonly CODING_DEPENDENCY = 'codingDependency';
-  private static readonly SELECTION_PRIORITY = 'selectionPriority';
-  private static readonly TAG = 'tag';
-  private static readonly INITIALIZATION = 'initialization';
+  private static readonly ID_ = 'id';
+  private static readonly CODECS_ = 'codecs';
+  private static readonly BANDWIDTH_ = 'bandwidth';
+  private static readonly WIDTH_ = 'width';
+  private static readonly HEIGHT_ = 'height';
+  private static readonly FRAME_RATE_ = 'frameRate';
+  private static readonly SAR_ = 'sar';
+  private static readonly SCAN_TYPE_ = 'scanType';
+  private static readonly PROFILES_ = 'profiles';
+  private static readonly AUDIO_SAMPLING_RATE_ = 'audioSamplingRate';
+  private static readonly MIME_TYPE_ = 'mimeType';
+  private static readonly SEGMENT_PROFILES_ = 'segmentProfiles';
+  private static readonly CONTAINER_PROFILES_ = 'containerProfiles';
+  private static readonly MAXIMUM_SAP_PERIOD_ = 'maximumSAPPeriod';
+  private static readonly START_WITH_SAP_ = 'startWithSAP';
+  private static readonly MAX_PLAYOUT_RATE_ = 'maxPlayoutRate';
+  private static readonly CODING_DEPENDENCY_ = 'codingDependency';
+  private static readonly SELECTION_PRIORITY_ = 'selectionPriority';
+  private static readonly TAG_ = 'tag';
+  private static readonly INITIALIZATION_ = 'initialization';
 
-  protected readonly tag = REPRESENTATION;
+  protected readonly tag_ = REPRESENTATION;
   // TODO
-  protected readonly requiredAttributes = new Set<string>();
+  protected readonly requiredAttributes_ = new Set<string>();
 
-  protected safeProcess(
+  protected safeProcess_(
     tagInfo: TagInfo,
     parentTagInfo: TagInfo | null,
     parsedManifest: ParsedManifest,
@@ -289,26 +288,26 @@ export class Representation extends TagProcessor {
         ...previousAttributes,
         // TODO: ID isn't required, so set this in a better way if it doesn't exit
         // Maybe use period id.
-        id: attributes[Representation.ID] || 'default-id',
-        codecs: attributes[Representation.CODECS],
-        bandwidth: attributes[Representation.BANDWIDTH],
-        initialization: attributes[Representation.INITIALIZATION],
-        width: attributes[Representation.WIDTH],
-        height: attributes[Representation.HEIGHT],
-        frameRate: attributes[Representation.FRAME_RATE],
-        sar: attributes[Representation.SAR],
-        scanType: attributes[Representation.SCAN_TYPE],
-        profiles: attributes[Representation.PROFILES],
-        audioSamplingRate: attributes[Representation.AUDIO_SAMPLING_RATE],
-        mimeType: attributes[Representation.MIME_TYPE],
-        segmentProfiles: attributes[Representation.SEGMENT_PROFILES],
-        containerProfiles: attributes[Representation.CONTAINER_PROFILES],
-        maximumSAPPeriod: attributes[Representation.MAXIMUM_SAP_PERIOD],
-        startWithSAP: attributes[Representation.START_WITH_SAP],
-        maxPlayoutRate: attributes[Representation.MAX_PLAYOUT_RATE],
-        codingDependency: attributes[Representation.CODING_DEPENDENCY],
-        selectionPriority: attributes[Representation.SELECTION_PRIORITY],
-        tag: attributes[Representation.TAG],
+        id: attributes[Representation.ID_] || 'default-id',
+        codecs: attributes[Representation.CODECS_],
+        bandwidth: attributes[Representation.BANDWIDTH_],
+        initialization: attributes[Representation.INITIALIZATION_],
+        width: attributes[Representation.WIDTH_],
+        height: attributes[Representation.HEIGHT_],
+        frameRate: attributes[Representation.FRAME_RATE_],
+        sar: attributes[Representation.SAR_],
+        scanType: attributes[Representation.SCAN_TYPE_],
+        profiles: attributes[Representation.PROFILES_],
+        audioSamplingRate: attributes[Representation.AUDIO_SAMPLING_RATE_],
+        mimeType: attributes[Representation.MIME_TYPE_],
+        segmentProfiles: attributes[Representation.SEGMENT_PROFILES_],
+        containerProfiles: attributes[Representation.CONTAINER_PROFILES_],
+        maximumSAPPeriod: attributes[Representation.MAXIMUM_SAP_PERIOD_],
+        startWithSAP: attributes[Representation.START_WITH_SAP_],
+        maxPlayoutRate: attributes[Representation.MAX_PLAYOUT_RATE_],
+        codingDependency: attributes[Representation.CODING_DEPENDENCY_],
+        selectionPriority: attributes[Representation.SELECTION_PRIORITY_],
+        tag: attributes[Representation.TAG_],
         segments,
         baseUrl: base.uri,
       };
@@ -319,19 +318,19 @@ export class Representation extends TagProcessor {
 }
 
 export class SegmentTemplate extends TagProcessor {
-  private static readonly MEDIA = 'media';
-  private static readonly INDEX = 'index';
-  private static readonly INITIALIZATION = 'initialization';
-  private static readonly BIT_STREAM_SWITCHING = 'bitstreamSwitching';
-  private static readonly DURATION = 'duration';
-  private static readonly TIME_SCALE = 'timescale';
-  private static readonly START_NUMBER = 'startNumber';
+  private static readonly MEDIA_ = 'media';
+  private static readonly INDEX_ = 'index';
+  private static readonly INITIALIZATION_ = 'initialization';
+  private static readonly BIT_STREAM_SWITCHING_ = 'bitstreamSwitching';
+  private static readonly DURATION_ = 'duration';
+  private static readonly TIME_SCALE_ = 'timescale';
+  private static readonly START_NUMBER_ = 'startNumber';
 
-  protected readonly tag = SEGMENT_TEMPLATE;
+  protected readonly tag_ = SEGMENT_TEMPLATE;
   // TODO
-  protected readonly requiredAttributes = new Set<string>();
+  protected readonly requiredAttributes_ = new Set<string>();
 
-  protected safeProcess(
+  protected safeProcess_(
     tagInfo: TagInfo,
     parentTagInfo: TagInfo | null,
     parsedManifest: ParsedManifest,
@@ -340,24 +339,24 @@ export class SegmentTemplate extends TagProcessor {
   ): void {
     const attributes = parseAttributes(tagInfo.tagAttributes);
     sharedState.segmentTemplateAttributes = {
-      media: attributes[SegmentTemplate.MEDIA],
-      index: attributes[SegmentTemplate.INDEX],
-      initialization: attributes[SegmentTemplate.INITIALIZATION],
-      bitstreamSwitching: attributes[SegmentTemplate.BIT_STREAM_SWITCHING],
-      duration: attributes[SegmentTemplate.DURATION],
-      timescale: attributes[SegmentTemplate.TIME_SCALE],
-      startNumber: attributes[SegmentTemplate.START_NUMBER],
+      media: attributes[SegmentTemplate.MEDIA_],
+      index: attributes[SegmentTemplate.INDEX_],
+      initialization: attributes[SegmentTemplate.INITIALIZATION_],
+      bitstreamSwitching: attributes[SegmentTemplate.BIT_STREAM_SWITCHING_],
+      duration: attributes[SegmentTemplate.DURATION_],
+      timescale: attributes[SegmentTemplate.TIME_SCALE_],
+      startNumber: attributes[SegmentTemplate.START_NUMBER_],
     };
   }
 }
 
 export class UTCTiming extends TagProcessor {
-  private static readonly SCHEME_ID_URI = 'schemeIdUri';
+  private static readonly SCHEME_ID_URI_ = 'schemeIdUri';
 
-  protected readonly requiredAttributes = new Set([UTCTiming.SCHEME_ID_URI]);
-  protected readonly tag = UTC_TIMING;
+  protected readonly requiredAttributes_ = new Set([UTCTiming.SCHEME_ID_URI_]);
+  protected readonly tag_ = UTC_TIMING;
 
-  protected safeProcess(
+  protected safeProcess_(
     tagInfo: TagInfo,
     parentTagInfo: TagInfo | null,
     parsedManifest: ParsedManifest
@@ -374,11 +373,11 @@ export class UTCTiming extends TagProcessor {
 
 export class EventStream extends TagProcessor {
   // TODO
-  protected readonly tag = EVENT_STREAM;
+  protected readonly tag_ = EVENT_STREAM;
   // TODO
-  protected readonly requiredAttributes = new Set<string>();
+  protected readonly requiredAttributes_ = new Set<string>();
 
-  protected safeProcess() // tagInfo: TagInfo,
+  protected safeProcess_() // tagInfo: TagInfo,
   // parentTagInfo: TagInfo | null,
   // parsedManifest: ParsedManifest,
   // sharedState: SharedState,
@@ -387,11 +386,11 @@ export class EventStream extends TagProcessor {
 }
 
 export class Event extends TagProcessor {
-  protected readonly tag = EVENT;
+  protected readonly tag_ = EVENT;
   // TODO
-  protected readonly requiredAttributes = new Set<string>();
+  protected readonly requiredAttributes_ = new Set<string>();
 
-  protected safeProcess(
+  protected safeProcess_(
     tagInfo: TagInfo,
     parentTagInfo: TagInfo | null,
     parsedManifest: ParsedManifest

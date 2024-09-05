@@ -7,7 +7,7 @@ export interface SharedState {
   attributes?: Record<string, unknown>;
 }
 
-interface BaseURLState {
+export interface BaseURLState {
   uri: string;
   attributes: Record<string, unknown>;
   parentKey?: string | null;

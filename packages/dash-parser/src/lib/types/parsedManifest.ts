@@ -39,7 +39,8 @@ export type UTCTimingScheme = {
 };
 
 // TODO:
-interface Representation {}
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
+export interface Representation {}
 
 export interface ParsedManifest {
   representations: Array<Representation>;

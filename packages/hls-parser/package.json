@@ -3,9 +3,8 @@
   "version": "0.0.0",
   "description": "HLS parser",
   "type": "module",
-  "main": "./dist/index.js",
   "scripts": {
-    "clean": "rimraf ./dist ./dist-api-reference ./*.tgz",
+    "clean": "rimraf ./dist ./dist-api-reference ./*.tgz ./coverage",
     "build": "npm run clean && rollup -c rollup.config.js && npm run build:api-reference",
     "build:api-reference": "npx typedoc --options typedoc.json",
     "verify:bundle-size": "npx bundlesize --config bundlesize.json",
@@ -16,7 +15,6 @@
   },
   "keywords": [
     "videojs",
-    "videojs-plugin",
     "hls",
     "hls-parser",
     "m3u8",
@@ -29,5 +27,21 @@
   "files": [
     "./dist/",
     "CHANGELOG.md"
-  ]
+  ],
+  "main": "./dist/cjs/index.min.js",
+  "module": "./dist/es/index.min.js",
+  "es2015": "./dist/es/index.min.js",
+  "types": "./dist/types/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/types/index.d.ts",
+      "require": "./dist/cjs/index.min.js",
+      "import": "./dist/es/index.min.js"
+    },
+    "./debug": {
+      "types": "./dist/types/index.d.ts",
+      "require": "./dist/cjs/index.debug.js",
+      "import": "./dist/es/index.debug.js"
+    }
+  }
 }
