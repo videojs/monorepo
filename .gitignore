@@ -50,6 +50,8 @@ bower_components
 
 build/Release
 
+deploy
+
 # Dependency directories
 
 node_modules/

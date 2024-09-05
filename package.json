@@ -17,6 +17,7 @@
     "prepare": "husky",
     "prepare-pre-release": "npx nx release --specifier prerelease --skip-publish",
     "prepare-release": "npx nx release --skip-publish",
+    "prepare-deploy": "rimraf deploy && npm run build && node cli/prepare-deploy.js",
     "release:publish": "npx nx release publish"
   },
   "devDependencies": {
@@ -45,7 +46,7 @@
     "lint-staged": "^15.2.10",
     "nx": "19.6.5",
     "playwright": "^1.46.1",
-    "prettier": "^3.0.3",
+    "prettier": "^3.3.3",
     "rimraf": "^6.0.1",
     "rollup": "^4.21.2",
     "rollup-plugin-copy": "^3.5.0",

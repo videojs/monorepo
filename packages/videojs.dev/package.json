@@ -1,11 +1,28 @@
 {
   "name": "videojs.dev",
-  "version": "0.0.0",
   "private": true,
-  "scripts": {},
-  "devDependencies": {
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "clean": "rimraf dist",
+    "dev": "vite",
+    "build": "vite build",
+    "lint": "eslint .",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
     "@videojs/playback": "*",
     "@videojs/hls-parser": "*",
     "@videojs/dash-parser": "*"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.5",
+    "@types/react-dom": "^18.3.0",
+    "@vitejs/plugin-react": "^4.3.1",
+    "eslint-plugin-react-hooks": "^4.6.2",
+    "eslint-plugin-react-refresh": "^0.4.11",
+    "vite": "^5.4.3"
   }
 }

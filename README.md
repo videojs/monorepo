@@ -2,6 +2,8 @@
 >
 > This project is under active development!
 
+[![Netlify Status](https://api.netlify.com/api/v1/badges/9717430f-7ee5-41d2-b7af-cbb37472ab12/deploy-status)](https://app.netlify.com/sites/videojsdev/deploys)
+
 Video.js is a full-featured, open source video player for all web-based platforms.
 
 Right out of the box, Video.js supports all common media formats used on the web including streaming formats like HLS and DASH. It works on desktops, mobile devices, tablets, and web-based Smart TVs.
