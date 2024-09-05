@@ -17,6 +17,7 @@
     "prepare": "husky",
     "prepare-pre-release": "npx nx release --specifier prerelease --skip-publish",
     "prepare-release": "npx nx release --skip-publish",
+    "prepare-deploy": "rimraf deploy && npm run build && node cli/prepare-deploy.js",
     "release:publish": "npx nx release publish"
   },
   "devDependencies": {
