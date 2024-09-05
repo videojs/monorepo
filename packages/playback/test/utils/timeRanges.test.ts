@@ -1,19 +1,19 @@
-import { describe, it, expect } from '@jest/globals';
+import { describe, it, expect } from 'vitest';
 import PlayerTimeRange from '../../src/lib/utils/timeRanges';
 
 class MockTimeRange implements TimeRanges {
-  public constructor(private timeRangeArray: Array<{ start: number; end: number }>) {}
+  public constructor(private timeRangeArray_: Array<{ start: number; end: number }>) {}
 
   public get length(): number {
-    return this.timeRangeArray.length;
+    return this.timeRangeArray_.length;
   }
 
   public start(index: number): number {
-    return this.timeRangeArray[index].start;
+    return this.timeRangeArray_[index].start;
   }
 
   public end(index: number): number {
-    return this.timeRangeArray[index].end;
+    return this.timeRangeArray_[index].end;
   }
 }
 

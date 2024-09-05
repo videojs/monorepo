@@ -1,0 +1,16 @@
+name: Feature Request
+description: Suggest an idea for this project
+labels: [RFC, Needs Triage]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for using Video.js and contributing by requesting a new feature. Before you start, please create your request for change in thr RFC repo: https://github.com/videojs/rfcs
+  - type: input
+    id: rfc
+    attributes:
+      label: Request for change PR
+      description: Add a link to your RFC PR
+      placeholder: https://github.com/videojs/rfcs/pull/3
+    validations:
+      required: true

@@ -11,6 +11,11 @@ type UriInfoCallback = (url: string) => void;
 
 export type StateMachineTransition = (char: string) => void;
 
+/**
+ *
+ * @param tagInfoCallback
+ * @param uriInfoCallback
+ */
 export default function createStateMachine(
   tagInfoCallback: TagInfoCallback,
   uriInfoCallback: UriInfoCallback

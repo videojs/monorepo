@@ -1,35 +1,35 @@
 export default class PlayerTimeRange {
-  private readonly rangeStart: number;
-  private readonly rangeEnd: number;
+  private readonly rangeStart_: number;
+  private readonly rangeEnd_: number;
 
   public constructor(start: number, end: number) {
-    this.rangeStart = start;
-    this.rangeEnd = end;
+    this.rangeStart_ = start;
+    this.rangeEnd_ = end;
   }
 
   public get start(): number {
-    return this.rangeStart;
+    return this.rangeStart_;
   }
 
   public get end(): number {
-    return this.rangeEnd;
+    return this.rangeEnd_;
   }
 
   public isInRangeInclusive(time: number): boolean {
-    return time >= this.rangeStart && time <= this.rangeEnd;
+    return time >= this.rangeStart_ && time <= this.rangeEnd_;
   }
 
   public isInRangeExclusive(time: number): boolean {
-    return time > this.rangeStart && time < this.rangeEnd;
+    return time > this.rangeStart_ && time < this.rangeEnd_;
   }
 
   // Additional Methods
   public isInPast(time: number): boolean {
-    return time < this.rangeStart;
+    return time < this.rangeStart_;
   }
 
   public isInFuture(time: number): boolean {
-    return time > this.rangeEnd;
+    return time > this.rangeEnd_;
   }
 
   public static fromTimeRanges(timeRanges: TimeRanges): Array<PlayerTimeRange> {

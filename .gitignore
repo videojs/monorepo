@@ -88,7 +88,8 @@ web_modules/
 
 # Output of 'npm pack'
 
-\*.tgz
+**/*.tgz
+
 
 # Yarn Integrity file
 
@@ -116,6 +117,7 @@ out
 
 .nuxt
 dist
+dist-api-reference
 
 # Gatsby files
 
@@ -175,5 +177,6 @@ dist
 .DS_Store
 
 
+.nx
 
 .nx/cache

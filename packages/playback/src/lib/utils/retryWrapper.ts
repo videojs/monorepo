@@ -30,16 +30,16 @@ class MaxAttemptsExceeded extends Error {
 const wait = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
 
 export default class RetryWrapper {
-  private readonly maxAttempts: number;
-  private readonly delay: number;
-  private readonly delayFactor: number;
-  private readonly fuzzFactor: number;
+  private readonly maxAttempts_: number;
+  private readonly delay_: number;
+  private readonly delayFactor_: number;
+  private readonly fuzzFactor_: number;
 
   public constructor(options: RetryWrapperOptions) {
-    this.maxAttempts = options.maxAttempts;
-    this.delay = options.delay;
-    this.delayFactor = options.delayFactor;
-    this.fuzzFactor = options.fuzzFactor;
+    this.maxAttempts_ = options.maxAttempts;
+    this.delay_ = options.delay;
+    this.delayFactor_ = options.delayFactor;
+    this.fuzzFactor_ = options.fuzzFactor;
   }
 
   public wrap<T>(
@@ -49,13 +49,13 @@ export default class RetryWrapper {
     waitFn = wait
   ): WrappedWithRetry<T> {
     let attemptNumber = 1;
-    let delay = this.delay;
+    let delay = this.delay_;
     let lastError: unknown | undefined;
 
     const attempts: Array<AttemptDiagnosticInfo> = [];
 
     const wrapped = async (...args: Array<unknown>): Promise<T> => {
-      if (attemptNumber > this.maxAttempts) {
+      if (attemptNumber > this.maxAttempts_) {
         if (lastError) {
           throw lastError;
         }
@@ -64,7 +64,7 @@ export default class RetryWrapper {
       }
 
       try {
-        const attemptDiagnosticInfo = this.createDiagnosticInfoForAttempt(attemptNumber, delay, lastError);
+        const attemptDiagnosticInfo = this.createDiagnosticInfoForAttempt_(attemptNumber, delay, lastError);
         attempts.push(attemptDiagnosticInfo);
         hooks.onAttempt?.call(null, attemptDiagnosticInfo);
         return await fn(...args);
@@ -74,9 +74,9 @@ export default class RetryWrapper {
         }
 
         lastError = e;
-        await waitFn(this.applyFuzzFactor(delay));
+        await waitFn(this.applyFuzzFactor_(delay));
         attemptNumber++;
-        delay = this.applyDelayFactor(delay);
+        delay = this.applyDelayFactor_(delay);
         return wrapped(...args);
       }
     };
@@ -92,28 +92,27 @@ export default class RetryWrapper {
    * So if we have delay as 1000
    * This function can generate any value from 900 to 1100
    * @param delay
-   * @private
    */
-  private applyFuzzFactor(delay: number): number {
-    const lowValue = (1 - this.fuzzFactor) * delay;
-    const highValue = (1 + this.fuzzFactor) * delay;
+  private applyFuzzFactor_(delay: number): number {
+    const lowValue = (1 - this.fuzzFactor_) * delay;
+    const highValue = (1 + this.fuzzFactor_) * delay;
 
     return lowValue + Math.random() * (highValue - lowValue);
   }
 
-  private applyDelayFactor(delay: number): number {
-    const delta = delay * this.delayFactor;
+  private applyDelayFactor_(delay: number): number {
+    const delta = delay * this.delayFactor_;
 
     return delay + delta;
   }
 
-  private createDiagnosticInfoForAttempt(
+  private createDiagnosticInfoForAttempt_(
     attemptNumber: number,
     delay: number,
     lastError: unknown | undefined
   ): AttemptDiagnosticInfo {
-    const fuzzedDelayFrom = (1 - this.fuzzFactor) * delay;
-    const fuzzedDelayTo = (1 + this.fuzzFactor) * delay;
+    const fuzzedDelayFrom = (1 - this.fuzzFactor_) * delay;
+    const fuzzedDelayTo = (1 + this.fuzzFactor_) * delay;
 
     return {
       attemptNumber,

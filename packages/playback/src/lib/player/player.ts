@@ -35,7 +35,7 @@ interface PlayerDependencies {
   eventEmitter: EventEmitter<PlayerEventTypeToEventMap>;
 }
 
-interface PipelineFactory {
+export interface PipelineFactory {
   create(dependencies: PipelineDependencies): Pipeline;
 }
 
@@ -55,59 +55,59 @@ export default class Player {
     return new Player({ logger, eventEmitter, configurationManager, networkManager });
   }
 
-  private readonly logger: Logger;
-  private readonly configurationManager: ConfigurationManager;
-  private readonly eventEmitter: EventEmitter<PlayerEventTypeToEventMap>;
+  private readonly logger_: Logger;
+  private readonly configurationManager_: ConfigurationManager;
+  private readonly eventEmitter_: EventEmitter<PlayerEventTypeToEventMap>;
 
-  private networkManager: NetworkManager;
-  private videoElement: HTMLVideoElement | null = null;
-  private activePipeline: Pipeline | null = null;
-  private pictureInPictureWindow: PictureInPictureWindow | null = null;
-  private playbackState: PlaybackState = PlaybackState.Idle;
+  private networkManager_: NetworkManager;
+  private videoElement_: HTMLVideoElement | null = null;
+  private activePipeline_: Pipeline | null = null;
+  private pictureInPictureWindow_: PictureInPictureWindow | null = null;
+  private playbackState_: PlaybackState = PlaybackState.Idle;
 
-  private readonly mimeTypeToPipelineFactoryMap = new Map<string, PipelineFactory>();
+  private readonly mimeTypeToPipelineFactoryMap_ = new Map<string, PipelineFactory>();
 
   public constructor(dependencies: PlayerDependencies) {
-    this.logger = dependencies.logger;
-    this.configurationManager = dependencies.configurationManager;
-    this.networkManager = dependencies.networkManager;
-    this.eventEmitter = dependencies.eventEmitter;
+    this.logger_ = dependencies.logger;
+    this.configurationManager_ = dependencies.configurationManager;
+    this.networkManager_ = dependencies.networkManager;
+    this.eventEmitter_ = dependencies.eventEmitter;
   }
 
   public registerPipelineFactory(mimeType: string, pipelineFactory: PipelineFactory): void {
-    if (this.mimeTypeToPipelineFactoryMap.has(mimeType)) {
-      this.logger.warn(`Overriding existing pipeline factory for "${mimeType}" mimeType.`);
+    if (this.mimeTypeToPipelineFactoryMap_.has(mimeType)) {
+      this.logger_.warn(`Overriding existing pipeline factory for "${mimeType}" mimeType.`);
     }
 
-    this.mimeTypeToPipelineFactoryMap.set(mimeType, pipelineFactory);
+    this.mimeTypeToPipelineFactoryMap_.set(mimeType, pipelineFactory);
   }
 
   public getNetworkManager(): NetworkManager {
-    return this.networkManager;
+    return this.networkManager_;
   }
 
   public setNetworkManager(networkManager: NetworkManager): void {
-    this.networkManager = networkManager;
+    this.networkManager_ = networkManager;
   }
 
   public getVideoElement(): HTMLVideoElement | null {
-    return this.videoElement;
+    return this.videoElement_;
   }
 
   public getConfiguration(): PlayerConfiguration {
-    return this.configurationManager.getConfiguration();
+    return this.configurationManager_.getConfiguration();
   }
 
   public getLoggerLevel(): LoggerLevel {
-    return this.logger.getLoggerLevel();
+    return this.logger_.getLoggerLevel();
   }
 
   public getPlaybackState(): PlaybackState {
-    return this.playbackState;
+    return this.playbackState_;
   }
 
   public getVolumeLevel(): number {
-    return this.safeAttemptOnVideoElement('getVolumeLevel', (videoElement) => videoElement.volume, 0);
+    return this.safeAttemptOnVideoElement_('getVolumeLevel', (videoElement) => videoElement.volume, 0);
   }
 
   public setVolumeLevel(volumeLevel: number): void {
@@ -115,36 +115,36 @@ export default class Player {
 
     if (volumeLevel > 1) {
       level = 1;
-      this.logger.warn(`Volume level should be in range [0, 1]. Received: ${volumeLevel}. Value is clamped to 1.`);
+      this.logger_.warn(`Volume level should be in range [0, 1]. Received: ${volumeLevel}. Value is clamped to 1.`);
     } else if (volumeLevel < 0) {
       level = 0;
-      this.logger.warn(`Volume level should be in range [0, 1]. Received: ${volumeLevel}. Value is clamped to 0.`);
+      this.logger_.warn(`Volume level should be in range [0, 1]. Received: ${volumeLevel}. Value is clamped to 0.`);
     } else {
       level = volumeLevel;
     }
 
-    return this.safeVoidAttemptOnVideoElement('setVolumeLevel', (videoElement) => void (videoElement.volume = level));
+    return this.safeVoidAttemptOnVideoElement_('setVolumeLevel', (videoElement) => void (videoElement.volume = level));
   }
 
   public getPlaybackRate(): number {
-    return this.safeAttemptOnVideoElement('getPlaybackRate', (videoElement) => videoElement.playbackRate, 0);
+    return this.safeAttemptOnVideoElement_('getPlaybackRate', (videoElement) => videoElement.playbackRate, 0);
   }
 
   public setPlaybackRate(rate: number): void {
-    return this.safeVoidAttemptOnVideoElement('setPlaybackRate', (videoElement) => (videoElement.playbackRate = rate));
+    return this.safeVoidAttemptOnVideoElement_('setPlaybackRate', (videoElement) => (videoElement.playbackRate = rate));
   }
 
   public getCurrentTime(): number {
-    return this.safeAttemptOnVideoElement('getCurrentTime', (videoElement) => videoElement.currentTime, 0);
+    return this.safeAttemptOnVideoElement_('getCurrentTime', (videoElement) => videoElement.currentTime, 0);
   }
 
   public seek(seekTarget: number): void {
-    return this.safeVoidAttemptOnVideoElement('seek', (videoElement) => {
+    return this.safeVoidAttemptOnVideoElement_('seek', (videoElement) => {
       const seekableRanges = this.getSeekableRanges();
       const isValidSeekTarget = seekableRanges.some((timeRange) => timeRange.isInRangeInclusive(seekTarget));
 
       if (!isValidSeekTarget) {
-        this.logger.warn(
+        this.logger_.warn(
           `provided seek target (${seekTarget}) is out of available seekable time ranges: `,
           seekableRanges
         );
@@ -157,7 +157,7 @@ export default class Player {
   }
 
   public getSeekableRanges(): Array<PlayerTimeRange> {
-    return this.safeAttemptOnVideoElement(
+    return this.safeAttemptOnVideoElement_(
       'getSeekableRanges',
       (videoElement) => PlayerTimeRange.fromTimeRanges(videoElement.seekable),
       [] as Array<PlayerTimeRange>
@@ -165,7 +165,7 @@ export default class Player {
   }
 
   public getBufferedRanges(): Array<PlayerTimeRange> {
-    return this.safeAttemptOnVideoElement(
+    return this.safeAttemptOnVideoElement_(
       'getBufferedRanges',
       (videoElement) => PlayerTimeRange.fromTimeRanges(videoElement.buffered),
       [] as Array<PlayerTimeRange>
@@ -173,63 +173,63 @@ export default class Player {
   }
 
   public getTextTracks(): Array<PlayerTextTrack> {
-    if (this.activePipeline) {
-      return this.activePipeline.getTextTracks();
+    if (this.activePipeline_) {
+      return this.activePipeline_.getTextTracks();
     }
 
     return [];
   }
 
   public getAudioTracks(): Array<PlayerAudioTrack> {
-    if (this.activePipeline) {
-      return this.activePipeline.getAudioTracks();
+    if (this.activePipeline_) {
+      return this.activePipeline_.getAudioTracks();
     }
 
     return [];
   }
 
   public getImageTracks(): Array<PlayerImageTrack> {
-    if (this.activePipeline) {
-      return this.activePipeline.getImageTracks();
+    if (this.activePipeline_) {
+      return this.activePipeline_.getImageTracks();
     }
 
     return [];
   }
 
   public getVideoTracks(): Array<PlayerVideoTrack> {
-    if (this.activePipeline) {
-      return this.activePipeline.getVideoTracks();
+    if (this.activePipeline_) {
+      return this.activePipeline_.getVideoTracks();
     }
 
     return [];
   }
 
   public getStats(): PlayerStats {
-    if (this.activePipeline) {
-      return this.activePipeline.getStats();
+    if (this.activePipeline_) {
+      return this.activePipeline_.getStats();
     }
 
     return {};
   }
 
   public selectVideoTrack(videoTrack: PlayerVideoTrack): void {
-    return this.activePipeline?.selectVideoTrack(videoTrack);
+    return this.activePipeline_?.selectVideoTrack(videoTrack);
   }
 
   public selectImageTrack(imageTrack: PlayerImageTrack): void {
-    return this.activePipeline?.selectImageTrack(imageTrack);
+    return this.activePipeline_?.selectImageTrack(imageTrack);
   }
 
   public selectAudioTrack(audioTrack: PlayerAudioTrack): void {
-    return this.activePipeline?.selectAudioTrack(audioTrack);
+    return this.activePipeline_?.selectAudioTrack(audioTrack);
   }
 
   public selectTextTrack(textTrack: PlayerTextTrack): void {
-    return this.activePipeline?.selectTextTrack(textTrack);
+    return this.activePipeline_?.selectTextTrack(textTrack);
   }
 
   public mute(): void {
-    return this.safeVoidAttemptOnVideoElement('mute', (videoElement) => {
+    return this.safeVoidAttemptOnVideoElement_('mute', (videoElement) => {
       const isMuted = videoElement.muted;
 
       if (isMuted) {
@@ -238,12 +238,12 @@ export default class Player {
       }
 
       videoElement.muted = true;
-      this.eventEmitter.emit(Events.MutedStatusChanged, new MutedStatusChangedEvent(true));
+      this.eventEmitter_.emit(Events.MutedStatusChanged, new MutedStatusChangedEvent(true));
     });
   }
 
   public unmute(): void {
-    return this.safeVoidAttemptOnVideoElement('unmute', (videoElement) => {
+    return this.safeVoidAttemptOnVideoElement_('unmute', (videoElement) => {
       const isMuted = videoElement.muted;
 
       if (!isMuted) {
@@ -252,190 +252,190 @@ export default class Player {
       }
 
       videoElement.muted = false;
-      this.eventEmitter.emit(Events.MutedStatusChanged, new MutedStatusChangedEvent(false));
+      this.eventEmitter_.emit(Events.MutedStatusChanged, new MutedStatusChangedEvent(false));
     });
   }
 
   public getIsMuted(): boolean {
-    return this.safeAttemptOnVideoElement('getIsMuted', (videoElement) => videoElement.muted, false);
+    return this.safeAttemptOnVideoElement_('getIsMuted', (videoElement) => videoElement.muted, false);
   }
 
   public setLoggerLevel(level: LoggerLevel): void {
-    this.logger.setLoggerLevel(level);
-    this.eventEmitter.emit(Events.LoggerLevelChanged, new LoggerLevelChangedEvent(this.getLoggerLevel()));
+    this.logger_.setLoggerLevel(level);
+    this.eventEmitter_.emit(Events.LoggerLevelChanged, new LoggerLevelChangedEvent(this.getLoggerLevel()));
   }
 
   public addEventListener<K extends keyof PlayerEventTypeToEventMap>(
     event: K,
     callback: Callback<PlayerEventTypeToEventMap[K]>
   ): void {
-    return this.eventEmitter.on(event, callback);
+    return this.eventEmitter_.on(event, callback);
   }
 
   public once<K extends keyof PlayerEventTypeToEventMap>(
     event: K,
     callback: Callback<PlayerEventTypeToEventMap[K]>
   ): void {
-    return this.eventEmitter.once(event, callback);
+    return this.eventEmitter_.once(event, callback);
   }
 
   public removeEventListener<K extends keyof PlayerEventTypeToEventMap>(
     event: K,
     callback: Callback<PlayerEventTypeToEventMap[K]>
   ): void {
-    return this.eventEmitter.off(event, callback);
+    return this.eventEmitter_.off(event, callback);
   }
 
   public removeAllEventListenersForType<K extends keyof PlayerEventTypeToEventMap>(event: K): void {
-    return this.eventEmitter.offAllFor(event);
+    return this.eventEmitter_.offAllFor(event);
   }
 
   public removeAllEventListeners(): void {
-    return this.eventEmitter.reset();
+    return this.eventEmitter_.reset();
   }
 
   public play(): void {
-    return this.safeVoidAttemptOnVideoElement('play', (videoElement) => videoElement.play());
+    return this.safeVoidAttemptOnVideoElement_('play', (videoElement) => videoElement.play());
   }
 
   public pause(): void {
-    return this.safeVoidAttemptOnVideoElement('pause', (videoElement) => videoElement.pause());
+    return this.safeVoidAttemptOnVideoElement_('pause', (videoElement) => videoElement.pause());
   }
 
   public requestPictureInPicture(): void {
     if (!window.document.pictureInPictureEnabled) {
-      return this.logger.warn(
+      return this.logger_.warn(
         'User agent does not support pictureInPicture. document.pictureInPictureEnabled is false.'
       );
     }
 
-    return this.safeVoidAttemptOnVideoElement('requestPictureInPicture', (videoElement) => {
+    return this.safeVoidAttemptOnVideoElement_('requestPictureInPicture', (videoElement) => {
       if (videoElement.disablePictureInPicture) {
-        return this.logger.warn(
+        return this.logger_.warn(
           'pictureInPicture is disabled for this videoElement. Set videoElement.disablePictureInPicture to false to enable pictureInPicture'
         );
       }
 
       if (this.getIsInPictureInPictureMode()) {
-        return this.logger.warn('This videoElement is already in pictureInPicture mode.');
+        return this.logger_.warn('This videoElement is already in pictureInPicture mode.');
       }
 
       videoElement
         .requestPictureInPicture()
         .then((pictureInPictureWindow) => {
-          this.pictureInPictureWindow = pictureInPictureWindow;
+          this.pictureInPictureWindow_ = pictureInPictureWindow;
 
-          this.pictureInPictureWindow.addEventListener('resize', this.handlePictureAndPictureSize);
-          this.handlePictureAndPictureSize();
+          this.pictureInPictureWindow_.addEventListener('resize', this.handlePictureAndPictureSize_);
+          this.handlePictureAndPictureSize_();
         })
         .catch((error) => {
-          this.logger.warn('pictureInPicture request failed, see reason: ', error);
+          this.logger_.warn('pictureInPicture request failed, see reason: ', error);
         });
     });
   }
 
   public getIsInPictureInPictureMode(): boolean {
-    return this.videoElement !== null && window.document.pictureInPictureElement === this.videoElement;
+    return this.videoElement_ !== null && window.document.pictureInPictureElement === this.videoElement_;
   }
 
-  private readonly handlePictureAndPictureSize = (): void => {
+  private readonly handlePictureAndPictureSize_ = (): void => {
     // probably report to abr:
     // this.pictureInPictureWindow.width
     // this.pictureInPictureWindow.height
   };
 
   public exitPictureInPicture(): void {
-    if (this.videoElement === null) {
-      return this.warnAttempt('exitPictureInPicture');
+    if (this.videoElement_ === null) {
+      return this.warnAttempt_('exitPictureInPicture');
     }
 
     if (!this.getIsInPictureInPictureMode()) {
-      return this.logger.warn('current video element is not in pictureInPicture mode.');
+      return this.logger_.warn('current video element is not in pictureInPicture mode.');
     }
 
-    this.pictureInPictureWindow?.removeEventListener('resize', this.handlePictureAndPictureSize);
-    this.pictureInPictureWindow = null;
+    this.pictureInPictureWindow_?.removeEventListener('resize', this.handlePictureAndPictureSize_);
+    this.pictureInPictureWindow_ = null;
 
     window.document.exitPictureInPicture().catch((error) => {
-      this.logger.warn('exitPictureInPicture request failed, see reason: ', error);
+      this.logger_.warn('exitPictureInPicture request failed, see reason: ', error);
     });
   }
 
   public attach(videoElement: HTMLVideoElement): void {
-    if (this.videoElement !== null) {
+    if (this.videoElement_ !== null) {
       this.detach();
     }
 
-    this.videoElement = videoElement;
+    this.videoElement_ = videoElement;
 
-    this.videoElement.addEventListener('volumechange', this.handleVolumeChange);
-    this.videoElement.addEventListener('leavepictureinpicture', this.handleLevePictureInPicture);
-    this.videoElement.addEventListener('enterpictureinpicture', this.handleEnterPictureInPicture);
+    this.videoElement_.addEventListener('volumechange', this.handleVolumeChange_);
+    this.videoElement_.addEventListener('leavepictureinpicture', this.handleLevePictureInPicture_);
+    this.videoElement_.addEventListener('enterpictureinpicture', this.handleEnterPictureInPicture_);
   }
 
   public detach(): void {
-    if (this.videoElement === null) {
-      return this.logger.warn('video element is already detached');
+    if (this.videoElement_ === null) {
+      return this.logger_.warn('video element is already detached');
     }
 
     if (this.getIsInPictureInPictureMode()) {
       this.exitPictureInPicture();
     }
 
-    this.videoElement.removeEventListener('volumechange', this.handleVolumeChange);
-    this.videoElement.removeEventListener('leavepictureinpicture', this.handleLevePictureInPicture);
-    this.videoElement.removeEventListener('enterpictureinpicture', this.handleEnterPictureInPicture);
+    this.videoElement_.removeEventListener('volumechange', this.handleVolumeChange_);
+    this.videoElement_.removeEventListener('leavepictureinpicture', this.handleLevePictureInPicture_);
+    this.videoElement_.removeEventListener('enterpictureinpicture', this.handleEnterPictureInPicture_);
 
-    this.videoElement = null;
+    this.videoElement_ = null;
   }
 
-  private readonly handleVolumeChange = (event: Event): void => {
+  private readonly handleVolumeChange_ = (event: Event): void => {
     const target = event.target as HTMLVideoElement;
-    this.eventEmitter.emit(Events.VolumeChanged, new VolumeChangedEvent(target.volume));
+    this.eventEmitter_.emit(Events.VolumeChanged, new VolumeChangedEvent(target.volume));
   };
 
-  private readonly handleEnterPictureInPicture = (): void => {
-    this.eventEmitter.emit(Events.EnterPictureInPictureMode, new EnterPictureInPictureModeEvent());
+  private readonly handleEnterPictureInPicture_ = (): void => {
+    this.eventEmitter_.emit(Events.EnterPictureInPictureMode, new EnterPictureInPictureModeEvent());
   };
 
-  private readonly handleLevePictureInPicture = (): void => {
-    this.eventEmitter.emit(Events.LeavePictureInPictureMode, new LeavePictureInPictureModeEvent());
+  private readonly handleLevePictureInPicture_ = (): void => {
+    this.eventEmitter_.emit(Events.LeavePictureInPictureMode, new LeavePictureInPictureModeEvent());
   };
 
   public updateConfiguration(configurationChunk: PlayerConfigurationChunk): void {
-    this.configurationManager.updateConfiguration(configurationChunk);
+    this.configurationManager_.updateConfiguration(configurationChunk);
 
-    if (this.activePipeline) {
-      this.activePipeline.updateConfiguration(this.getConfiguration());
+    if (this.activePipeline_) {
+      this.activePipeline_.updateConfiguration(this.getConfiguration());
     }
   }
 
   public resetConfiguration(): void {
-    return this.configurationManager.reset();
+    return this.configurationManager_.reset();
   }
 
   public dispose(): void {
     this.detach();
     this.removeAllEventListeners();
-    this.activePipeline?.dispose();
-    this.activePipeline = null;
+    this.activePipeline_?.dispose();
+    this.activePipeline_ = null;
     // TODO
   }
 
   public loadRemoteAsset(uri: URL, mimeType: string): void {
-    return this.safeVoidAttemptOnVideoElement('loadRemoteAsset', (videoElement) => {
-      return this.load(mimeType, videoElement, (pipeline) => pipeline.loadRemoteAsset(uri));
+    return this.safeVoidAttemptOnVideoElement_('loadRemoteAsset', (videoElement) => {
+      return this.load_(mimeType, videoElement, (pipeline) => pipeline.loadRemoteAsset(uri));
     });
   }
 
   public loadLocalAsset(asset: string | ArrayBuffer, baseUrl: string, mimeType: string): void {
-    return this.safeVoidAttemptOnVideoElement('loadLocalAsset', (videoElement) => {
-      return this.load(mimeType, videoElement, (pipeline) => pipeline.loadLocalAsset(asset, baseUrl));
+    return this.safeVoidAttemptOnVideoElement_('loadLocalAsset', (videoElement) => {
+      return this.load_(mimeType, videoElement, (pipeline) => pipeline.loadLocalAsset(asset, baseUrl));
     });
   }
 
-  private load(mimeType: string, videoElement: HTMLVideoElement, pipelineHandler: (pipeline: Pipeline) => void): void {
-    let pipelineFactory = this.mimeTypeToPipelineFactoryMap.get(mimeType);
+  private load_(mimeType: string, videoElement: HTMLVideoElement, pipelineHandler: (pipeline: Pipeline) => void): void {
+    let pipelineFactory = this.mimeTypeToPipelineFactoryMap_.get(mimeType);
 
     if (!pipelineFactory && videoElement.canPlayType(mimeType)) {
       pipelineFactory = NativePipeline;
@@ -443,37 +443,37 @@ export default class Player {
 
     if (pipelineFactory) {
       const pipeline = pipelineFactory.create({
-        logger: this.logger,
-        networkManager: this.networkManager,
+        logger: this.logger_,
+        networkManager: this.networkManager_,
         playerConfiguration: this.getConfiguration(),
       });
-      this.activePipeline = pipeline;
+      this.activePipeline_ = pipeline;
       return pipelineHandler(pipeline);
     }
 
-    this.logger.warn('no supported pipelines found for ', mimeType);
+    this.logger_.warn('no supported pipelines found for ', mimeType);
 
-    this.eventEmitter.emit(Events.Error, new ErrorEvent(new NoSupportedPipelineError()));
+    this.eventEmitter_.emit(Events.Error, new ErrorEvent(new NoSupportedPipelineError()));
   }
 
-  private safeAttemptOnVideoElement<T>(
+  private safeAttemptOnVideoElement_<T>(
     methodName: string,
     executor: (videoElement: HTMLVideoElement) => T,
     fallback: T
   ): T {
-    if (this.videoElement === null) {
-      this.warnAttempt(methodName);
+    if (this.videoElement_ === null) {
+      this.warnAttempt_(methodName);
       return fallback;
     }
 
-    return executor(this.videoElement);
+    return executor(this.videoElement_);
   }
 
-  private safeVoidAttemptOnVideoElement(methodName: string, executor: (videoElement: HTMLVideoElement) => void): void {
-    return this.safeAttemptOnVideoElement(methodName, executor, undefined);
+  private safeVoidAttemptOnVideoElement_(methodName: string, executor: (videoElement: HTMLVideoElement) => void): void {
+    return this.safeAttemptOnVideoElement_(methodName, executor, undefined);
   }
 
-  private warnAttempt(method: string): void {
-    this.logger.warn(`Attempt to call "${method}", but no video element attached. Call "attach" first.`);
+  private warnAttempt_(method: string): void {
+    this.logger_.warn(`Attempt to call "${method}", but no video element attached. Call "attach" first.`);
   }
 }

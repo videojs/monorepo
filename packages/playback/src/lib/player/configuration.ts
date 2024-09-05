@@ -27,37 +27,37 @@ class NetworkConfigurationImpl extends Configuration<NetworkConfiguration> {
     });
   }
 
-  private readonly configuration: NetworkConfiguration;
+  private readonly configuration_: NetworkConfiguration;
 
   protected constructor(configuration: NetworkConfiguration) {
     super();
-    this.configuration = configuration;
+    this.configuration_ = configuration;
   }
 
   public update(chunk: NetworkConfigurationChunk): void {
     if (chunk.maxAttempts !== undefined) {
-      this.configuration.maxAttempts = chunk.maxAttempts;
+      this.configuration_.maxAttempts = chunk.maxAttempts;
     }
 
     if (chunk.delay !== undefined) {
-      this.configuration.delay = chunk.delay;
+      this.configuration_.delay = chunk.delay;
     }
 
     if (chunk.delayFactor !== undefined) {
-      this.configuration.delayFactor = chunk.delayFactor;
+      this.configuration_.delayFactor = chunk.delayFactor;
     }
 
     if (chunk.fuzzFactor !== undefined) {
-      this.configuration.fuzzFactor = chunk.fuzzFactor;
+      this.configuration_.fuzzFactor = chunk.fuzzFactor;
     }
 
     if (chunk.timeout !== undefined) {
-      this.configuration.timeout = chunk.timeout;
+      this.configuration_.timeout = chunk.timeout;
     }
   }
 
   public deepCopy(): NetworkConfiguration {
-    return { ...this.configuration };
+    return { ...this.configuration_ };
   }
 }
 
@@ -72,7 +72,7 @@ class PlayerConfigurationImpl extends Configuration<PlayerConfiguration> {
     });
   }
 
-  private readonly network: {
+  private readonly network_: {
     manifest: NetworkConfigurationImpl;
     license: NetworkConfigurationImpl;
     segment: NetworkConfigurationImpl;
@@ -86,45 +86,45 @@ class PlayerConfigurationImpl extends Configuration<PlayerConfiguration> {
     };
   }) {
     super();
-    this.network = configuration.network;
+    this.network_ = configuration.network;
   }
 
   public update(chunk: PlayerConfigurationChunk): void {
     if (chunk.network?.manifest) {
-      this.network.manifest.update(chunk.network.manifest);
+      this.network_.manifest.update(chunk.network.manifest);
     }
 
     if (chunk.network?.segment) {
-      this.network.segment.update(chunk.network.segment);
+      this.network_.segment.update(chunk.network.segment);
     }
 
     if (chunk.network?.license) {
-      this.network.license.update(chunk.network.license);
+      this.network_.license.update(chunk.network.license);
     }
   }
   public deepCopy(): PlayerConfiguration {
     return {
       network: {
-        manifest: this.network.manifest.deepCopy(),
-        segment: this.network.segment.deepCopy(),
-        license: this.network.license.deepCopy(),
+        manifest: this.network_.manifest.deepCopy(),
+        segment: this.network_.segment.deepCopy(),
+        license: this.network_.license.deepCopy(),
       },
     };
   }
 }
 
 export default class ConfigurationManager {
-  private currentConfiguration = PlayerConfigurationImpl.default();
+  private currentConfiguration_ = PlayerConfigurationImpl.default();
 
   public getConfiguration(): PlayerConfiguration {
-    return this.currentConfiguration.deepCopy();
+    return this.currentConfiguration_.deepCopy();
   }
 
   public updateConfiguration(chunk: PlayerConfigurationChunk): void {
-    this.currentConfiguration.update(chunk);
+    this.currentConfiguration_.update(chunk);
   }
 
   public reset(): void {
-    this.currentConfiguration = PlayerConfigurationImpl.default();
+    this.currentConfiguration_ = PlayerConfigurationImpl.default();
   }
 }

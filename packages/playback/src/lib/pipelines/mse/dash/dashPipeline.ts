@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars,@typescript-eslint/no-unused-vars */
 import MsePipeLine from '../msePipeline';
 import type { PipelineDependencies } from '../../basePipeline';
 import type {
@@ -19,32 +20,30 @@ interface DashPipelineDependencies extends PipelineDependencies {
 }
 
 export default class DashPipeline extends MsePipeLine {
-  private static parserFactory: DashParserFactory = ProgressiveParser;
+  private static parserFactory_: DashParserFactory = ProgressiveParser;
 
   public static setParserFactory(parserFactory: DashParserFactory): void {
-    DashPipeline.parserFactory = parserFactory;
+    DashPipeline.parserFactory_ = parserFactory;
   }
 
   public static create(dependencies: PipelineDependencies): DashPipeline {
     dependencies.logger = dependencies.logger.createSubLogger('DashPipeline');
-    const parser = DashPipeline.parserFactory.create({
+    const parser = DashPipeline.parserFactory_.create({
       warnCallback: (warn) => dependencies.logger.warn(warn),
     });
 
     return new DashPipeline({ ...dependencies, parser });
   }
 
-  private readonly parser: ProgressiveParser;
+  private readonly parser_: ProgressiveParser;
 
   protected constructor(dashPipelineDependencies: DashPipelineDependencies) {
     super(dashPipelineDependencies);
-    this.parser = dashPipelineDependencies.parser;
+    this.parser_ = dashPipelineDependencies.parser;
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   public loadRemoteAsset(uri: URL): void {}
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   public loadLocalAsset(asset: string | ArrayBuffer, baseUrl: string): void {}
 
   public selectTextTrack(textTrack: PlayerTextTrack): void {

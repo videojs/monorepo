@@ -28,30 +28,30 @@ import type { SharedState } from './types/sharedState';
 import { createDefaultParsedManifest } from './consts/defaults';
 
 class Parser {
-  private readonly warnCallback: WarnCallback;
-  private readonly debugCallback: DebugCallback;
-  private readonly customTagMap: CustomTagMap;
-  private readonly ignoreTags: Set<string>;
-  private readonly transformTagValue: TransformTagValue;
-  private readonly transformTagAttributes: TransformTagAttributes;
-  private readonly tagProcessorMap: Record<string, TagProcessor>;
+  private readonly warnCallback_: WarnCallback;
+  private readonly debugCallback_: DebugCallback;
+  private readonly customTagMap_: CustomTagMap;
+  private readonly ignoreTags_: Set<string>;
+  private readonly transformTagValue_: TransformTagValue;
+  private readonly transformTagAttributes_: TransformTagAttributes;
+  private readonly tagProcessorMap_: Record<string, TagProcessor>;
 
-  protected parsedManifest: ParsedManifest;
-  protected readonly sharedState: SharedState;
-  protected readonly pendingProcessors: PendingProcessors;
+  protected parsedManifest_: ParsedManifest;
+  protected readonly sharedState_: SharedState;
+  protected readonly pendingProcessors_: PendingProcessors;
 
   public constructor(options: ParserOptions) {
-    this.warnCallback = options.warnCallback || ((): void => {});
-    this.debugCallback = options.debugCallback || ((): void => {});
-    this.customTagMap = options.customTagMap || {};
-    this.ignoreTags = options.ignoreTags || new Set();
-    this.transformTagValue = options.transformTagValue || ((tagKey, tagValue): string | null => tagValue);
-    this.transformTagAttributes =
+    this.warnCallback_ = options.warnCallback || ((): void => {});
+    this.debugCallback_ = options.debugCallback || ((): void => {});
+    this.customTagMap_ = options.customTagMap || {};
+    this.ignoreTags_ = options.ignoreTags || new Set();
+    this.transformTagValue_ = options.transformTagValue || ((tagKey, tagValue): string | null => tagValue);
+    this.transformTagAttributes_ =
       options.transformTagAttributes || ((tagKey, tagAttributes): Record<string, string> => tagAttributes);
 
-    this.parsedManifest = createDefaultParsedManifest();
+    this.parsedManifest_ = createDefaultParsedManifest();
 
-    this.sharedState = {
+    this.sharedState_ = {
       baseUrls: [],
       mpdAttributes: {},
       adaptationSetAttributes: {},
@@ -59,58 +59,58 @@ class Parser {
 
     // If the manifest URI is inteded to be used as the initial baseURL, set it here
     if (options.uri) {
-      this.sharedState.baseUrls.push({
+      this.sharedState_.baseUrls.push({
         uri: options.uri,
         attributes: {},
       });
     }
 
-    this.pendingProcessors = new PendingProcessors();
+    this.pendingProcessors_ = new PendingProcessors();
 
-    this.tagProcessorMap = {
-      [MPD]: new Mpd(this.warnCallback),
-      [PERIOD]: new Period(this.warnCallback),
-      [ADAPTATION_SET]: new AdaptationSet(this.warnCallback),
-      [REPRESENTATION]: new Representation(this.warnCallback),
-      [UTC_TIMING]: new UTCTiming(this.warnCallback),
-      [SEGMENT_TEMPLATE]: new SegmentTemplate(this.warnCallback),
-      [BASE_URL]: new BaseUrl(this.warnCallback),
+    this.tagProcessorMap_ = {
+      [MPD]: new Mpd(this.warnCallback_),
+      [PERIOD]: new Period(this.warnCallback_),
+      [ADAPTATION_SET]: new AdaptationSet(this.warnCallback_),
+      [REPRESENTATION]: new Representation(this.warnCallback_),
+      [UTC_TIMING]: new UTCTiming(this.warnCallback_),
+      [SEGMENT_TEMPLATE]: new SegmentTemplate(this.warnCallback_),
+      [BASE_URL]: new BaseUrl(this.warnCallback_),
     };
   }
 
-  protected readonly tagInfoCallback = (tagInfo: TagInfo, parentTagInfo: TagInfo | null): void => {
-    this.debugCallback(`Received tag info from scanner: `, tagInfo, parentTagInfo);
+  protected readonly tagInfoCallback_ = (tagInfo: TagInfo, parentTagInfo: TagInfo | null): void => {
+    this.debugCallback_(`Received tag info from scanner: `, tagInfo, parentTagInfo);
 
-    if (this.ignoreTags.has(tagInfo.tagKey)) {
-      return this.warnCallback(ignoreTagWarn(tagInfo.tagKey));
+    if (this.ignoreTags_.has(tagInfo.tagKey)) {
+      return this.warnCallback_(ignoreTagWarn(tagInfo.tagKey));
     }
 
-    if (tagInfo.tagKey in this.tagProcessorMap) {
-      tagInfo.tagValue = this.transformTagValue(tagInfo.tagKey, tagInfo.tagValue);
-      tagInfo.tagAttributes = this.transformTagAttributes(tagInfo.tagKey, tagInfo.tagAttributes);
+    if (tagInfo.tagKey in this.tagProcessorMap_) {
+      tagInfo.tagValue = this.transformTagValue_(tagInfo.tagKey, tagInfo.tagValue);
+      tagInfo.tagAttributes = this.transformTagAttributes_(tagInfo.tagKey, tagInfo.tagAttributes);
 
-      const tagProcessor = this.tagProcessorMap[tagInfo.tagKey];
+      const tagProcessor = this.tagProcessorMap_[tagInfo.tagKey];
       return tagProcessor.process(
         tagInfo,
         parentTagInfo,
-        this.parsedManifest,
-        this.sharedState,
-        this.pendingProcessors
+        this.parsedManifest_,
+        this.sharedState_,
+        this.pendingProcessors_
       );
     }
 
-    if (tagInfo.tagKey in this.customTagMap) {
-      const customTagProcessor = this.customTagMap[tagInfo.tagKey];
+    if (tagInfo.tagKey in this.customTagMap_) {
+      const customTagProcessor = this.customTagMap_[tagInfo.tagKey];
 
-      return customTagProcessor(tagInfo, parentTagInfo, this.parsedManifest.custom);
+      return customTagProcessor(tagInfo, parentTagInfo, this.parsedManifest_.custom);
     }
 
-    this.warnCallback(unsupportedTagWarn(tagInfo.tagKey));
+    this.warnCallback_(unsupportedTagWarn(tagInfo.tagKey));
   };
 
-  protected clean(): ParsedManifest {
-    const copy = { ...this.parsedManifest };
-    this.parsedManifest = createDefaultParsedManifest();
+  protected clean_(): ParsedManifest {
+    const copy = { ...this.parsedManifest_ };
+    this.parsedManifest_ = createDefaultParsedManifest();
 
     return copy;
   }
@@ -122,25 +122,25 @@ export class FullManifestParser extends Parser {
   }
 
   public parseFullManifestString(manifest: string): ParsedManifest {
-    const stateMachine = createStateMachine(this.tagInfoCallback);
+    const stateMachine = createStateMachine(this.tagInfoCallback_);
     const length = manifest.length;
 
     for (let i = 0; i < length; i++) {
       stateMachine(manifest[i]);
     }
 
-    return this.clean();
+    return this.clean_();
   }
 
   public parseFullManifestBuffer(manifest: Uint8Array): ParsedManifest {
-    const stateMachine = createStateMachine(this.tagInfoCallback);
+    const stateMachine = createStateMachine(this.tagInfoCallback_);
     const length = manifest.length;
 
     for (let i = 0; i < length; i++) {
       stateMachine(String.fromCharCode(manifest[i]));
     }
 
-    return this.clean();
+    return this.clean_();
   }
 }
 
@@ -149,31 +149,31 @@ export class ProgressiveParser extends Parser {
     return new ProgressiveParser(options);
   }
 
-  private stateMachine: StateMachineTransition | null = null;
+  private stateMachine_: StateMachineTransition | null = null;
 
   public pushString(chunk: string): void {
-    if (this.stateMachine === null) {
-      this.stateMachine = createStateMachine(this.tagInfoCallback);
+    if (this.stateMachine_ === null) {
+      this.stateMachine_ = createStateMachine(this.tagInfoCallback_);
     }
 
     for (let i = 0; i < chunk.length; i++) {
-      this.stateMachine(chunk[i]);
+      this.stateMachine_(chunk[i]);
     }
   }
 
   public pushBuffer(chunk: Uint8Array): void {
-    if (this.stateMachine === null) {
-      this.stateMachine = createStateMachine(this.tagInfoCallback);
+    if (this.stateMachine_ === null) {
+      this.stateMachine_ = createStateMachine(this.tagInfoCallback_);
     }
 
     for (let i = 0; i < chunk.length; i++) {
-      this.stateMachine(String.fromCharCode(chunk[i]));
+      this.stateMachine_(String.fromCharCode(chunk[i]));
     }
   }
 
   public done(): ParsedManifest {
-    this.stateMachine = null;
+    this.stateMachine_ = null;
 
-    return this.clean();
+    return this.clean_();
   }
 }

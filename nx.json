@@ -14,7 +14,42 @@
       "cache": true
     }
   },
+  "release": {
+    "projects": ["packages/dash-parser", "packages/hls-parser", "packages/playback"],
+    "conventionalCommits": {
+      "types": {
+        "chore": {
+          "semverBump": "patch",
+          "changelog": {
+            "hidden": false,
+            "title": "Chores \uD83E\uDDF9"
+          }
+        }
+      }
+    },
+    "version": {
+      "generatorOptions": {
+        "fallbackCurrentVersionResolver": "disk",
+        "currentVersionResolver": "git-tag",
+        "specifierSource": "conventional-commits"
+      }
+    },
+    "changelog": {
+      "automaticFromRef": true,
+      "workspaceChangelog": {
+        "createRelease": false
+      },
+      "projectChangelogs": {
+        "renderOptions": {
+          "authors": false,
+          "commitReferences": false,
+          "versionTitleDate": true
+        }
+      }
+    }
+  },
   "affected": {
     "defaultBase": "main"
-  }
+  },
+  "$schema": "./node_modules/nx/schemas/nx-schema.json"
 }

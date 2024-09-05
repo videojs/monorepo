@@ -26,6 +26,9 @@ const VARIABLE_REPLACEMENT_REGEX = /\{\$([a-zA-Z0-9-_]+)\}/g;
 
 /**
  * Variable Substitution
+ * @param value
+ * @param define
+ * @param warnCallback
  * @see https://datatracker.ietf.org/doc/html/draft-pantos-hls-rfc8216bis#section-4.3
  */
 export const substituteVariables = (
@@ -38,15 +41,15 @@ export const substituteVariables = (
     const variableName = match.slice(2, -1);
 
     if (define.name[variableName]) {
-      return define.name[variableName] as string;
+      return define.name[variableName];
     }
 
     if (define.import[variableName]) {
-      return define.import[variableName] as string;
+      return define.import[variableName];
     }
 
     if (define.queryParam[variableName]) {
-      return define.queryParam[variableName] as string;
+      return define.queryParam[variableName];
     }
 
     warnCallback(variableName);

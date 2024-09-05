@@ -1,0 +1,96 @@
+name: Bug Report
+description: Bug report
+labels: [Bug, Needs Triage]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for using Video.js and contributing by opening an issue. Before you start, please check this list:
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      options:
+        - label: The issue observed is not already reported by searching on Github under https://github.com/videojs/monorepo/issues
+          required: true
+        - label: The issue occurs in the latest version of the package on <tbd-demo-app>
+          required: true
+  - type: dropdown
+    id: package
+    attributes:
+      label: Package
+      description: Select a package for which you want to report a bug
+      options:
+        - @videojs/playback
+        - @videojs/hls-parser
+        - @videos/dash-parser
+        - videojs.dev
+      default: 0
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: What version of the package are you using?
+      placeholder: e.g. vX.Y.Z
+    validations:
+      required: true
+  - type: input
+    id: browser
+    attributes:
+      label: What browser are you using? (please, including version)
+      placeholder: e.g. Chrome 128.0.6613.85 (Official Build) (arm64)
+    validations:
+      required: true
+  - type: input
+    id: os
+    attributes:
+      label: What operation system are you using? (please, including version)
+      placeholder: e.g. MacOS 14.6.1 (23G93)
+    validations:
+      required: true
+  - type: input
+    id: stream
+    attributes:
+      label: Test stream
+      description: If possible, please provide a test stream. (While this is optional, we highly recommend providing a test stream since it will help us to find the root cause faster. Please, make sure that the stream does not have network or CORS issues)
+    validations:
+      required: false
+  - type: textarea
+    id: configuration
+    attributes:
+      label: Configuration
+      description: Please provide the package's configuration. (if applicable)
+      value: '{}'
+      render: JavaScript
+    validations:
+      required: false
+  - type: textarea
+    id: description
+    attributes:
+      label: Description of the issue
+      description: Please give a detailed description of the issue.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Please provide clear steps to reproduce your problem.  If the bug is intermittent, give a rough frequency.
+      value: |
+        1.
+        2.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behaviour
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: What actually happened?
+    validations:
+      required: true

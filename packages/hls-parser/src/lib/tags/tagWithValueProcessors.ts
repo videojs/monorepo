@@ -19,92 +19,92 @@ export abstract class TagWithValueProcessor extends TagProcessor {
 }
 
 abstract class TagWithNumberValueProcessor extends TagWithValueProcessor {
-  protected readonly fallback: number | undefined;
+  protected readonly fallback_: number | undefined;
 
   public process(tagValue: string, playlist: ParsedPlaylist, sharedState: SharedState): void {
     let parsed = Number(tagValue);
 
     if (Number.isNaN(parsed)) {
-      if (this.fallback !== undefined) {
-        this.warnCallback(fallbackUsedWarn(this.tag, String(this.fallback)));
-        parsed = this.fallback;
+      if (this.fallback_ !== undefined) {
+        this.warnCallback_(fallbackUsedWarn(this.tag_, String(this.fallback_)));
+        parsed = this.fallback_;
       } else {
-        return this.warnCallback(unableToParseValueWarn(this.tag));
+        return this.warnCallback_(unableToParseValueWarn(this.tag_));
       }
     }
 
-    return this.processNumberValue(parsed, playlist, sharedState);
+    return this.processNumberValue_(parsed, playlist, sharedState);
   }
 
-  protected abstract processNumberValue(value: number, playlist: ParsedPlaylist, sharedState: SharedState): void;
+  protected abstract processNumberValue_(value: number, playlist: ParsedPlaylist, sharedState: SharedState): void;
 }
 
 abstract class TagWithEnumValueProcessor<T> extends TagWithValueProcessor {
-  protected abstract readonly enum: Set<string>;
+  protected abstract readonly enum_: Set<string>;
 
   public process(tagValue: string, playlist: ParsedPlaylist): void {
-    if (!this.enum.has(tagValue)) {
-      return this.warnCallback(unsupportedEnumValue(this.tag, tagValue, this.enum));
+    if (!this.enum_.has(tagValue)) {
+      return this.warnCallback_(unsupportedEnumValue(this.tag_, tagValue, this.enum_));
     }
 
-    return this.processEnumValue(tagValue as T, playlist);
+    return this.processEnumValue_(tagValue as T, playlist);
   }
 
-  protected abstract processEnumValue(value: T, playlist: ParsedPlaylist): void;
+  protected abstract processEnumValue_(value: T, playlist: ParsedPlaylist): void;
 }
 
 export class ExtXVersion extends TagWithNumberValueProcessor {
-  protected readonly tag = EXT_X_VERSION;
+  protected readonly tag_ = EXT_X_VERSION;
 
-  protected processNumberValue(value: number, playlist: ParsedPlaylist): void {
+  protected processNumberValue_(value: number, playlist: ParsedPlaylist): void {
     playlist.version = value;
   }
 }
 
 export class ExtXTargetDuration extends TagWithNumberValueProcessor {
-  protected readonly tag = EXT_X_TARGETDURATION;
+  protected readonly tag_ = EXT_X_TARGETDURATION;
 
-  protected processNumberValue(value: number, playlist: ParsedPlaylist): void {
+  protected processNumberValue_(value: number, playlist: ParsedPlaylist): void {
     playlist.targetDuration = value;
   }
 }
 
 export class ExtXMediaSequence extends TagWithNumberValueProcessor {
-  protected readonly tag = EXT_X_MEDIA_SEQUENCE;
+  protected readonly tag_ = EXT_X_MEDIA_SEQUENCE;
 
-  protected processNumberValue(value: number, playlist: ParsedPlaylist, sharedState: SharedState): void {
+  protected processNumberValue_(value: number, playlist: ParsedPlaylist, sharedState: SharedState): void {
     playlist.mediaSequence = value;
     sharedState.currentSegment.mediaSequence = value;
   }
 }
 
 export class ExtXDiscontinuitySequence extends TagWithNumberValueProcessor {
-  protected readonly tag = EXT_X_DISCONTINUITY_SEQUENCE;
+  protected readonly tag_ = EXT_X_DISCONTINUITY_SEQUENCE;
 
-  protected processNumberValue(value: number, playlist: ParsedPlaylist, sharedState: SharedState): void {
+  protected processNumberValue_(value: number, playlist: ParsedPlaylist, sharedState: SharedState): void {
     playlist.discontinuitySequence = value;
     sharedState.currentSegment.discontinuitySequence = value;
   }
 }
 
 export class ExtXPlaylistType extends TagWithEnumValueProcessor<PlaylistType> {
-  protected readonly tag = EXT_X_PLAYLIST_TYPE;
-  protected readonly enum = new Set(['EVENT', 'VOD']);
+  protected readonly tag_ = EXT_X_PLAYLIST_TYPE;
+  protected readonly enum_ = new Set(['EVENT', 'VOD']);
 
-  protected processEnumValue(value: PlaylistType, playlist: ParsedPlaylist): void {
+  protected processEnumValue_(value: PlaylistType, playlist: ParsedPlaylist): void {
     playlist.playlistType = value;
   }
 }
 
 export class ExtInf extends TagWithValueProcessor {
-  protected readonly tag = EXTINF;
+  protected readonly tag_ = EXTINF;
 
   public process(tagValue: string, playlist: ParsedPlaylist, sharedState: SharedState): void {
     const parts = tagValue.split(',');
     const duration = Number(parts[0]);
 
     if (Number.isNaN(duration)) {
-      return this.warnCallback(unableToParseValueWarn(this.tag));
+      return this.warnCallback_(unableToParseValueWarn(this.tag_));
     }
 
     let title = parts[1];
@@ -119,7 +119,7 @@ export class ExtInf extends TagWithValueProcessor {
 }
 
 export class ExtXByteRange extends TagWithValueProcessor {
-  protected readonly tag = EXT_X_BYTERANGE;
+  protected readonly tag_ = EXT_X_BYTERANGE;
 
   public process(tagValue: string, playlist: ParsedPlaylist, sharedState: SharedState): void {
     const values = tagValue.split('@');
@@ -130,8 +130,8 @@ export class ExtXByteRange extends TagWithValueProcessor {
       const previousSegment = playlist.segments[playlist.segments.length - 1];
 
       if (!previousSegment || !previousSegment.byteRange) {
-        return this.warnCallback(
-          `Unable to parse ${this.tag}: EXT-X-BYTERANGE without offset requires a previous segment with a byte range in the playlist`
+        return this.warnCallback_(
+          `Unable to parse ${this.tag_}: EXT-X-BYTERANGE without offset requires a previous segment with a byte range in the playlist`
         );
       }
 
@@ -143,13 +143,13 @@ export class ExtXByteRange extends TagWithValueProcessor {
 }
 
 export class ExtXBitrate extends TagWithValueProcessor {
-  protected readonly tag = EXT_X_BITRATE;
+  protected readonly tag_ = EXT_X_BITRATE;
 
   public process(tagValue: string, playlist: ParsedPlaylist, sharedState: SharedState): void {
     const bitrate = Number(tagValue);
 
     if (Number.isNaN(bitrate) || bitrate < 0) {
-      return this.warnCallback(unableToParseValueWarn(this.tag));
+      return this.warnCallback_(unableToParseValueWarn(this.tag_));
     }
 
     // Store the bitrate value so it can be applied to subsequent segments
@@ -158,13 +158,13 @@ export class ExtXBitrate extends TagWithValueProcessor {
 }
 
 export class ExtXProgramDateTime extends TagWithValueProcessor {
-  protected readonly tag = EXT_X_PROGRAM_DATE_TIME;
+  protected readonly tag_ = EXT_X_PROGRAM_DATE_TIME;
 
   public process(tagValue: string, playlist: ParsedPlaylist, sharedState: SharedState): void {
     const timestamp = Date.parse(tagValue);
 
     if (Number.isNaN(timestamp)) {
-      return this.warnCallback(unableToParseValueWarn(this.tag));
+      return this.warnCallback_(unableToParseValueWarn(this.tag_));
     }
 
     sharedState.currentSegment.programDateTimeStart = timestamp;

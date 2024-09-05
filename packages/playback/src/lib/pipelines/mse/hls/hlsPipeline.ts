@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars,@typescript-eslint/no-unused-vars */
 import type { ParsedPlaylist, ParserOptions } from '@videojs/hls-parser';
 import { ProgressiveParser } from '@videojs/hls-parser';
 import MsePipeLine from '../msePipeline';
@@ -20,65 +21,62 @@ interface HlsPipelineDependencies extends PipelineDependencies {
 }
 
 export default class HlsPipeline extends MsePipeLine {
-  private static parserFactory: HlsParserFactory = ProgressiveParser;
+  private static parserFactory_: HlsParserFactory = ProgressiveParser;
 
   public static setParserFactory(parserFactory: HlsParserFactory): void {
-    HlsPipeline.parserFactory = parserFactory;
+    HlsPipeline.parserFactory_ = parserFactory;
   }
 
   public static create(dependencies: PipelineDependencies): HlsPipeline {
     dependencies.logger = dependencies.logger.createSubLogger('HlsPipeline');
-    const parser = HlsPipeline.parserFactory.create({
+    const parser = HlsPipeline.parserFactory_.create({
       warnCallback: (warn) => dependencies.logger.warn(warn),
     });
 
     return new HlsPipeline({ ...dependencies, parser });
   }
 
-  private readonly parser: ProgressiveParser;
+  private readonly parser_: ProgressiveParser;
 
   protected constructor(hlsPipelineDependencies: HlsPipelineDependencies) {
     super(hlsPipelineDependencies);
-    this.parser = hlsPipelineDependencies.parser;
+    this.parser_ = hlsPipelineDependencies.parser;
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   public loadRemoteAsset(uri: URL): void {
-    const { abort, done } = this.networkManager.getProgressive(
+    const { done } = this.networkManager_.getProgressive(
       uri.toString(),
       RequestType.HlsPlaylist,
       {},
-      this.playerConfiguration.network.manifest,
-      this.playerConfiguration.network.manifest.timeout,
+      this.playerConfiguration_.network.manifest,
+      this.playerConfiguration_.network.manifest.timeout,
       (chunk) => {
-        this.parser.pushBuffer(chunk, { baseUrl: uri.toString() });
+        this.parser_.pushBuffer(chunk, { baseUrl: uri.toString() });
       }
     );
 
     done.then(
       () => {
-        const parsed = this.parser.done();
-
+        // const parsed = this.parser_.done();
         // TODO: initialize Presentations
       },
-      (error) => {
+      () => {
         //TODO: check abort
         //TODO: trigger error
       }
     );
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   public loadLocalAsset(asset: string | ArrayBuffer, baseUrl: string): void {
     let parsed: ParsedPlaylist;
 
     if (typeof asset === 'string') {
-      this.parser.pushString(asset, { baseUrl });
+      this.parser_.pushString(asset, { baseUrl });
     } else {
-      this.parser.pushBuffer(new Uint8Array(asset), { baseUrl });
+      this.parser_.pushBuffer(new Uint8Array(asset), { baseUrl });
     }
 
-    parsed = this.parser.done();
+    // parsed = this.parser_.done();
 
     // TODO: initialize Presentations
   }
