@@ -94,6 +94,7 @@ export default [
       'no-shadow': 'off',
       '@typescript-eslint/no-shadow': 'error',
       '@typescript-eslint/no-unused-vars': ['error', { caughtErrors: 'none' }],
+      '@typescript-eslint/no-unused-expressions': 'off',
       '@typescript-eslint/naming-convention': [
         'error',
         {

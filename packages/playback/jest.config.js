@@ -1,11 +1,7 @@
-// eslint-disable-next-line import/extensions
 import base from '../../jest.config.base.js';
 
-/** @type {import('ts-jest').JestConfigWithTsJest} */
-const config = {
+export default {
   ...base,
-  displayName: 'player',
+  displayName: 'playback',
   coverageDirectory: './coverage',
 };
-
-export default config;

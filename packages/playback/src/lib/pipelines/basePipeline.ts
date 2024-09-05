@@ -16,19 +16,19 @@ export interface PipelineDependencies {
 }
 
 export abstract class Pipeline {
-  protected readonly logger: Logger;
-  protected readonly networkManager: NetworkManager;
+  protected readonly logger_: Logger;
+  protected readonly networkManager_: NetworkManager;
 
-  protected playerConfiguration: PlayerConfiguration;
+  protected playerConfiguration_: PlayerConfiguration;
 
   protected constructor(dependencies: PipelineDependencies) {
-    this.logger = dependencies.logger;
-    this.networkManager = dependencies.networkManager;
-    this.playerConfiguration = dependencies.playerConfiguration;
+    this.logger_ = dependencies.logger;
+    this.networkManager_ = dependencies.networkManager;
+    this.playerConfiguration_ = dependencies.playerConfiguration;
   }
 
   public updateConfiguration(playerConfiguration: PlayerConfiguration): void {
-    this.playerConfiguration = playerConfiguration;
+    this.playerConfiguration_ = playerConfiguration;
   }
 
   public abstract selectTextTrack(textTrack: PlayerTextTrack): void;

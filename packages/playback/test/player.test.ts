@@ -1,62 +1,26 @@
 import { describe, it, expect, beforeEach } from '@jest/globals';
-import { Player } from '../src/player';
+import { Player } from '../src';
 import Logger from '../src/lib/utils/logger';
 import NetworkManager from '../src/lib/network/networkManager';
-import type { PlayerEventTypeToEventMap } from '../src/lib/player/events/PlayerEventTypeToEventMap';
+import type { PlayerEventTypeToEventMap } from '../src/lib/player/events/playerEventTypeToEventMap';
 import EventEmitter from '../src/lib/utils/eventEmitter';
-import { DashPipeline, HlsPipeline } from '../src/lib/pipelines/mse';
+import ConfigurationManager from '../src/lib/player/configuration';
 
 describe('Player', () => {
   let logger: Logger;
   let networkManager: NetworkManager;
   let videoElement: HTMLVideoElement;
-  let dashPipeline: DashPipeline;
-  let hlsPipeline: HlsPipeline;
   let eventEmitter: EventEmitter<PlayerEventTypeToEventMap>;
+  let configurationManager: ConfigurationManager;
   let player: Player;
 
   beforeEach(() => {
     logger = new Logger(console, 'Player');
-    networkManager = new NetworkManager(logger);
+    networkManager = new NetworkManager({ logger });
     eventEmitter = new EventEmitter<PlayerEventTypeToEventMap>();
+    configurationManager = new ConfigurationManager();
     videoElement = document.createElement('video');
-    dashPipeline = new DashPipeline();
-    hlsPipeline = new HlsPipeline();
-    player = new Player({ logger, eventEmitter });
-  });
-
-  describe('registerPipeline', () => {
-    it('should register a new pipeline', () => {
-      player.registerPipeline('application/dash+xml', dashPipeline);
-      player.registerPipeline('application/x-mpegurl', hlsPipeline);
-      expect(player.getPipelineForMimeType('application/dash+xml')).toBe(dashPipeline);
-      expect(player.getPipelineForMimeType('application/x-mpegurl')).toBe(hlsPipeline);
-      expect(player.getPipelineForMimeType('application/custom')).toBe(undefined);
-    });
-
-    it('should log warn if pipeline with provided mimetype already exists', () => {
-      const warnSpy = jest.spyOn(logger, 'warn');
-      player.registerPipeline('application/dash+xml', dashPipeline);
-      player.registerPipeline('application/dash+xml', dashPipeline);
-      expect(warnSpy).toHaveBeenNthCalledWith(1, 'Overriding existing pipeline for "application/dash+xml" mimeType.');
-    });
-  });
-
-  describe('registerNetworkManager', () => {
-    it('should register a new networkManager', () => {
-      player.registerNetworkManager('http', networkManager);
-      player.registerNetworkManager('https', networkManager);
-      expect(player.getNetworkManagerForProtocol('http')).toBe(networkManager);
-      expect(player.getNetworkManagerForProtocol('https')).toBe(networkManager);
-      expect(player.getNetworkManagerForProtocol('custom')).toBe(undefined);
-    });
-
-    it('should log warn if networkManager with provided protocol already exists', () => {
-      const warnSpy = jest.spyOn(logger, 'warn');
-      player.registerNetworkManager('http', networkManager);
-      player.registerNetworkManager('http', networkManager);
-      expect(warnSpy).toHaveBeenNthCalledWith(1, 'Overriding existing networkManager for "http" protocol.');
-    });
+    player = new Player({ logger, eventEmitter, networkManager, configurationManager });
   });
 
   describe('loggerLevel', () => {

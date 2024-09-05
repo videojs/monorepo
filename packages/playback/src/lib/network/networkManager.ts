@@ -41,16 +41,16 @@ export default class NetworkManager {
     return new NetworkManager(dependencies);
   }
 
-  private readonly requestInterceptors = new Map<RequestType, Array<RequestInterceptor>>();
-  private readonly responseHandlers = new Map<RequestType, Array<ResponseHandler>>();
+  private readonly requestInterceptors_ = new Map<RequestType, Array<RequestInterceptor>>();
+  private readonly responseHandlers_ = new Map<RequestType, Array<ResponseHandler>>();
 
-  private readonly logger: Logger;
+  private readonly logger_: Logger;
 
   public constructor(dependencies: NetworkManagerDependencies) {
-    this.logger = dependencies.logger;
+    this.logger_ = dependencies.logger;
   }
 
-  private add<T>(type: RequestType, interceptor: T, interceptors: Map<RequestType, Array<T>>): void {
+  private add_<T>(type: RequestType, interceptor: T, interceptors: Map<RequestType, Array<T>>): void {
     if (interceptors.has(type)) {
       interceptors.get(type)?.push(interceptor);
     } else {
@@ -58,7 +58,7 @@ export default class NetworkManager {
     }
   }
 
-  private remove<T>(type: RequestType, interceptorToRemove: T, interceptors: Map<RequestType, Array<T>>): void {
+  private remove_<T>(type: RequestType, interceptorToRemove: T, interceptors: Map<RequestType, Array<T>>): void {
     if (!interceptors.has(type)) {
       return;
     }
@@ -70,19 +70,19 @@ export default class NetworkManager {
   }
 
   public addRequestInterceptor(type: RequestType, interceptor: RequestInterceptor): void {
-    this.add(type, interceptor, this.requestInterceptors);
+    this.add_(type, interceptor, this.requestInterceptors_);
   }
 
   public removeRequestInterceptor(type: RequestType, interceptor: RequestInterceptor): void {
-    this.remove(type, interceptor, this.requestInterceptors);
+    this.remove_(type, interceptor, this.requestInterceptors_);
   }
 
   public addResponseHandler(type: RequestType, interceptor: ResponseHandler): void {
-    this.add(type, interceptor, this.responseHandlers);
+    this.add_(type, interceptor, this.responseHandlers_);
   }
 
   public removeResponseHandler(type: RequestType, interceptor: ResponseHandler): void {
-    this.remove(type, interceptor, this.responseHandlers);
+    this.remove_(type, interceptor, this.responseHandlers_);
   }
 
   public get<T>(
@@ -95,7 +95,7 @@ export default class NetworkManager {
   ): NetworkRequestWithFullResponse<T> {
     (requestInit as RequestInit).method = 'GET';
 
-    return this.createNetworkRequestWithFullBody<T>(uri, type, requestInit, retryOptions, timeout, mapper);
+    return this.createNetworkRequestWithFullBody_<T>(uri, type, requestInit, retryOptions, timeout, mapper);
   }
 
   public getProgressive(
@@ -108,7 +108,7 @@ export default class NetworkManager {
   ): NetworkRequestWithProgressiveResponse {
     (requestInit as RequestInit).method = 'GET';
 
-    return this.createProgressiveNetworkRequest(uri, type, requestInit, retryOptions, timeout, chunkHandler);
+    return this.createProgressiveNetworkRequest_(uri, type, requestInit, retryOptions, timeout, chunkHandler);
   }
 
   public post<T>(
@@ -121,7 +121,7 @@ export default class NetworkManager {
   ): NetworkRequestWithFullResponse<T> {
     (requestInit as RequestInit).method = 'POST';
 
-    return this.createNetworkRequestWithFullBody<T>(uri, type, requestInit, retryOptions, timeout, mapper);
+    return this.createNetworkRequestWithFullBody_<T>(uri, type, requestInit, retryOptions, timeout, mapper);
   }
 
   public postProgressive(
@@ -134,10 +134,10 @@ export default class NetworkManager {
   ): NetworkRequestWithProgressiveResponse {
     (requestInit as RequestInit).method = 'POST';
 
-    return this.createProgressiveNetworkRequest(uri, type, requestInit, retryOptions, timeout, chunkHandler);
+    return this.createProgressiveNetworkRequest_(uri, type, requestInit, retryOptions, timeout, chunkHandler);
   }
 
-  private createProgressiveNetworkRequest(
+  private createProgressiveNetworkRequest_(
     uri: string,
     type: RequestType,
     requestInit: RequestInit,
@@ -145,7 +145,7 @@ export default class NetworkManager {
     timeout: number,
     chunkHandler: (chunk: Uint8Array) => void
   ): NetworkRequestWithProgressiveResponse {
-    const { abort, headersReceived } = this.createNetworkRequest(uri, type, requestInit, retryOptions, timeout);
+    const { abort, headersReceived } = this.createNetworkRequest_(uri, type, requestInit, retryOptions, timeout);
 
     const done = headersReceived.then((response) => {
       const reader = response.body?.getReader();
@@ -154,19 +154,19 @@ export default class NetworkManager {
         return;
       }
 
-      return this.readFromBodyStream(reader, chunkHandler);
+      return this.readFromBodyStream_(reader, chunkHandler);
     });
 
     headersReceived
-      .then((response) => this.applyResponseHandlers(type, response))
+      .then((response) => this.applyResponseHandlers_(type, response))
       .catch((e) => {
-        this.logger.debug('Error catched from response handlers: ', e);
+        this.logger_.debug('Error catched from response handlers: ', e);
       });
 
     return { done, abort };
   }
 
-  private createNetworkRequestWithFullBody<T>(
+  private createNetworkRequestWithFullBody_<T>(
     uri: string,
     type: RequestType,
     requestInit: RequestInitPost,
@@ -174,7 +174,7 @@ export default class NetworkManager {
     timeout: number,
     mapper: (body: Uint8Array) => T
   ): NetworkRequestWithFullResponse<T> {
-    const { abort, headersReceived } = this.createNetworkRequest(uri, type, requestInit, retryOptions, timeout);
+    const { abort, headersReceived } = this.createNetworkRequest_(uri, type, requestInit, retryOptions, timeout);
 
     const chunks: Array<Uint8Array> = [];
 
@@ -186,7 +186,7 @@ export default class NetworkManager {
           return;
         }
 
-        return this.readFromBodyStream(reader, (chunk) => chunks.push(chunk));
+        return this.readFromBodyStream_(reader, (chunk) => chunks.push(chunk));
       })
       .then(() => {
         const totalLength = chunks.reduce((total, chunk) => total + chunk.length, 0);
@@ -203,15 +203,15 @@ export default class NetworkManager {
       });
 
     headersReceived
-      .then((response) => this.applyResponseHandlers(type, response))
+      .then((response) => this.applyResponseHandlers_(type, response))
       .catch((e) => {
-        this.logger.debug('Error catched from response handlers: ', e);
+        this.logger_.debug('Error catched from response handlers: ', e);
       });
 
     return { done, abort };
   }
 
-  private createNetworkRequest(
+  private createNetworkRequest_(
     uri: string,
     type: RequestType,
     requestInit: RequestInit,
@@ -223,10 +223,10 @@ export default class NetworkManager {
     const request = new Request(uri, requestInit);
 
     const wrappedSendRequest = retryWrapper.wrap<Response>(
-      () => this.sendRequest(request, type, abortController, timeout),
+      () => this.sendRequest_(request, type, abortController, timeout),
       (e) => !(e instanceof RequestAbortedNetworkError),
       {
-        onAttempt: (diagnosticInfo) => this.logger.debug('attempt network request: ', diagnosticInfo),
+        onAttempt: (diagnosticInfo) => this.logger_.debug('attempt network request: ', diagnosticInfo),
       }
     );
 
@@ -236,8 +236,8 @@ export default class NetworkManager {
     };
   }
 
-  private applyResponseHandlers(type: RequestType, response: Response): void {
-    const responseHandlers = this.responseHandlers.get(type);
+  private applyResponseHandlers_(type: RequestType, response: Response): void {
+    const responseHandlers = this.responseHandlers_.get(type);
 
     if (responseHandlers) {
       for (const responseHandler of responseHandlers) {
@@ -250,13 +250,13 @@ export default class NetworkManager {
     }
   }
 
-  private async sendRequest(
+  private async sendRequest_(
     request: Request,
     type: RequestType,
     abortController: AbortController,
     timeout: number
   ): Promise<Response> {
-    const requestInterceptors = this.requestInterceptors.get(type);
+    const requestInterceptors = this.requestInterceptors_.get(type);
 
     if (requestInterceptors) {
       for (const requestInterceptor of requestInterceptors) {
@@ -268,10 +268,10 @@ export default class NetworkManager {
       }
     }
 
-    return await this.wrapFetch(request, abortController, timeout);
+    return await this.wrapFetch_(request, abortController, timeout);
   }
 
-  private wrapFetch(request: Request, abortController: AbortController, timeout: number): Promise<Response> {
+  private wrapFetch_(request: Request, abortController: AbortController, timeout: number): Promise<Response> {
     return new Promise((resolve, reject) => {
       let hitTimeout = false;
 
@@ -288,7 +288,7 @@ export default class NetworkManager {
       const onError = (fetchError: DOMException | TypeError): void => {
         clearTimeout(timeoutId);
 
-        if (this.isAbortError(fetchError)) {
+        if (this.isAbortError_(fetchError)) {
           if (hitTimeout) {
             // abort from timeout:
             reject(new TimeoutNetworkError());
@@ -305,11 +305,11 @@ export default class NetworkManager {
     });
   }
 
-  private isAbortError(e: unknown): boolean {
+  private isAbortError_(e: unknown): boolean {
     return e instanceof DOMException && e.name === 'AbortError';
   }
 
-  private async readFromBodyStream(
+  private async readFromBodyStream_(
     reader: ReadableStreamDefaultReader,
     handleChunk: (chunk: Uint8Array) => void
   ): Promise<void> {
@@ -322,7 +322,7 @@ export default class NetworkManager {
         return;
       }
 
-      return this.readFromBodyStream(reader, handleChunk);
+      return this.readFromBodyStream_(reader, handleChunk);
     } catch (e) {
       reader.releaseLock();
       throw new RequestAbortedNetworkError();
