@@ -1,8 +1,7 @@
-export { default as Player } from './lib/player/player';
-export type { PipelineFactory } from './lib/player/player';
+export { Player } from './lib/player_n';
 
-export * from './lib/types/configuration';
-export * from './lib/types/network';
-export * from './lib/types/player';
+// consts
+export { LoggerLevel } from './lib/consts/loggerLevel';
 
-export type { LoggerLevel } from './lib/utils/logger';
+// types
+export type { ILogger } from './lib/types/logger';
