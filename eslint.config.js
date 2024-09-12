@@ -126,6 +126,7 @@ export default [
     rules: {
       'no-console': 'error',
       'no-unused-vars': ['error', { caughtErrors: 'none' }],
+      'jsdoc/require-returns': 'off',
     },
   },
 ];
