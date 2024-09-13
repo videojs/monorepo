@@ -5,10 +5,16 @@ import type { PlayerConfiguration } from './types/configuration.declarations';
 import type { IStore } from './types/store.declarations';
 import ConfigurationManager from './configuration/configurationManager';
 import type { DeepPartial } from './types/utility.declarations';
+import type { EventListener, IEventEmitter } from './types/eventEmitter.declarations';
+import type { EventTypeToEventMap } from './types/eventTypeToEventMap.declarations';
+import EventEmitter from './utils/eventEmitter';
+import { PlayerEventType } from './consts/events';
+import { ConfigurationChangedEvent, LoggerLevelChangedEvent } from './events/player';
 
 interface PlayerDependencies {
   logger?: ILogger;
   configurationManager?: IStore<PlayerConfiguration>;
+  eventEmitter?: IEventEmitter<EventTypeToEventMap>;
 }
 
 interface VersionInfo {
@@ -23,9 +29,11 @@ declare const __EXPERIMENTAL: boolean;
 
 export class Player {
   public static LoggerLevel = LoggerLevel;
+  public static Event = PlayerEventType;
 
   private readonly logger_: ILogger;
   private readonly configurationManager_: IStore<PlayerConfiguration>;
+  private readonly eventEmitter_: IEventEmitter<EventTypeToEventMap>;
 
   /**
    * You can pass your own implementations via dependencies.
@@ -35,6 +43,7 @@ export class Player {
   public constructor(dependencies: PlayerDependencies = {}) {
     this.logger_ = dependencies.logger ?? new Logger(console, 'Player');
     this.configurationManager_ = dependencies.configurationManager ?? new ConfigurationManager();
+    this.eventEmitter_ = dependencies.eventEmitter ?? new EventEmitter<EventTypeToEventMap>();
   }
 
   /**
@@ -69,7 +78,7 @@ export class Player {
    */
   public setLoggerLevel(loggerLevel: LoggerLevel): void {
     this.logger_.setLoggerLevel(loggerLevel);
-    // TODO: emit logger level changed event
+    this.eventEmitter_.emitEvent(new LoggerLevelChangedEvent(this.getLoggerLevel()));
   }
 
   /**
@@ -89,7 +98,7 @@ export class Player {
    */
   public updateConfiguration(configurationChunk: DeepPartial<PlayerConfiguration>): void {
     this.configurationManager_.update(configurationChunk);
-    // TODO: emit configuration change (prev, new)
+    this.eventEmitter_.emitEvent(new ConfigurationChangedEvent(this.getConfigurationSnapshot()));
   }
 
   /**
@@ -97,6 +106,57 @@ export class Player {
    */
   public resetConfiguration(): void {
     this.configurationManager_.reset();
-    // TODO: emit configuration change (prev, new)
+    this.eventEmitter_.emitEvent(new ConfigurationChangedEvent(this.getConfigurationSnapshot()));
+  }
+
+  /**
+   * Events API
+   */
+
+  /**
+   * Register event listener for a specific event type
+   * @param eventType - specific event type
+   * @param eventListener - event listener
+   */
+  public addEventListener<K extends PlayerEventType>(
+    eventType: K,
+    eventListener: EventListener<EventTypeToEventMap[K]>
+  ): void {
+    return this.eventEmitter_.addEventListener(eventType, eventListener);
+  }
+
+  /**
+   * Register event listener for a specific event type once
+   * @param eventType - specific event type
+   * @param eventListener - event listener
+   */
+  public once<K extends PlayerEventType>(eventType: K, eventListener: EventListener<EventTypeToEventMap[K]>): void {
+    return this.eventEmitter_.once(eventType, eventListener);
+  }
+  /**
+   * Remove specific registered event listener for a specific event type
+   * @param eventType - specific event type
+   * @param eventListener - specific event listener
+   */
+  public removeEventListener<K extends PlayerEventType>(
+    eventType: K,
+    eventListener: EventListener<EventTypeToEventMap[K]>
+  ): void {
+    return this.eventEmitter_.removeEventListener(eventType, eventListener);
+  }
+
+  /**
+   * Remove all registered event handlers for specific event type
+   * @param eventType - specific event type
+   */
+  public removeAllEventListenersForType<K extends PlayerEventType>(eventType: K): void {
+    return this.eventEmitter_.removeAllEventListenersFor(eventType);
+  }
+
+  /**
+   * Remove all registered event handlers for all events
+   */
+  public removeAllEventListeners(): void {
+    return this.eventEmitter_.removeAllEventListeners();
   }
 }
