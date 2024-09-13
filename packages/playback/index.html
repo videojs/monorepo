@@ -7,27 +7,33 @@
 <body>
   <script src="./dist/iife/index.debug.js"></script>
   <script>
-    console.log('global namespace: ', PlaybackNamespace);
+    (async() => {
+      console.log('global namespace: ', PlaybackNamespace);
 
-    console.group('Static members: ');
-    console.log(PlaybackNamespace.Player.LoggerLevel);
-    console.groupEnd();
+      console.group('Static members: ');
+      console.log(PlaybackNamespace.Player.LoggerLevel);
+      console.groupEnd();
 
-    const player = new PlaybackNamespace.Player();
+      const player = new PlaybackNamespace.Player();
 
-    console.log('instance: ', player);
+      console.log('instance: ', player);
 
-    const versionInfo = player.getVersionInfo();
+      const versionInfo = player.getVersionInfo();
 
-    console.log('version info: ', versionInfo);
+      console.log('version info: ', versionInfo);
 
-    const loggerLevel = player.getLoggerLevel();
+      const loggerLevel = player.getLoggerLevel();
 
-    console.log('logger level: ', loggerLevel);
+      console.log('logger level: ', loggerLevel);
 
-    const configuration = player.getConfigurationSnapshot();
+      const configuration = player.getConfigurationSnapshot();
 
-    console.log('configuration: ', configuration);
+      console.log('configuration: ', configuration);
+
+      const envCapabilities = await player.probeEnvCapabilities();
+
+      console.log(envCapabilities);
+    })()
   </script>
 </body>
 </html>

@@ -10,11 +10,14 @@ import type { EventTypeToEventMap } from './types/eventTypeToEventMap.declaratio
 import EventEmitter from './utils/eventEmitter';
 import { PlayerEventType } from './consts/events';
 import { ConfigurationChangedEvent, LoggerLevelChangedEvent } from './events/playerEvents';
+import type { CapabilitiesProbeResult, IEnvCapabilitiesProvider } from './types/envCapabilities.declarations';
+import EnvCapabilitiesProvider from './utils/envCapabilities';
 
 interface PlayerDependencies {
   logger?: ILogger;
   configurationManager?: IStore<PlayerConfiguration>;
   eventEmitter?: IEventEmitter<EventTypeToEventMap>;
+  envCapabilitiesProvider?: IEnvCapabilitiesProvider;
 }
 
 interface VersionInfo {
@@ -34,6 +37,7 @@ export class Player {
   private readonly logger_: ILogger;
   private readonly configurationManager_: IStore<PlayerConfiguration>;
   private readonly eventEmitter_: IEventEmitter<EventTypeToEventMap>;
+  private readonly envCapabilitiesProvider_: IEnvCapabilitiesProvider;
 
   /**
    * You can pass your own implementations via dependencies.
@@ -44,6 +48,7 @@ export class Player {
     this.logger_ = dependencies.logger ?? new Logger(console, 'Player');
     this.configurationManager_ = dependencies.configurationManager ?? new ConfigurationManager();
     this.eventEmitter_ = dependencies.eventEmitter ?? new EventEmitter<EventTypeToEventMap>();
+    this.envCapabilitiesProvider_ = dependencies.envCapabilitiesProvider ?? new EnvCapabilitiesProvider();
   }
 
   /**
@@ -158,5 +163,12 @@ export class Player {
    */
   public removeAllEventListeners(): void {
     return this.eventEmitter_.removeAllEventListeners();
+  }
+
+  /**
+   * Probe env capabilities
+   */
+  public probeEnvCapabilities(): Promise<CapabilitiesProbeResult> {
+    return this.envCapabilitiesProvider_.probe();
   }
 }
