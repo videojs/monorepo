@@ -9,7 +9,7 @@ import type { EventListener, IEventEmitter } from './types/eventEmitter.declarat
 import type { EventTypeToEventMap } from './types/eventTypeToEventMap.declarations';
 import EventEmitter from './utils/eventEmitter';
 import { PlayerEventType } from './consts/events';
-import { ConfigurationChangedEvent, LoggerLevelChangedEvent } from './events/player';
+import { ConfigurationChangedEvent, LoggerLevelChangedEvent } from './events/playerEvents';
 
 interface PlayerDependencies {
   logger?: ILogger;

@@ -1,7 +1,8 @@
 import type { LoggerLevel } from '../consts/loggerLevel';
 import { PlayerEventType } from '../consts/events';
-import { PlayerEvent } from './base';
+import { PlayerEvent } from './basePlayerEvent';
 import type { PlayerConfiguration } from '../types/configuration.declarations';
+import type { PlayerError } from '../errors/basePlayerErrors';
 
 export class LoggerLevelChangedEvent extends PlayerEvent {
   public readonly type = PlayerEventType.LoggerLevelChanged;
@@ -40,5 +41,15 @@ export class MutedStatusChangedEvent extends PlayerEvent {
   public constructor(isMuted: boolean) {
     super();
     this.isMuted = isMuted;
+  }
+}
+
+export class PlayerErrorEvent extends PlayerEvent {
+  public readonly type = PlayerEventType.Error;
+  public readonly error: PlayerError;
+
+  public constructor(error: PlayerError) {
+    super();
+    this.error = error;
   }
 }

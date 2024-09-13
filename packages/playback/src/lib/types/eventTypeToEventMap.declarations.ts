@@ -5,11 +5,13 @@ import type {
   LoggerLevelChangedEvent,
   MutedStatusChangedEvent,
   VolumeChangedEvent,
-} from '../events/player';
+  PlayerErrorEvent,
+} from '../events/playerEvents';
 
 export interface EventTypeToEventMap {
   [PlayerEventType.LoggerLevelChanged]: LoggerLevelChangedEvent;
   [PlayerEventType.VolumeChanged]: VolumeChangedEvent;
   [PlayerEventType.ConfigurationChanged]: ConfigurationChangedEvent;
   [PlayerEventType.MutedStatusChanged]: MutedStatusChangedEvent;
+  [PlayerEventType.Error]: PlayerErrorEvent;
 }

@@ -5,4 +5,5 @@ export enum PlayerEventType {
   ConfigurationChanged = 'ConfigurationChanged',
   VolumeChanged = 'VolumeChanged',
   MutedStatusChanged = 'MutedStatusChanged',
+  Error = 'Error',
 }
