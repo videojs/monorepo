@@ -1,4 +1,4 @@
-export { Player } from './lib/player_n';
+export { Player } from './lib/player';
 
 // consts
 export { LoggerLevel } from './lib/consts/loggerLevel';

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { Player } from '../src/lib/player_n';
+import { Player } from '../src/lib/player';
 import type { PlayerConfiguration } from '../src/lib/types/configuration.declarations';
 import { ConfigurationChangedEvent, LoggerLevelChangedEvent, VolumeChangedEvent } from '../src/lib/events/playerEvents';
 import EventEmitter from '../src/lib/utils/eventEmitter';
