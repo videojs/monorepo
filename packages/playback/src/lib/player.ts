@@ -19,7 +19,7 @@ import {
 import type { CapabilitiesProbeResult, IEnvCapabilitiesProvider } from './types/envCapabilities.declarations';
 import EnvCapabilitiesProvider from './utils/envCapabilities';
 import type { ISource } from './types/source.declarations';
-import type { IPipeline } from './types/pipeline.declarations';
+import type { IPipeline, IPipelineFactory } from './types/pipeline.declarations';
 import type PlayerTimeRange from './utils/timeRanges';
 import { PlaybackState } from './consts/playbackState';
 import type { PlaybackStats } from './types/playbackStats.declarations';
@@ -59,6 +59,8 @@ export class Player {
   private activeSource_: ISource | null = null;
   private activePipeline_: IPipeline | null = null;
 
+  private readonly mimeTypeToPipelineFactoryMap_ = new Map<string, IPipelineFactory>();
+
   /**
    * MARK: Private services
    */
@@ -78,6 +80,43 @@ export class Player {
     this.configurationManager_ = dependencies.configurationManager ?? new ConfigurationManager();
     this.eventEmitter_ = dependencies.eventEmitter ?? new EventEmitter<EventTypeToEventMap>();
     this.envCapabilitiesProvider_ = dependencies.envCapabilitiesProvider ?? new EnvCapabilitiesProvider();
+  }
+
+  /**
+   * MARK: Pipeline API
+   */
+
+  /**
+   * Add pipeline factory for a specific mime type
+   * @param mimeType - mime type
+   * @param factory - pipeline factory
+   */
+  public addPipelineFactory(mimeType: string, factory: IPipelineFactory): void {
+    this.mimeTypeToPipelineFactoryMap_.set(mimeType, factory);
+  }
+
+  /**
+   * Check if player already has pipeline factory for a specific mime type
+   * @param mimeType - mime type
+   */
+  public hasPipelineFactory(mimeType: string): boolean {
+    return this.mimeTypeToPipelineFactoryMap_.has(mimeType);
+  }
+
+  /**
+   * Returns pipeline factory or null for a specific mime type
+   * @param mimeType - mime type
+   */
+  public getPipelineFactory(mimeType: string): IPipelineFactory | null {
+    return this.mimeTypeToPipelineFactoryMap_.get(mimeType) ?? null;
+  }
+
+  /**
+   * remove pipeline factory for a specific mime type
+   * @param mimeType - mime type
+   */
+  public removePipelineFactory(mimeType: string): boolean {
+    return this.mimeTypeToPipelineFactoryMap_.delete(mimeType);
   }
 
   /**
@@ -255,6 +294,8 @@ export class Player {
     // TODO: call pipeline stop
 
     this.activeSource_ = null;
+    this.activePipeline_?.dispose();
+    this.activePipeline_ = null;
   }
 
   /**
@@ -262,8 +303,7 @@ export class Player {
    */
   public dispose(): void {
     this.detach();
-    this.activePipeline_?.dispose();
-    this.activePipeline_ = null;
+    this.mimeTypeToPipelineFactoryMap_.clear();
   }
 
   /**
