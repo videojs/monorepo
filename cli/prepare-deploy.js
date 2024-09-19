@@ -1,10 +1,10 @@
 /* eslint-disable no-console */
 import { cp, mkdir } from 'node:fs';
 
-const copyApiReferences = (pckg) => {
-  cp(`packages/${pckg}/dist-api-reference`, `deploy/api-references/${pckg}`, { recursive: true }, (err) => {
+const copyFromPackage = (packageName, folder) => {
+  cp(`packages/${packageName}/dist-${folder}`, `deploy/${folder}/${packageName}`, { recursive: true }, (err) => {
     if (err) {
-      console.log(`Failed to copy ${pckg} api reference dist. See error: `, err);
+      console.log(`Failed to copy ${packageName} api reference dist. See error: `, err);
     }
   });
 };
@@ -16,7 +16,8 @@ mkdir('deploy', () => {
     }
   });
 
-  copyApiReferences('dash-parser');
-  copyApiReferences('hls-parser');
-  copyApiReferences('playback');
+  ['dash-parser', 'hls-parser', 'playback'].forEach((packageName) => {
+    copyFromPackage(packageName, 'api-reference');
+    copyFromPackage(packageName, 'demo');
+  });
 });

@@ -4,6 +4,8 @@ import jsdoc from 'eslint-plugin-jsdoc';
 import prettier from 'eslint-plugin-prettier/recommended';
 import vitest from 'eslint-plugin-vitest';
 import globals from 'globals';
+import reactHooks from 'eslint-plugin-react-hooks';
+import reactRefresh from 'eslint-plugin-react-refresh';
 
 /**
  * most of the configurations are glob-based,
@@ -72,6 +74,9 @@ export default [
     languageOptions: {
       parserOptions: {
         project: './tsconfig.json',
+        ecmaFeatures: {
+          jsx: true,
+        },
       },
       ecmaVersion: 'latest',
       sourceType: 'module',
@@ -116,6 +121,22 @@ export default [
           trailingUnderscore: 'require',
         },
       ],
+    },
+  },
+
+  /**
+   * TSX rules
+   * mainly for demo pages
+   */
+  {
+    files: ['**/*.tsx'],
+    plugins: {
+      'react-hooks': reactHooks,
+      'react-refresh': reactRefresh,
+    },
+    rules: {
+      ...reactHooks.configs.recommended.rules,
+      'react-refresh/only-export-components': ['warn', { allowConstantExport: true }],
     },
   },
 
