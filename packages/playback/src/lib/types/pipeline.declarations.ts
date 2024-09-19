@@ -2,6 +2,16 @@ import type PlayerTimeRange from '../utils/timeRanges';
 import type { PlaybackState } from '../consts/playbackState';
 import type { PlaybackStats } from './playbackStats.declarations';
 import type { IAudioTrack, ITextTrack } from './tracks.declarations';
+import type { ILogger } from './logger.declarations';
+
+export interface PipelineDependencies {
+  videoElement: HTMLVideoElement;
+  logger: ILogger;
+}
+
+export interface IPipelineFactory {
+  create(deps: PipelineDependencies): Promise<IPipeline>;
+}
 
 export interface IPipeline {
   play(): void;

@@ -1,57 +1,77 @@
-import type NetworkManager from '../network/networkManager';
-import type Logger from '../utils/logger';
-import type { PlayerConfiguration } from '../types/configuration';
-import type {
-  PlayerAudioTrack,
-  PlayerImageTrack,
-  PlayerStats,
-  PlayerTextTrack,
-  PlayerVideoTrack,
-} from '../types/player';
+import type { IPipeline, PipelineDependencies } from '../types/pipeline.declarations';
+import type { IAudioTrack, ITextTrack } from '../types/tracks.declarations';
+import type PlayerTimeRange from '../utils/timeRanges';
+import type { PlaybackState } from '../consts/playbackState';
+import type { PlaybackStats } from '../types/playbackStats.declarations';
 
-export interface PipelineDependencies {
-  logger: Logger;
-  networkManager: NetworkManager;
-  playerConfiguration: PlayerConfiguration;
-}
+export abstract class Pipeline implements IPipeline {
+  protected readonly videoElement_: HTMLVideoElement;
 
-export abstract class Pipeline {
-  protected readonly logger_: Logger;
-  protected readonly networkManager_: NetworkManager;
-
-  protected playerConfiguration_: PlayerConfiguration;
-
-  protected constructor(dependencies: PipelineDependencies) {
-    this.logger_ = dependencies.logger;
-    this.networkManager_ = dependencies.networkManager;
-    this.playerConfiguration_ = dependencies.playerConfiguration;
+  public constructor(dependencies: PipelineDependencies) {
+    this.videoElement_ = dependencies.videoElement;
   }
-
-  public updateConfiguration(playerConfiguration: PlayerConfiguration): void {
-    this.playerConfiguration_ = playerConfiguration;
-  }
-
-  public abstract selectTextTrack(textTrack: PlayerTextTrack): void;
-
-  public abstract selectAudioTrack(audioTrack: PlayerAudioTrack): void;
-
-  public abstract selectImageTrack(imageTrack: PlayerImageTrack): void;
-
-  public abstract selectVideoTrack(videoTrack: PlayerVideoTrack): void;
-
-  public abstract getTextTracks(): Array<PlayerTextTrack>;
-
-  public abstract getAudioTracks(): Array<PlayerAudioTrack>;
-
-  public abstract getImageTracks(): Array<PlayerImageTrack>;
-
-  public abstract getVideoTracks(): Array<PlayerVideoTrack>;
-
-  public abstract getStats(): PlayerStats;
 
   public abstract dispose(): void;
 
-  public abstract loadRemoteAsset(uri: URL): void;
+  public abstract getAudioTracks(): Array<IAudioTrack>;
 
-  public abstract loadLocalAsset(asset: string | ArrayBuffer, baseUrl: string): void;
+  public abstract getBufferedRanges(): Array<PlayerTimeRange>;
+
+  public getCurrentTime(): number {
+    return this.videoElement_.currentTime;
+  }
+
+  public abstract getDuration(): number;
+
+  public getIsMuted(): boolean {
+    return this.videoElement_.muted;
+  }
+
+  public getPlaybackRate(): number {
+    return this.videoElement_.playbackRate;
+  }
+
+  public abstract getPlaybackState(): PlaybackState;
+
+  public abstract getPlaybackStats(): PlaybackStats;
+
+  public abstract getSeekableRanges(): Array<PlayerTimeRange>;
+
+  public abstract getTextTracks(): Array<ITextTrack>;
+
+  public getVolumeLevel(): number {
+    return this.videoElement_.volume;
+  }
+
+  public mute(): void {
+    this.videoElement_.muted = true;
+  }
+
+  public unmute(): void {
+    this.videoElement_.muted = false;
+  }
+
+  public pause(): void {
+    this.videoElement_.pause();
+  }
+
+  public play(): void {
+    void this.videoElement_.play();
+  }
+
+  public seek(seekTarget: number): boolean {
+    this.videoElement_.currentTime = seekTarget;
+
+    return true;
+  }
+
+  public abstract selectAudioTrack(id: string): boolean;
+
+  public setPlaybackRate(playbackRate: number): void {
+    this.videoElement_.playbackRate = playbackRate;
+  }
+
+  public setVolumeLevel(volumeLevel: number): void {
+    this.videoElement_.volume = volumeLevel;
+  }
 }

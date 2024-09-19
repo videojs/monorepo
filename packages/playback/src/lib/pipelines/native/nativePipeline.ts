@@ -1,57 +1,48 @@
-/* eslint-disable no-unused-vars,@typescript-eslint/no-unused-vars */
-import type {
-  PlayerTextTrack,
-  PlayerAudioTrack,
-  PlayerImageTrack,
-  PlayerVideoTrack,
-  PlayerStats,
-} from '../../types/player';
-import type { PipelineDependencies } from '../basePipeline';
 import { Pipeline } from '../basePipeline';
+import type { PipelineDependencies } from '../../types/pipeline.declarations';
+import type { IAudioTrack, ITextTrack } from '../../types/tracks.declarations';
+import type PlayerTimeRange from '../../utils/timeRanges';
+import type { PlaybackState } from '../../consts/playbackState';
+import type { PlaybackStats } from '../../types/playbackStats.declarations';
 
 export default class NativePipeline extends Pipeline {
-  public static create(dependencies: PipelineDependencies): NativePipeline {
+  public static create(dependencies: PipelineDependencies): Promise<NativePipeline> {
     dependencies.logger = dependencies.logger.createSubLogger('NativePipeline');
 
-    return new NativePipeline(dependencies);
+    return Promise.resolve(new NativePipeline(dependencies));
   }
 
-  public loadLocalAsset(asset: string | ArrayBuffer, baseUrl: string): void {
-    throw new Error('Method not implemented.');
+  public dispose(): void {}
+
+  public getAudioTracks(): Array<IAudioTrack> {
+    throw new Error('Not implemented');
   }
 
-  public loadRemoteAsset(uri: URL): void {
-    throw new Error('Method not implemented.');
+  public getBufferedRanges(): Array<PlayerTimeRange> {
+    throw new Error('Not implemented');
   }
 
-  public selectTextTrack(textTrack: PlayerTextTrack): void {
-    throw new Error('Method not implemented.');
+  public getDuration(): number {
+    return 0;
   }
-  public selectAudioTrack(audioTrack: PlayerAudioTrack): void {
-    throw new Error('Method not implemented.');
+
+  public getPlaybackState(): PlaybackState {
+    throw new Error('Not implemented');
   }
-  public selectImageTrack(imageTrack: PlayerImageTrack): void {
-    throw new Error('Method not implemented.');
+
+  public getPlaybackStats(): PlaybackStats {
+    throw new Error('Not implemented');
   }
-  public selectVideoTrack(videoTrack: PlayerVideoTrack): void {
-    throw new Error('Method not implemented.');
+
+  public getSeekableRanges(): Array<PlayerTimeRange> {
+    throw new Error('Not implemented');
   }
-  public getTextTracks(): Array<PlayerTextTrack> {
-    throw new Error('Method not implemented.');
+
+  public getTextTracks(): Array<ITextTrack> {
+    throw new Error('Not implemented');
   }
-  public getAudioTracks(): Array<PlayerAudioTrack> {
-    throw new Error('Method not implemented.');
-  }
-  public getImageTracks(): Array<PlayerImageTrack> {
-    throw new Error('Method not implemented.');
-  }
-  public getVideoTracks(): Array<PlayerVideoTrack> {
-    throw new Error('Method not implemented.');
-  }
-  public getStats(): PlayerStats {
-    throw new Error('Method not implemented.');
-  }
-  public dispose(): void {
-    throw new Error('Method not implemented.');
+
+  public selectAudioTrack(id: string): boolean {
+    throw new Error(`Not implemented: ${id}`);
   }
 }

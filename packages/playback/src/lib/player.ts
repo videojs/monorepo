@@ -25,6 +25,7 @@ import { PlaybackState } from './consts/playbackState';
 import type { PlaybackStats } from './types/playbackStats.declarations';
 import type { IAudioTrack } from './types/tracks.declarations';
 import { NoSupportedPipelineError } from './errors/pipelineErrors';
+import { Source } from './utils/source';
 
 interface PlayerDependencies {
   logger?: ILogger;
@@ -56,7 +57,7 @@ export class Player {
    */
 
   private activeVideoElement_: HTMLVideoElement | null = null;
-  private activeSource_: ISource | null = null;
+  private activeSource_: Source | null = null;
   private activePipeline_: IPipeline | null = null;
 
   private readonly mimeTypeToPipelineFactoryMap_ = new Map<string, IPipelineFactory>();
@@ -311,21 +312,46 @@ export class Player {
    * @param source - source to load
    */
   public load(source: ISource): void {
+    if (this.activeVideoElement_ === null) {
+      this.logger_.warn(
+        'You are trying to load a source, while no video element attached to the player. Please call "attach" with a target video element first.'
+      );
+
+      return;
+    }
+
     if (this.activeSource_ !== null) {
       this.stop('load');
     }
 
-    this.activeSource_ = source;
-    // TODO: pipeline load
+    const sourceModel = new Source(source);
 
-    this.logger_.warn('no supported pipelines found for ', source.mimeType);
+    this.logger_.debug('received a load request: ', sourceModel);
+
+    this.activeSource_ = sourceModel;
+
+    if (this.hasPipelineFactory(source.mimeType)) {
+      // TODO: custom pipelines flow
+      return;
+    }
+
+    this.logger_.debug(
+      `No registered pipelines found for the provided mime type (${sourceModel.mimeType}). Trying to fallback to the native pipeline...`
+    );
+
+    if (this.activeVideoElement_.canPlayType(sourceModel.mimeType)) {
+      // TODO: native pipeline flow
+      return;
+    }
+
+    this.logger_.warn('No supported pipelines found for ', source.mimeType);
     this.eventEmitter_.emitEvent(new PlayerErrorEvent(new NoSupportedPipelineError(true)));
   }
 
   /**
    * current source getter
    */
-  public getCurrentSource(): ISource | null {
+  public getCurrentSource(): Source | null {
     return this.activeSource_;
   }
 
