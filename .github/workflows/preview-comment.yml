@@ -1,0 +1,33 @@
+name: preview-comment
+
+on:
+  pull_request:
+    types: [opened]
+
+jobs:
+  comment:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `### Preview
+
+                https://deploy-preview-${context.issue.number}--videojsdev.netlify.app
+
+                ### Api References
+
+                - https://deploy-preview-${context.issue.number}--videojsdev.netlify.app/api-reference/dash-parser
+                - https://deploy-preview-${context.issue.number}--videojsdev.netlify.app/api-reference/hls-parser
+                - https://deploy-preview-${context.issue.number}--videojsdev.netlify.app/api-reference/playback
+
+                ### Demo
+
+                - https://deploy-preview-${context.issue.number}--videojsdev.netlify.app/demo/dash-parser
+                - https://deploy-preview-${context.issue.number}--videojsdev.netlify.app/demo/hls-parser
+                - https://deploy-preview-${context.issue.number}--videojsdev.netlify.app/demo/playback`
+            })
