@@ -15,11 +15,7 @@ jobs:
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: `> [!NOTE]
-                >
-                > URLs will be available only after Netlify deploy is completed
-
-                ### Preview
+              body: `### Preview
 
                 https://deploy-preview-${context.issue.number}--videojsdev.netlify.app
 
