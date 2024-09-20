@@ -36,7 +36,15 @@ TBD
 
 # Important Links
 
-TBD
+- @videojs/dash-parser
+  - API Reference: https://videojsdev.netlify.app/api-reference/dash-parser
+  - Demo: https://videojsdev.netlify.app/demo/dash-parser
+- @videojs/hls-parser
+  - API Reference: https://videojsdev.netlify.app/api-reference/hls-parser
+  - Demo: https://videojsdev.netlify.app/demo/hls-parser
+- @videojs/playback
+  - API Reference: https://videojsdev.netlify.app/api-reference/playback
+  - Demo: https://videojsdev.netlify.app/demo/playback
 
 # Contributing
 
