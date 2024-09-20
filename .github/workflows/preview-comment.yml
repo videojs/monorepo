@@ -18,18 +18,20 @@ jobs:
               body: `> [!NOTE]
                 >
                 > URLs will be available only after Netlify deploy is completed
+
                 ### Preview
+
                 https://deploy-preview-${context.issue.number}--videojsdev.netlify.app
+
                 ### Api References
-                https://deploy-preview-${context.issue.number}--videojsdev.netlify.app/api-reference/dash-parser
 
-                https://deploy-preview-${context.issue.number}--videojsdev.netlify.app/api-reference/hls-parser
+                - https://deploy-preview-${context.issue.number}--videojsdev.netlify.app/api-reference/dash-parser
+                - https://deploy-preview-${context.issue.number}--videojsdev.netlify.app/api-reference/hls-parser
+                - https://deploy-preview-${context.issue.number}--videojsdev.netlify.app/api-reference/playback
 
-                https://deploy-preview-${context.issue.number}--videojsdev.netlify.app/api-reference/playback
                 ### Demo
-                https://deploy-preview-${context.issue.number}--videojsdev.netlify.app/demo/dash-parser
 
-                https://deploy-preview-${context.issue.number}--videojsdev.netlify.app/demo/hls-parser
-
-                https://deploy-preview-${context.issue.number}--videojsdev.netlify.app/demo/playback`
+                - https://deploy-preview-${context.issue.number}--videojsdev.netlify.app/demo/dash-parser
+                - https://deploy-preview-${context.issue.number}--videojsdev.netlify.app/demo/hls-parser
+                - https://deploy-preview-${context.issue.number}--videojsdev.netlify.app/demo/playback`
             })
