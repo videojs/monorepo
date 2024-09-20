@@ -5,7 +5,7 @@
     "packages/*"
   ],
   "scripts": {
-    "clean": "npx nx run-many -t clean",
+    "clean": "rimraf deploy && npx nx run-many -t clean",
     "clean:install": "npm run clean && rimraf node_modules .nx package-lock.json && npm i",
     "test": "npx nx run-many -t test",
     "test:coverage": "npx nx run-many -t test:coverage",
@@ -17,7 +17,7 @@
     "prepare": "husky",
     "prepare-pre-release": "npx nx release --specifier prerelease --skip-publish",
     "prepare-release": "npx nx release --skip-publish",
-    "prepare-deploy": "rimraf deploy && npm run build && node cli/prepare-deploy.js",
+    "prepare-deploy": "npm run clean && npm run build && node cli/prepare-deploy.js",
     "release:publish": "npx nx release publish",
     "serve": "npx http-server -p 3333 ./deploy",
     "preserve": "npm run prepare-deploy"

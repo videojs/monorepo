@@ -8,8 +8,8 @@ import {
 } from './networkManagerErrors';
 import type { RetryWrapperOptions } from '../utils/retryWrapper';
 import RetryWrapper from '../utils/retryWrapper';
-import type { RequestType } from '../types/network.ts';
 import type { ILogger } from '../types/logger.declarations';
+import type { RequestType } from '../consts/requestType';
 
 export type RequestInterceptor = (request: Request) => Promise<Request>;
 export type ResponseHandler = (response: Response) => void;
