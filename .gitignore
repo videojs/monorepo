@@ -120,6 +120,7 @@ out
 .nuxt
 dist
 dist-api-reference
+dist-demo
 
 # Gatsby files
 

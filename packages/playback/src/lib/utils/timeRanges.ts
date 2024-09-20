@@ -32,6 +32,10 @@ export default class PlayerTimeRange {
     return time > this.rangeEnd_;
   }
 
+  public toString(): string {
+    return `{${this.rangeStart_}-->${this.rangeEnd_}}`;
+  }
+
   public static fromTimeRanges(timeRanges: TimeRanges): Array<PlayerTimeRange> {
     const result = [];
 

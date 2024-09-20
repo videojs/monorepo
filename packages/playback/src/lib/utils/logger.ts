@@ -1,14 +1,9 @@
-export enum LoggerLevel {
-  Debug,
-  Info,
-  Warn,
-  Error,
-  Off,
-}
+import { LoggerLevel } from '../consts/loggerLevel';
+import type { ILogger } from '../types/logger.declarations';
 
 const style = 'background: #333; padding: 3px; color: #bada55';
 
-export default class Logger {
+export default class Logger implements ILogger {
   private readonly console_: Console;
   private readonly label_: string;
 

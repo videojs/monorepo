@@ -1,46 +1,50 @@
-export type Callback<T> = (data: T) => void;
+import type { IEventEmitter, EventListener } from '../types/eventEmitter.declarations';
 
-export default class EventEmitter<M> {
-  private events_ = new Map<keyof M, Set<Callback<unknown>>>();
+export default class EventEmitter<M> implements IEventEmitter<M> {
+  private events_ = new Map<keyof M, Set<EventListener<unknown>>>();
 
-  public on<K extends keyof M>(event: K, callback: Callback<M[K]>): void {
+  public addEventListener<K extends keyof M>(event: K, eventListener: EventListener<M[K]>): void {
     if (!this.events_.has(event)) {
       this.events_.set(event, new Set());
     }
-    const typedSet = this.events_.get(event) as Set<Callback<M[K]>>;
-    typedSet.add(callback);
+    const typedSet = this.events_.get(event) as Set<EventListener<M[K]>>;
+
+    typedSet.add(eventListener);
   }
 
-  public off<K extends keyof M>(event: K, callback: Callback<M[K]>): void {
-    const callbacks = this.events_.get(event) as Set<Callback<M[K]>>;
-    if (callbacks) {
-      callbacks.delete(callback);
-      if (callbacks.size === 0) {
+  public removeEventListener<K extends keyof M>(event: K, eventListener: EventListener<M[K]>): void {
+    const eventListeners = this.events_.get(event) as Set<EventListener<M[K]>>;
+
+    if (eventListeners) {
+      eventListeners.delete(eventListener);
+      if (eventListeners.size === 0) {
         this.events_.delete(event);
       }
     }
   }
 
-  public emit<K extends keyof M>(event: K, data: M[K]): void {
-    const callbacks = this.events_.get(event) as Set<Callback<M[K]>>;
-    if (callbacks) {
-      callbacks.forEach((callback) => callback(data));
+  public emitEvent(event: { type: keyof M }): void {
+    const eventListeners = this.events_.get(event.type);
+
+    if (eventListeners) {
+      eventListeners.forEach((eventListener) => eventListener(event));
     }
   }
 
-  public once<K extends keyof M>(event: K, callback: Callback<M[K]>): void {
-    const onceCallback = (data: M[K]): void => {
-      this.off(event, onceCallback);
-      callback(data);
+  public once<K extends keyof M>(event: K, eventListener: EventListener<M[K]>): void {
+    const onceEventListener = (data: M[K]): void => {
+      this.removeEventListener(event, onceEventListener);
+      eventListener(data);
     };
-    this.on(event, onceCallback);
+
+    this.addEventListener(event, onceEventListener);
   }
 
-  public offAllFor(event: keyof M): void {
+  public removeAllEventListenersFor(event: keyof M): void {
     this.events_.delete(event);
   }
 
-  public reset(): void {
+  public removeAllEventListeners(): void {
     this.events_.clear();
   }
 }

@@ -3,6 +3,7 @@
 > This project is under active development!
 
 [![Netlify Status](https://api.netlify.com/api/v1/badges/9717430f-7ee5-41d2-b7af-cbb37472ab12/deploy-status)](https://app.netlify.com/sites/videojsdev/deploys)
+[![codecov](https://codecov.io/github/videojs/monorepo/graph/badge.svg?token=4M248I6DDL)](https://codecov.io/github/videojs/monorepo)
 
 Video.js is a full-featured, open source video player for all web-based platforms.
 
@@ -35,7 +36,15 @@ TBD
 
 # Important Links
 
-TBD
+- @videojs/dash-parser
+  - API Reference: https://videojsdev.netlify.app/api-reference/dash-parser
+  - Demo: https://videojsdev.netlify.app/demo/dash-parser
+- @videojs/hls-parser
+  - API Reference: https://videojsdev.netlify.app/api-reference/hls-parser
+  - Demo: https://videojsdev.netlify.app/demo/hls-parser
+- @videojs/playback
+  - API Reference: https://videojsdev.netlify.app/api-reference/playback
+  - Demo: https://videojsdev.netlify.app/demo/playback
 
 # Contributing
 

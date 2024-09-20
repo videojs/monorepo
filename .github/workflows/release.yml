@@ -56,6 +56,4 @@ jobs:
             packages/hls-parser/videojs-hls-parser-*.tgz
             packages/playback/videojs-playback-*.tgz
 
-      # Deploy Demo apps to netlify (TBD)
-      # Deploy API references to netlify (TBD)
       # Deploy IIFE bundles to CDN (TBD)

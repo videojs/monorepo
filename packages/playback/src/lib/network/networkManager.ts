@@ -8,8 +8,8 @@ import {
 } from './networkManagerErrors';
 import type { RetryWrapperOptions } from '../utils/retryWrapper';
 import RetryWrapper from '../utils/retryWrapper';
-import type Logger from '../utils/logger';
-import type { RequestType } from '../types/network.ts';
+import type { ILogger } from '../types/logger.declarations';
+import type { RequestType } from '../consts/requestType';
 
 export type RequestInterceptor = (request: Request) => Promise<Request>;
 export type ResponseHandler = (response: Response) => void;
@@ -33,7 +33,7 @@ interface NetworkRequestWithProgressiveResponse {
 }
 
 interface NetworkManagerDependencies {
-  logger: Logger;
+  logger: ILogger;
 }
 
 export default class NetworkManager {
@@ -44,7 +44,7 @@ export default class NetworkManager {
   private readonly requestInterceptors_ = new Map<RequestType, Array<RequestInterceptor>>();
   private readonly responseHandlers_ = new Map<RequestType, Array<ResponseHandler>>();
 
-  private readonly logger_: Logger;
+  private readonly logger_: ILogger;
 
   public constructor(dependencies: NetworkManagerDependencies) {
     this.logger_ = dependencies.logger;
