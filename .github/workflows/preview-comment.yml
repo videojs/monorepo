@@ -16,15 +16,15 @@ jobs:
             message += '> \n'
             message += '> Urls will be available only after netlify deploy. \n'
             message += '### Preview \n'
-            message += '- https://deploy-preview-${context.issue.number}--videojsdev.netlify.app \n'
+            message += `- https://deploy-preview-${context.issue.number}--videojsdev.netlify.app \n`
             message += '### Api Reference \n'
-            message += '- https://deploy-preview-${context.issue.number}--videojsdev.netlify.app/api-reference/dash-parser \n'
-            message += '- https://deploy-preview-${context.issue.number}--videojsdev.netlify.app/api-reference/hls-parser \n'
-            message += '- https://deploy-preview-${context.issue.number}--videojsdev.netlify.app/api-reference/playback \n'
+            message += `- https://deploy-preview-${context.issue.number}--videojsdev.netlify.app/api-reference/dash-parser \n`
+            message += `- https://deploy-preview-${context.issue.number}--videojsdev.netlify.app/api-reference/hls-parser \n`
+            message += `- https://deploy-preview-${context.issue.number}--videojsdev.netlify.app/api-reference/playback \n`
             message += '### Demo \n'
-            message += '- https://deploy-preview-${context.issue.number}--videojsdev.netlify.app/demo/dash-parser \n'
-            message += '- https://deploy-preview-${context.issue.number}--videojsdev.netlify.app/demo/hls-parser \n'
-            message += '- https://deploy-preview-${context.issue.number}--videojsdev.netlify.app/demo/playback \n'
+            message += `- https://deploy-preview-${context.issue.number}--videojsdev.netlify.app/demo/dash-parser \n`
+            message += `- https://deploy-preview-${context.issue.number}--videojsdev.netlify.app/demo/hls-parser \n`
+            message += `- https://deploy-preview-${context.issue.number}--videojsdev.netlify.app/demo/playback \n`
 
             github.rest.issues.createComment({
               issue_number: context.issue.number,
