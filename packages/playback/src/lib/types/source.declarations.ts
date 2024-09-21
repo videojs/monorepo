@@ -10,9 +10,40 @@ export interface IKeySystemConfig {
   getContentId?: (contentId: string) => string;
 }
 
-export interface ISource {
-  url: URL;
+export interface ILoadSource {
   mimeType: string;
-  asset?: string | ArrayBuffer;
   keySystems?: Record<string, IKeySystemConfig>;
+  /**
+   * You have to provide baseUrl for MPEG-DASH or HLS parsing
+   * If provided manifest/playlist has relative urls inside and provided as one of the following formats:
+   * - data: | blob: URL
+   * - string | ArrayBuffer | Blob | File asset
+   */
+  baseUrl?: URL;
+}
+
+export interface ILoadRemoteSource extends ILoadSource {
+  /**
+   * Popular use-cases: (http:|https:|data:|blob:) all should work fine with fetch
+   * Potentially, could be any other protocols, so custom network manager should be provider by the client
+   */
+  readonly url: URL;
+}
+
+export interface ILoadLocalSource extends ILoadSource {
+  /**
+   * Provided asset will be converted as follows:
+   * new URL(URL.createObjectURL(new Blob([source.asset])));
+   */
+  readonly asset: string | ArrayBuffer | Blob | File;
+}
+
+export interface ISourceModel {
+  readonly isDisposed: boolean;
+  readonly id: number;
+  readonly mimeType: string;
+  readonly keySystems: Record<string, IKeySystemConfig>;
+  readonly url: URL;
+  readonly baseUrl: URL | null;
+  dispose(): void;
 }

@@ -1,19 +1,42 @@
-import type { IKeySystemConfig, ISource } from '../types/source.declarations';
+import type { IKeySystemConfig, ILoadLocalSource, ILoadRemoteSource, ISourceModel } from '../types/source.declarations';
 
-export class Source {
+export class Source implements ISourceModel {
   private static counter_: number = 0;
 
   public readonly id: number;
-  public readonly url: URL;
   public readonly mimeType: string;
-  public readonly asset: string | ArrayBuffer | null = null;
   public readonly keySystems: Record<string, IKeySystemConfig>;
+  public readonly url: URL;
+  public readonly baseUrl: URL | null = null;
 
-  public constructor(rawSource: ISource) {
+  private readonly isBlob_: boolean = false;
+
+  private isDisposed_: boolean = false;
+
+  public constructor(rawSource: ILoadRemoteSource | ILoadLocalSource) {
     this.id = ++Source.counter_;
-    this.url = rawSource.url;
     this.mimeType = rawSource.mimeType;
-    this.asset = rawSource.asset || null;
+    this.baseUrl = rawSource.baseUrl ?? null;
     this.keySystems = rawSource.keySystems ?? {};
+
+    if ('asset' in rawSource) {
+      const blob = new Blob([rawSource.asset]);
+      const blobUrl = URL.createObjectURL(blob);
+      this.url = new URL(blobUrl);
+      this.isBlob_ = true;
+    } else {
+      this.url = rawSource.url;
+    }
+  }
+
+  public get isDisposed(): boolean {
+    return this.isDisposed_;
+  }
+
+  public dispose(): void {
+    this.isDisposed_ = true;
+    if (this.isBlob_) {
+      URL.revokeObjectURL(this.url.toString());
+    }
   }
 }
