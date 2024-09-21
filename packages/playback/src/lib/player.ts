@@ -18,7 +18,7 @@ import {
 } from './events/playerEvents';
 import type { CapabilitiesProbeResult, IEnvCapabilitiesProvider } from './types/envCapabilities.declarations';
 import EnvCapabilitiesProvider from './utils/envCapabilities';
-import type { ISource } from './types/source.declarations';
+import type { ILoadLocalSource, ILoadRemoteSource, ISourceModel } from './types/source.declarations';
 import type { IPipeline, IPipelineFactory } from './types/pipeline.declarations';
 import type PlayerTimeRange from './utils/timeRanges';
 import { PlaybackState } from './consts/playbackState';
@@ -57,7 +57,7 @@ export class Player {
    */
 
   private activeVideoElement_: HTMLVideoElement | null = null;
-  private activeSource_: Source | null = null;
+  private activeSource_: ISourceModel | null = null;
   private activePipeline_: IPipeline | null = null;
 
   private readonly mimeTypeToPipelineFactoryMap_ = new Map<string, IPipelineFactory>();
@@ -294,6 +294,7 @@ export class Player {
     this.logger_.debug('stop is called. reason: ', reason);
     // TODO: call pipeline stop
 
+    this.activeSource_?.dispose();
     this.activeSource_ = null;
     this.activePipeline_?.dispose();
     this.activePipeline_ = null;
@@ -311,7 +312,7 @@ export class Player {
    * load source
    * @param source - source to load
    */
-  public load(source: ISource): void {
+  public load(source: ILoadRemoteSource | ILoadLocalSource): void {
     if (this.activeVideoElement_ === null) {
       this.logger_.warn(
         'You are trying to load a source, while no video element attached to the player. Please call "attach" with a target video element first.'
@@ -351,7 +352,7 @@ export class Player {
   /**
    * current source getter
    */
-  public getCurrentSource(): Source | null {
+  public getCurrentSource(): ISourceModel | null {
     return this.activeSource_;
   }
 
