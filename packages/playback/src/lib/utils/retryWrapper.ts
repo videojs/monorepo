@@ -5,14 +5,11 @@ interface AttemptDiagnosticInfo {
   retryReason: unknown | undefined;
 }
 
-type WrappedWithRetry<T> = {
-  (...args: Array<unknown>): Promise<T>;
-  attempts: Array<AttemptDiagnosticInfo>;
-};
+type WrappedWithRetry<T> = (...args: Array<unknown>) => Promise<T>;
 
 export interface RetryWrapperOptions {
   maxAttempts: number;
-  delay: number;
+  initialDelay: number;
   delayFactor: number;
   fuzzFactor: number;
 }
@@ -31,13 +28,13 @@ const wait = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(
 
 export default class RetryWrapper {
   private readonly maxAttempts_: number;
-  private readonly delay_: number;
+  private readonly initialDelay_: number;
   private readonly delayFactor_: number;
   private readonly fuzzFactor_: number;
 
   public constructor(options: RetryWrapperOptions) {
     this.maxAttempts_ = options.maxAttempts;
-    this.delay_ = options.delay;
+    this.initialDelay_ = options.initialDelay;
     this.delayFactor_ = options.delayFactor;
     this.fuzzFactor_ = options.fuzzFactor;
   }
@@ -49,10 +46,8 @@ export default class RetryWrapper {
     waitFn = wait
   ): WrappedWithRetry<T> {
     let attemptNumber = 1;
-    let delay = this.delay_;
+    let delay = this.initialDelay_;
     let lastError: unknown | undefined;
-
-    const attempts: Array<AttemptDiagnosticInfo> = [];
 
     const wrapped = async (...args: Array<unknown>): Promise<T> => {
       if (attemptNumber > this.maxAttempts_) {
@@ -65,7 +60,6 @@ export default class RetryWrapper {
 
       try {
         const attemptDiagnosticInfo = this.createDiagnosticInfoForAttempt_(attemptNumber, delay, lastError);
-        attempts.push(attemptDiagnosticInfo);
         hooks.onAttempt?.call(null, attemptDiagnosticInfo);
         return await fn(...args);
       } catch (e) {
@@ -80,8 +74,6 @@ export default class RetryWrapper {
         return wrapped(...args);
       }
     };
-
-    wrapped.attempts = attempts;
 
     return wrapped;
   }

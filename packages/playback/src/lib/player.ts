@@ -26,12 +26,15 @@ import type { PlaybackStats } from './types/playbackStats.declarations';
 import type { IAudioTrack } from './types/tracks.declarations';
 import { NoSupportedPipelineError } from './errors/pipelineErrors';
 import { Source } from './utils/source';
+import type { INetworkManager } from './types/networkingManager.declarations';
+import { NetworkManager } from './network/networkManager';
 
 interface PlayerDependencies {
   logger?: ILogger;
   configurationManager?: IStore<PlayerConfiguration>;
   eventEmitter?: IEventEmitter<EventTypeToEventMap>;
   envCapabilitiesProvider?: IEnvCapabilitiesProvider;
+  networkManager?: INetworkManager;
 }
 
 interface VersionInfo {
@@ -70,6 +73,7 @@ export class Player {
   private readonly configurationManager_: IStore<PlayerConfiguration>;
   private readonly eventEmitter_: IEventEmitter<EventTypeToEventMap>;
   private readonly envCapabilitiesProvider_: IEnvCapabilitiesProvider;
+  private readonly networkManager_: INetworkManager;
 
   /**
    * You can pass your own implementations via dependencies.
@@ -81,6 +85,8 @@ export class Player {
     this.configurationManager_ = dependencies.configurationManager ?? new ConfigurationManager();
     this.eventEmitter_ = dependencies.eventEmitter ?? new EventEmitter<EventTypeToEventMap>();
     this.envCapabilitiesProvider_ = dependencies.envCapabilitiesProvider ?? new EnvCapabilitiesProvider();
+    this.networkManager_ =
+      dependencies.networkManager ?? new NetworkManager({ logger: this.logger_.createSubLogger('NetworkManager') });
   }
 
   /**

@@ -11,23 +11,24 @@ jobs:
       - uses: actions/github-script@v7
         with:
           script: |
+            let message = ''
+            message += '> [!NOTE]\n'
+            message += '> \n'
+            message += '> Urls will be available only after netlify deploy. \n'
+            message += '### Preview \n'
+            message += `- https://deploy-preview-${context.issue.number}--videojsdev.netlify.app \n`
+            message += '### Api Reference \n'
+            message += `- https://deploy-preview-${context.issue.number}--videojsdev.netlify.app/api-reference/dash-parser \n`
+            message += `- https://deploy-preview-${context.issue.number}--videojsdev.netlify.app/api-reference/hls-parser \n`
+            message += `- https://deploy-preview-${context.issue.number}--videojsdev.netlify.app/api-reference/playback \n`
+            message += '### Demo \n'
+            message += `- https://deploy-preview-${context.issue.number}--videojsdev.netlify.app/demo/dash-parser \n`
+            message += `- https://deploy-preview-${context.issue.number}--videojsdev.netlify.app/demo/hls-parser \n`
+            message += `- https://deploy-preview-${context.issue.number}--videojsdev.netlify.app/demo/playback \n`
+
             github.rest.issues.createComment({
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: `### Preview
-
-                https://deploy-preview-${context.issue.number}--videojsdev.netlify.app
-
-                ### Api References
-
-                - https://deploy-preview-${context.issue.number}--videojsdev.netlify.app/api-reference/dash-parser
-                - https://deploy-preview-${context.issue.number}--videojsdev.netlify.app/api-reference/hls-parser
-                - https://deploy-preview-${context.issue.number}--videojsdev.netlify.app/api-reference/playback
-
-                ### Demo
-
-                - https://deploy-preview-${context.issue.number}--videojsdev.netlify.app/demo/dash-parser
-                - https://deploy-preview-${context.issue.number}--videojsdev.netlify.app/demo/hls-parser
-                - https://deploy-preview-${context.issue.number}--videojsdev.netlify.app/demo/playback`
+              body: message
             })
