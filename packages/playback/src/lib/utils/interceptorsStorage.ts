@@ -1,7 +1,8 @@
 import type { InterceptorType } from '../consts/interceptorType';
 import type { InterceptorTypeToInterceptorMap } from '../types/interceptorTypeToInterceptorMap.declarations';
+import type { IInterceptorsStorage } from '../types/interceptors.declarations';
 
-export class InterceptorsStorage {
+export class InterceptorsStorage implements IInterceptorsStorage {
   private readonly storage_ = new Map<InterceptorType, Set<InterceptorTypeToInterceptorMap[InterceptorType]>>();
 
   public addInterceptor<K extends InterceptorType>(

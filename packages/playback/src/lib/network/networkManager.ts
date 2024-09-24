@@ -11,7 +11,7 @@ import type { PlayerNetworkConfiguration } from '../types/configuration.declarat
 import type { IEventEmitter } from '../types/eventEmitter.declarations';
 import type { NetworkEventMap } from '../types/eventTypeToEventMap.declarations';
 
-interface NetworkManagerDependencies {
+export interface NetworkManagerDependencies {
   logger: ILogger;
   networkInterceptorsProvider: INetworkInterceptorsProvider;
   eventEmitter: IEventEmitter<NetworkEventMap>;

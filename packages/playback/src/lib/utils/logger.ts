@@ -3,19 +3,31 @@ import type { ILogger } from '../types/logger.declarations';
 
 const style = 'background: #333; padding: 3px; color: #bada55';
 
-export default class Logger implements ILogger {
+export interface LoggerDependencies {
+  console: Console;
+  label: string;
+  delimiter: string;
+}
+
+export class Logger implements ILogger {
   private readonly console_: Console;
   private readonly label_: string;
+  private readonly delimiter_: string;
 
   private level_: LoggerLevel = LoggerLevel.Debug;
 
-  public constructor(console: Console, label: string) {
-    this.console_ = console;
-    this.label_ = `%c${label}`;
+  public constructor(dependencies: LoggerDependencies) {
+    this.console_ = dependencies.console;
+    this.label_ = `%c${dependencies.label}`;
+    this.delimiter_ = dependencies.delimiter;
   }
 
   public createSubLogger(subLabel: string): Logger {
-    return new Logger(this.console_, this.label_ + ' > ' + subLabel);
+    return new Logger({
+      console: this.console_,
+      label: `${this.label_} ${this.delimiter_} ${subLabel}`,
+      delimiter: this.delimiter_,
+    });
   }
 
   public setLoggerLevel(level: LoggerLevel): void {

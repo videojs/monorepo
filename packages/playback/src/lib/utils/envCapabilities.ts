@@ -24,7 +24,7 @@ const persistentEmeConfig = {
   sessionTypes: ['persistent-license'],
 };
 
-export default class EnvCapabilitiesProvider implements IEnvCapabilitiesProvider {
+export class EnvCapabilitiesProvider implements IEnvCapabilitiesProvider {
   private cache_: CapabilitiesProbeResult | null = null;
 
   public async probe(): Promise<CapabilitiesProbeResult> {

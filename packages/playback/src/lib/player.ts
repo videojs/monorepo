@@ -1,13 +1,10 @@
 import type { ILogger } from './types/logger.declarations';
-import Logger from './utils/logger';
 import { LoggerLevel } from './consts/loggerLevel';
 import type { PlayerConfiguration } from './types/configuration.declarations';
 import type { IStore } from './types/store.declarations';
-import ConfigurationManager from './configuration/configurationManager';
 import type { DeepPartial } from './types/utility.declarations';
 import type { EventListener, IEventEmitter } from './types/eventEmitter.declarations';
 import type { EventTypeToEventMap } from './types/eventTypeToEventMap.declarations';
-import EventEmitter from './utils/eventEmitter';
 import { PlayerEventType } from './consts/events';
 import {
   ConfigurationChangedEvent,
@@ -17,7 +14,6 @@ import {
   VolumeChangedEvent,
 } from './events/playerEvents';
 import type { CapabilitiesProbeResult, IEnvCapabilitiesProvider } from './types/envCapabilities.declarations';
-import EnvCapabilitiesProvider from './utils/envCapabilities';
 import type { ILoadLocalSource, ILoadRemoteSource, ISourceModel } from './types/source.declarations';
 import type { IPipeline, IPipelineFactory } from './types/pipeline.declarations';
 import type PlayerTimeRange from './utils/timeRanges';
@@ -27,17 +23,16 @@ import type { IAudioTrack } from './types/tracks.declarations';
 import { NoSupportedPipelineError } from './errors/pipelineErrors';
 import { Source } from './utils/source';
 import type { INetworkManager } from './types/network.declarations';
-import { NetworkManager } from './network/networkManager';
-import { InterceptorsStorage } from './utils/interceptorsStorage';
-import { InterceptorType } from './consts/interceptorType';
-import type { InterceptorTypeToInterceptorMap } from './types/interceptorTypeToInterceptorMap.declarations';
+import type { IInterceptorsStorage } from './types/interceptors.declarations';
+import { ServiceLocator } from './serviceLocator';
 
 interface PlayerDependencies {
-  logger?: ILogger;
-  configurationManager?: IStore<PlayerConfiguration>;
-  eventEmitter?: IEventEmitter<EventTypeToEventMap>;
-  envCapabilitiesProvider?: IEnvCapabilitiesProvider;
-  networkManager?: INetworkManager;
+  readonly logger: ILogger;
+  readonly interceptorsStorage: IInterceptorsStorage;
+  readonly configurationManager: IStore<PlayerConfiguration>;
+  readonly eventEmitter: IEventEmitter<EventTypeToEventMap>;
+  readonly envCapabilitiesProvider: IEnvCapabilitiesProvider;
+  readonly networkManager: INetworkManager;
 }
 
 interface VersionInfo {
@@ -58,6 +53,10 @@ export class Player {
   public static LoggerLevel = LoggerLevel;
   public static Event = PlayerEventType;
 
+  public static create(): Player {
+    return new Player(new ServiceLocator());
+  }
+
   /**
    * MARK: Private Properties
    */
@@ -77,30 +76,20 @@ export class Player {
   private readonly eventEmitter_: IEventEmitter<EventTypeToEventMap>;
   private readonly envCapabilitiesProvider_: IEnvCapabilitiesProvider;
   private readonly networkManager_: INetworkManager;
-  private readonly interceptorsStorage_: InterceptorsStorage;
+  private readonly interceptorsStorage_: IInterceptorsStorage;
 
   /**
    * You can pass your own implementations via dependencies.
    * - Pass your own logger, you have to implement ILogger interface.
-   * @param dependencies - optional dependencies
+   * @param dependencies - player dependencies
    */
-  public constructor(dependencies: PlayerDependencies = {}) {
-    this.interceptorsStorage_ = new InterceptorsStorage();
-    this.logger_ = dependencies.logger ?? new Logger(console, 'Player');
-    this.configurationManager_ = dependencies.configurationManager ?? new ConfigurationManager();
-    this.eventEmitter_ = dependencies.eventEmitter ?? new EventEmitter<EventTypeToEventMap>();
-    this.envCapabilitiesProvider_ = dependencies.envCapabilitiesProvider ?? new EnvCapabilitiesProvider();
-    this.networkManager_ =
-      dependencies.networkManager ??
-      new NetworkManager({
-        logger: this.logger_.createSubLogger('NetworkManager'),
-        eventEmitter: this.eventEmitter_,
-        configuration: this.configurationManager_.getSnapshot().network,
-        networkInterceptorsProvider: {
-          getNetworkRequestInterceptors: (): Set<InterceptorTypeToInterceptorMap[InterceptorType.NetworkRequest]> =>
-            this.interceptorsStorage_.getInterceptorsSet(InterceptorType.NetworkRequest),
-        },
-      });
+  public constructor(dependencies: PlayerDependencies) {
+    this.interceptorsStorage_ = dependencies.interceptorsStorage;
+    this.logger_ = dependencies.logger;
+    this.configurationManager_ = dependencies.configurationManager;
+    this.eventEmitter_ = dependencies.eventEmitter;
+    this.envCapabilitiesProvider_ = dependencies.envCapabilitiesProvider;
+    this.networkManager_ = dependencies.networkManager;
   }
 
   /**
@@ -110,7 +99,7 @@ export class Player {
   /**
    * interceptors storage getter
    */
-  public getInterceptorsStorage(): InterceptorsStorage {
+  public getInterceptorsStorage(): IInterceptorsStorage {
     return this.interceptorsStorage_;
   }
 
