@@ -28,6 +28,7 @@ import { NoSupportedPipelineError } from './errors/pipelineErrors';
 import { Source } from './utils/source';
 import type { INetworkManager } from './types/networkingManager.declarations';
 import { NetworkManager } from './network/networkManager';
+import { InterceptorsStorage } from './utils/interceptorsStorage';
 
 interface PlayerDependencies {
   logger?: ILogger;
@@ -74,6 +75,7 @@ export class Player {
   private readonly eventEmitter_: IEventEmitter<EventTypeToEventMap>;
   private readonly envCapabilitiesProvider_: IEnvCapabilitiesProvider;
   private readonly networkManager_: INetworkManager;
+  private readonly interceptorsStorage_: InterceptorsStorage;
 
   /**
    * You can pass your own implementations via dependencies.
@@ -81,12 +83,24 @@ export class Player {
    * @param dependencies - optional dependencies
    */
   public constructor(dependencies: PlayerDependencies = {}) {
+    this.interceptorsStorage_ = new InterceptorsStorage();
     this.logger_ = dependencies.logger ?? new Logger(console, 'Player');
     this.configurationManager_ = dependencies.configurationManager ?? new ConfigurationManager();
     this.eventEmitter_ = dependencies.eventEmitter ?? new EventEmitter<EventTypeToEventMap>();
     this.envCapabilitiesProvider_ = dependencies.envCapabilitiesProvider ?? new EnvCapabilitiesProvider();
     this.networkManager_ =
       dependencies.networkManager ?? new NetworkManager({ logger: this.logger_.createSubLogger('NetworkManager') });
+  }
+
+  /**
+   * MARK: Interceptors API
+   */
+
+  /**
+   * interceptors storage getter
+   */
+  public getInterceptorsStorage(): InterceptorsStorage {
+    return this.interceptorsStorage_;
   }
 
   /**
@@ -311,6 +325,8 @@ export class Player {
    */
   public dispose(): void {
     this.detach();
+    this.eventEmitter_.removeAllEventListeners();
+    this.interceptorsStorage_.removeAllInterceptors();
     this.mimeTypeToPipelineFactoryMap_.clear();
   }
 
