@@ -1,5 +1,14 @@
 import type Logger from '../../utils/logger';
-import { OperationType, type SourceBufferWrapper } from './types/bufferOperation';
+
+enum OperationType {
+  append,
+  remove,
+}
+
+interface SourceBufferWrapper {
+  buffer: SourceBuffer;
+  queue: Array<() => Promise<void>>;
+}
 
 export default class MseManager {
   private readonly logger_: Logger;
