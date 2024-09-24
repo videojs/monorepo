@@ -1,4 +1,4 @@
-import type Logger from '../../utils/logger';
+import type { ILogger } from '../../types/logger.declarations';
 
 enum OperationType {
   append,
@@ -11,14 +11,14 @@ interface SourceBufferWrapper {
 }
 
 export default class MseManager {
-  private readonly logger_: Logger;
+  private readonly logger_: ILogger;
   //TODO: ManagedMediaSource
   private readonly mediaSource_: MediaSource = new MediaSource();
   private readonly sourceBuffers_ = new Map<string, SourceBufferWrapper>();
   private readonly sourceOpen_: Promise<void> = this.initMediaSource_();
   private readonly srcURL_: string = URL.createObjectURL(this.mediaSource_);
 
-  public constructor(logger: Logger) {
+  public constructor(logger: ILogger) {
     this.logger_ = logger.createSubLogger('MseManager');
   }
 

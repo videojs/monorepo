@@ -2,10 +2,9 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { Player } from '../src/lib/player';
 import type { PlayerConfiguration } from '../src/lib/types/configuration.declarations';
 import { ConfigurationChangedEvent, LoggerLevelChangedEvent, VolumeChangedEvent } from '../src/lib/events/playerEvents';
-import EventEmitter from '../src/lib/utils/eventEmitter';
-import type { EventTypeToEventMap } from '../src/lib/types/eventTypeToEventMap.declarations';
 import type { PlayerEvent } from '../src/lib/events/basePlayerEvent';
 import { RequestType } from '../src/lib/consts/requestType';
+import { ServiceLocator } from '../src/lib/serviceLocator';
 // import type { ILogger } from '../src/lib/types/logger';
 // import { instance, mock, verify, when } from '@typestrong/ts-mockito';
 
@@ -58,11 +57,11 @@ const createPlayerDefaultConfiguration = (): PlayerConfiguration => ({
 
 describe('Player spec', () => {
   let player: Player;
-  let eventEmitter: EventEmitter<EventTypeToEventMap>;
+  let serviceLocator: ServiceLocator;
 
   beforeEach(() => {
-    eventEmitter = new EventEmitter<EventTypeToEventMap>();
-    player = new Player({ eventEmitter });
+    serviceLocator = new ServiceLocator();
+    player = new Player(serviceLocator);
   });
 
   describe('getLoggerLevel', () => {
@@ -186,10 +185,10 @@ describe('Player spec', () => {
         actualEvents.push(event);
       });
 
-      eventEmitter.emitEvent(new LoggerLevelChangedEvent(Player.LoggerLevel.Warn));
-      eventEmitter.emitEvent(new LoggerLevelChangedEvent(Player.LoggerLevel.Info));
-      eventEmitter.emitEvent(new VolumeChangedEvent(0.5));
-      eventEmitter.emitEvent(new ConfigurationChangedEvent(player.getConfigurationSnapshot()));
+      serviceLocator.eventEmitter.emitEvent(new LoggerLevelChangedEvent(Player.LoggerLevel.Warn));
+      serviceLocator.eventEmitter.emitEvent(new LoggerLevelChangedEvent(Player.LoggerLevel.Info));
+      serviceLocator.eventEmitter.emitEvent(new VolumeChangedEvent(0.5));
+      serviceLocator.eventEmitter.emitEvent(new ConfigurationChangedEvent(player.getConfigurationSnapshot()));
 
       expect(expectedEvents).toEqual(actualEvents);
     });
@@ -204,10 +203,10 @@ describe('Player spec', () => {
         actualEvents.push(event);
       });
 
-      eventEmitter.emitEvent(new LoggerLevelChangedEvent(Player.LoggerLevel.Warn));
-      eventEmitter.emitEvent(new LoggerLevelChangedEvent(Player.LoggerLevel.Info));
-      eventEmitter.emitEvent(new VolumeChangedEvent(0.5));
-      eventEmitter.emitEvent(new ConfigurationChangedEvent(player.getConfigurationSnapshot()));
+      serviceLocator.eventEmitter.emitEvent(new LoggerLevelChangedEvent(Player.LoggerLevel.Warn));
+      serviceLocator.eventEmitter.emitEvent(new LoggerLevelChangedEvent(Player.LoggerLevel.Info));
+      serviceLocator.eventEmitter.emitEvent(new VolumeChangedEvent(0.5));
+      serviceLocator.eventEmitter.emitEvent(new ConfigurationChangedEvent(player.getConfigurationSnapshot()));
 
       expect(expectedEvents).toEqual(actualEvents);
     });
@@ -225,18 +224,18 @@ describe('Player spec', () => {
       player.addEventListener(Player.Event.LoggerLevelChanged, listener);
       player.addEventListener(Player.Event.VolumeChanged, listener);
 
-      eventEmitter.emitEvent(new LoggerLevelChangedEvent(Player.LoggerLevel.Warn));
+      serviceLocator.eventEmitter.emitEvent(new LoggerLevelChangedEvent(Player.LoggerLevel.Warn));
 
       player.removeEventListener(Player.Event.LoggerLevelChanged, listener);
 
-      eventEmitter.emitEvent(new LoggerLevelChangedEvent(Player.LoggerLevel.Info));
-      eventEmitter.emitEvent(new VolumeChangedEvent(0.5));
+      serviceLocator.eventEmitter.emitEvent(new LoggerLevelChangedEvent(Player.LoggerLevel.Info));
+      serviceLocator.eventEmitter.emitEvent(new VolumeChangedEvent(0.5));
 
       player.removeEventListener(Player.Event.VolumeChanged, listener);
 
-      eventEmitter.emitEvent(new VolumeChangedEvent(0.6));
+      serviceLocator.eventEmitter.emitEvent(new VolumeChangedEvent(0.6));
 
-      eventEmitter.emitEvent(new ConfigurationChangedEvent(player.getConfigurationSnapshot()));
+      serviceLocator.eventEmitter.emitEvent(new ConfigurationChangedEvent(player.getConfigurationSnapshot()));
 
       expect(expectedEvents).toEqual(actualEvents);
     });
@@ -267,13 +266,13 @@ describe('Player spec', () => {
       player.addEventListener(Player.Event.LoggerLevelChanged, listener2);
       player.addEventListener(Player.Event.LoggerLevelChanged, listener3);
 
-      eventEmitter.emitEvent(new LoggerLevelChangedEvent(Player.LoggerLevel.Info));
+      serviceLocator.eventEmitter.emitEvent(new LoggerLevelChangedEvent(Player.LoggerLevel.Info));
 
       player.removeAllEventListenersForType(Player.Event.LoggerLevelChanged);
 
-      eventEmitter.emitEvent(new LoggerLevelChangedEvent(Player.LoggerLevel.Info));
-      eventEmitter.emitEvent(new LoggerLevelChangedEvent(Player.LoggerLevel.Info));
-      eventEmitter.emitEvent(new LoggerLevelChangedEvent(Player.LoggerLevel.Info));
+      serviceLocator.eventEmitter.emitEvent(new LoggerLevelChangedEvent(Player.LoggerLevel.Info));
+      serviceLocator.eventEmitter.emitEvent(new LoggerLevelChangedEvent(Player.LoggerLevel.Info));
+      serviceLocator.eventEmitter.emitEvent(new LoggerLevelChangedEvent(Player.LoggerLevel.Info));
 
       expect(expectedEvents).toEqual(actualEvents);
     });
@@ -291,13 +290,13 @@ describe('Player spec', () => {
       player.addEventListener(Player.Event.LoggerLevelChanged, listener);
       player.addEventListener(Player.Event.VolumeChanged, listener);
 
-      eventEmitter.emitEvent(new LoggerLevelChangedEvent(Player.LoggerLevel.Warn));
-      eventEmitter.emitEvent(new VolumeChangedEvent(0.5));
+      serviceLocator.eventEmitter.emitEvent(new LoggerLevelChangedEvent(Player.LoggerLevel.Warn));
+      serviceLocator.eventEmitter.emitEvent(new VolumeChangedEvent(0.5));
 
       player.removeAllEventListeners();
 
-      eventEmitter.emitEvent(new LoggerLevelChangedEvent(Player.LoggerLevel.Warn));
-      eventEmitter.emitEvent(new VolumeChangedEvent(0.5));
+      serviceLocator.eventEmitter.emitEvent(new LoggerLevelChangedEvent(Player.LoggerLevel.Warn));
+      serviceLocator.eventEmitter.emitEvent(new VolumeChangedEvent(0.5));
 
       expect(expectedEvents).toEqual(actualEvents);
     });

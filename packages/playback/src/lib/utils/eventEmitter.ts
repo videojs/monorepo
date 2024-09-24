@@ -1,6 +1,6 @@
 import type { IEventEmitter, EventListener } from '../types/eventEmitter.declarations';
 
-export default class EventEmitter<M> implements IEventEmitter<M> {
+export class EventEmitter<M> implements IEventEmitter<M> {
   private events_ = new Map<keyof M, Set<EventListener<unknown>>>();
 
   public addEventListener<K extends keyof M>(event: K, eventListener: EventListener<M[K]>): void {
