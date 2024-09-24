@@ -26,9 +26,11 @@ import type { PlaybackStats } from './types/playbackStats.declarations';
 import type { IAudioTrack } from './types/tracks.declarations';
 import { NoSupportedPipelineError } from './errors/pipelineErrors';
 import { Source } from './utils/source';
-import type { INetworkManager } from './types/networkingManager.declarations';
+import type { INetworkManager } from './types/network.declarations';
 import { NetworkManager } from './network/networkManager';
 import { InterceptorsStorage } from './utils/interceptorsStorage';
+import { InterceptorType } from './consts/interceptorType';
+import type { InterceptorTypeToInterceptorMap } from './types/interceptorTypeToInterceptorMap.declarations';
 
 interface PlayerDependencies {
   logger?: ILogger;
@@ -89,7 +91,16 @@ export class Player {
     this.eventEmitter_ = dependencies.eventEmitter ?? new EventEmitter<EventTypeToEventMap>();
     this.envCapabilitiesProvider_ = dependencies.envCapabilitiesProvider ?? new EnvCapabilitiesProvider();
     this.networkManager_ =
-      dependencies.networkManager ?? new NetworkManager({ logger: this.logger_.createSubLogger('NetworkManager') });
+      dependencies.networkManager ??
+      new NetworkManager({
+        logger: this.logger_.createSubLogger('NetworkManager'),
+        eventEmitter: this.eventEmitter_,
+        configuration: this.configurationManager_.getSnapshot().network,
+        networkInterceptorsProvider: {
+          getNetworkRequestInterceptors: (): Set<InterceptorTypeToInterceptorMap[InterceptorType.NetworkRequest]> =>
+            this.interceptorsStorage_.getInterceptorsSet(InterceptorType.NetworkRequest),
+        },
+      });
   }
 
   /**
@@ -192,6 +203,7 @@ export class Player {
    */
   public updateConfiguration(configurationChunk: DeepPartial<PlayerConfiguration>): void {
     this.configurationManager_.update(configurationChunk);
+    this.networkManager_.updateConfiguration(this.configurationManager_.getSnapshot().network);
     this.eventEmitter_.emitEvent(new ConfigurationChangedEvent(this.getConfigurationSnapshot()));
   }
 
@@ -200,6 +212,7 @@ export class Player {
    */
   public resetConfiguration(): void {
     this.configurationManager_.reset();
+    this.networkManager_.updateConfiguration(this.configurationManager_.getSnapshot().network);
     this.eventEmitter_.emitEvent(new ConfigurationChangedEvent(this.getConfigurationSnapshot()));
   }
 

@@ -1,27 +1,25 @@
-interface AttemptDiagnosticInfo {
-  attemptNumber: number;
-  currentDelaySec: number;
-  expectedFuzzedDelayRangeSec: { from: number; to: number };
-  retryReason: unknown | undefined;
-}
-
-type WrappedWithRetry<T> = (...args: Array<unknown>) => Promise<T>;
-
-export interface RetryWrapperOptions {
-  maxAttempts: number;
-  initialDelay: number;
-  delayFactor: number;
-  fuzzFactor: number;
-}
-
-interface RetryWrapperHooks {
-  onAttempt?: (diagnosticInfo: AttemptDiagnosticInfo) => void;
-}
+import type { RetryInfo } from '../types/retry.declarations';
+import { noop, t } from './fn';
 
 class MaxAttemptsExceeded extends Error {
   public constructor() {
     super(`Max attempts number is exceeded.`);
   }
+}
+
+type WrappedWithRetry<T> = (...args: Array<unknown>) => Promise<T>;
+
+interface WrapPayload<T> {
+  target: (...args: Array<unknown>) => Promise<T>;
+  shouldRetry?: (error: Error) => boolean;
+  onRetry?: (retryInfo: RetryInfo) => void;
+}
+
+interface RetryWrapperOptions {
+  maxAttempts: number;
+  initialDelay: number;
+  delayFactor: number;
+  fuzzFactor: number;
 }
 
 const wait = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
@@ -39,38 +37,39 @@ export default class RetryWrapper {
     this.fuzzFactor_ = options.fuzzFactor;
   }
 
-  public wrap<T>(
-    fn: (...args: Array<unknown>) => Promise<T>,
-    shouldRetry: (error: unknown) => boolean = (): boolean => true,
-    hooks: RetryWrapperHooks = {},
-    waitFn = wait
-  ): WrappedWithRetry<T> {
+  public wrap<T>(payload: WrapPayload<T>): WrappedWithRetry<T> {
+    const { target, shouldRetry = t, onRetry = noop } = payload;
+
     let attemptNumber = 1;
     let delay = this.initialDelay_;
-    let lastError: unknown | undefined;
+    let retryReason: Error;
 
     const wrapped = async (...args: Array<unknown>): Promise<T> => {
       if (attemptNumber > this.maxAttempts_) {
-        if (lastError) {
-          throw lastError;
+        if (retryReason) {
+          throw retryReason;
         }
 
         throw new MaxAttemptsExceeded();
       }
 
       try {
-        const attemptDiagnosticInfo = this.createDiagnosticInfoForAttempt_(attemptNumber, delay, lastError);
-        hooks.onAttempt?.call(null, attemptDiagnosticInfo);
-        return await fn(...args);
+        return await target(...args);
       } catch (e) {
-        if (!shouldRetry(e)) {
-          throw e;
+        const error = e as Error;
+
+        if (!shouldRetry(error)) {
+          throw error;
         }
 
-        lastError = e;
-        await waitFn(this.applyFuzzFactor_(delay));
+        await wait(this.applyFuzzFactor_(delay));
+
+        retryReason = error;
         attemptNumber++;
-        delay = this.applyDelayFactor_(delay);
+        delay += delay * this.delayFactor_;
+
+        onRetry({ attemptNumber, delay, retryReason });
+
         return wrapped(...args);
       }
     };
@@ -83,34 +82,12 @@ export default class RetryWrapper {
    * This means ±10% deviation
    * So if we have delay as 1000
    * This function can generate any value from 900 to 1100
-   * @param delay
+   * @param delay - current delay
    */
   private applyFuzzFactor_(delay: number): number {
     const lowValue = (1 - this.fuzzFactor_) * delay;
     const highValue = (1 + this.fuzzFactor_) * delay;
 
     return lowValue + Math.random() * (highValue - lowValue);
-  }
-
-  private applyDelayFactor_(delay: number): number {
-    const delta = delay * this.delayFactor_;
-
-    return delay + delta;
-  }
-
-  private createDiagnosticInfoForAttempt_(
-    attemptNumber: number,
-    delay: number,
-    lastError: unknown | undefined
-  ): AttemptDiagnosticInfo {
-    const fuzzedDelayFrom = (1 - this.fuzzFactor_) * delay;
-    const fuzzedDelayTo = (1 + this.fuzzFactor_) * delay;
-
-    return {
-      attemptNumber,
-      currentDelaySec: delay / 1000,
-      retryReason: lastError,
-      expectedFuzzedDelayRangeSec: { from: fuzzedDelayFrom / 1000, to: fuzzedDelayTo / 1000 },
-    };
   }
 }

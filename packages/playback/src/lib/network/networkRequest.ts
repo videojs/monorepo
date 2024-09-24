@@ -1,9 +1,10 @@
 import type {
+  INetworkInterceptorsProvider,
   INetworkRequest,
   IRequestPayload,
   IRequestPayloadWithChunkHandler,
   IRequestPayloadWithMapper,
-} from '../types/networkingManager.declarations';
+} from '../types/network.declarations';
 import type { RequestType } from '../consts/requestType';
 import RetryWrapper from '../utils/retryWrapper';
 import {
@@ -13,71 +14,147 @@ import {
   TimeoutNetworkError,
 } from './networkManagerErrors';
 import type { ILogger } from '../types/logger.declarations';
+import type { IEventEmitter } from '../types/eventEmitter.declarations';
+import type { NetworkEventMap } from '../types/eventTypeToEventMap.declarations';
+import {
+  NetworkRequestStartedEvent,
+  NetworkRequestFailedEvent,
+  NetworkResponseCompletedSuccessfullyEvent,
+  NetworkResponseCompletedUnsuccessfullyEvent,
+} from '../events/networkEvents';
+import type { NetworkConfiguration } from '../types/configuration.declarations';
+import type { RetryInfo } from '../types/retry.declarations';
+
+interface NetworkRequestDependencies {
+  logger: ILogger;
+  networkInterceptorsProvider: INetworkInterceptorsProvider;
+  eventEmitter: IEventEmitter<NetworkEventMap>;
+  configuration: NetworkConfiguration;
+}
 
 abstract class NetworkRequest<T> implements INetworkRequest<T> {
-  private readonly abortController_: AbortController;
+  private static counter_ = 0;
 
-  protected wrappedSendRequest_: () => Promise<Response>;
+  protected readonly abortController_: AbortController;
+  protected readonly logger_: ILogger;
+  protected readonly networkInterceptorsProvider_: INetworkInterceptorsProvider;
+  protected readonly eventEmitter_: IEventEmitter<NetworkEventMap>;
+  protected readonly wrappedSendRequest_: () => Promise<Response>;
 
   public abstract readonly done: Promise<T>;
 
   public readonly requestType: RequestType;
+  public readonly configuration: NetworkConfiguration;
+  public readonly id: string;
 
-  protected constructor(payload: IRequestPayload, logger: ILogger) {
-    const { requestType, requestInit, url, configuration } = payload;
+  protected constructor(payload: IRequestPayload, dependencies: NetworkRequestDependencies) {
+    NetworkRequest.counter_++;
+
+    const { logger, networkInterceptorsProvider, configuration, eventEmitter } = dependencies;
+    const { requestType, requestInit, url } = payload;
     const { timeout } = configuration;
 
+    this.id = `${NetworkRequest.counter_}--${requestType}`;
+    this.logger_ = logger.createSubLogger(`NetworkRequest (${this.id})`);
+    this.networkInterceptorsProvider_ = networkInterceptorsProvider;
+    this.eventEmitter_ = eventEmitter;
     this.abortController_ = new AbortController();
     this.requestType = requestType;
+    this.configuration = configuration;
 
     const retryWrapper = new RetryWrapper(configuration);
     const request = new Request(url, requestInit);
 
-    this.wrappedSendRequest_ = retryWrapper.wrap<Response>(
-      () => this.sendRequest_(request, timeout),
-      (e) => !(e instanceof RequestAbortedNetworkError),
-      {
-        onAttempt: (diagnosticInfo) => {
-          logger.debug('attempt network request: ', diagnosticInfo);
-        },
-      }
-    );
+    this.wrappedSendRequest_ = retryWrapper.wrap<Response>({
+      target: () => this.sendRequest_(request, timeout),
+      shouldRetry: this.shouldRetry_,
+      onRetry: this.onRetry_,
+    });
   }
 
+  private readonly shouldRetry_ = (e: Error): boolean => {
+    return !(e instanceof RequestAbortedNetworkError);
+  };
+
+  private readonly onRetry_ = (retryInfo: RetryInfo): void => {
+    this.logger_.debug('Retrying request: ', retryInfo);
+  };
+
   private sendRequest_(request: Request, timeout: number): Promise<Response> {
-    return new Promise((resolve, reject) => {
-      let hitTimeout = false;
+    return this.applyRequestInterceptors_(request).then((finalRequest) => {
+      return new Promise((resolve, reject) => {
+        const requestInfo = {
+          id: this.id,
+          configuration: { ...this.configuration },
+          requestType: this.requestType,
+          request: finalRequest.clone(),
+        };
 
-      const timeoutId = setTimeout(() => {
-        hitTimeout = true;
-        this.abortController_.abort();
-      }, timeout);
+        let hitTimeout = false;
 
-      const onResponse = (response: Response): void => {
-        clearTimeout(timeoutId);
-        response.ok ? resolve(response) : reject(new BadStatusNetworkError(response));
-      };
+        const timeoutId = setTimeout(() => {
+          hitTimeout = true;
+          this.abortController_.abort();
+        }, timeout);
 
-      const onError = (fetchError: DOMException | TypeError): void => {
-        clearTimeout(timeoutId);
+        const onCompleted = (response: Response): void => {
+          clearTimeout(timeoutId);
 
-        const isAbortError = fetchError instanceof DOMException && fetchError.name === 'AbortError';
+          const responseInfo = {
+            response: response.clone(),
+          };
 
-        if (!isAbortError) {
-          reject(new FetchError(fetchError));
-          return;
-        }
+          if (response.ok) {
+            this.eventEmitter_.emitEvent(new NetworkResponseCompletedSuccessfullyEvent(requestInfo, responseInfo));
+            resolve(response);
+          } else {
+            this.eventEmitter_.emitEvent(new NetworkResponseCompletedUnsuccessfullyEvent(requestInfo, responseInfo));
+            reject(new BadStatusNetworkError(response));
+          }
+        };
 
-        if (hitTimeout) {
-          reject(new TimeoutNetworkError());
-          return;
-        }
+        const onFailed = (e: DOMException | TypeError): void => {
+          clearTimeout(timeoutId);
 
-        reject(new RequestAbortedNetworkError());
-      };
+          const isAbortError = e instanceof DOMException && e.name === 'AbortError';
 
-      fetch(request).then(onResponse, onError);
+          let error: Error;
+
+          if (!isAbortError) {
+            // some fetch error
+            error = new FetchError(e as TypeError);
+          } else if (hitTimeout) {
+            // aborted from timeout
+            error = new TimeoutNetworkError();
+          } else {
+            // aborted externally
+            error = new RequestAbortedNetworkError();
+          }
+
+          this.logger_.warn('Request failed: ', error);
+          this.eventEmitter_.emitEvent(new NetworkRequestFailedEvent(requestInfo, error));
+          reject(error);
+        };
+
+        this.eventEmitter_.emitEvent(new NetworkRequestStartedEvent(requestInfo));
+        return fetch(finalRequest).then(onCompleted, onFailed);
+      });
     });
+  }
+
+  private async applyRequestInterceptors_(request: Request): Promise<Request> {
+    const requestInterceptors = this.networkInterceptorsProvider_.getNetworkRequestInterceptors();
+
+    for (const requestInterceptor of requestInterceptors) {
+      try {
+        request = await requestInterceptor(request);
+      } catch (e) {
+        this.logger_.warn('Got an error during request interceptor execution: ', e);
+        // ignore interceptors errors
+      }
+    }
+
+    return request;
   }
 
   public abort(reason: string): void {
@@ -88,8 +165,8 @@ abstract class NetworkRequest<T> implements INetworkRequest<T> {
 export class NetworkRequestWithMapper<T> extends NetworkRequest<T> {
   public readonly done: Promise<T>;
 
-  public constructor(payload: IRequestPayloadWithMapper<T>, logger: ILogger) {
-    super(payload, logger);
+  public constructor(payload: IRequestPayloadWithMapper<T>, dependencies: NetworkRequestDependencies) {
+    super(payload, dependencies);
 
     this.done = this.wrappedSendRequest_()
       .then((response) => response.arrayBuffer())
@@ -100,8 +177,8 @@ export class NetworkRequestWithMapper<T> extends NetworkRequest<T> {
 export class NetworkRequestWithChunkHandler extends NetworkRequest<void> {
   public readonly done: Promise<void>;
 
-  public constructor(payload: IRequestPayloadWithChunkHandler, logger: ILogger) {
-    super(payload, logger);
+  public constructor(payload: IRequestPayloadWithChunkHandler, dependencies: NetworkRequestDependencies) {
+    super(payload, dependencies);
 
     this.done = this.wrappedSendRequest_().then((response) => {
       const reader = response.body?.getReader();
