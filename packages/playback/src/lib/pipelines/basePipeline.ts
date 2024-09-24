@@ -3,12 +3,15 @@ import type { IAudioTrack, ITextTrack } from '../types/tracks.declarations';
 import type PlayerTimeRange from '../utils/timeRanges';
 import type { PlaybackState } from '../consts/playbackState';
 import type { PlaybackStats } from '../types/playbackStats.declarations';
+import type { INetworkManager } from '../types/network.declarations';
 
-export abstract class Pipeline implements IPipeline {
+export abstract class BasePipeline implements IPipeline {
   protected readonly videoElement_: HTMLVideoElement;
+  protected readonly networkManager_: INetworkManager;
 
   public constructor(dependencies: PipelineDependencies) {
     this.videoElement_ = dependencies.videoElement;
+    this.networkManager_ = dependencies.networkManager;
   }
 
   public abstract dispose(): void;

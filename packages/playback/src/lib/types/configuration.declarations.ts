@@ -1,3 +1,5 @@
+import type { RequestType } from '../consts/requestType';
+
 export interface NetworkConfiguration {
   /**
    * The maximum number of requests before we fail.
@@ -32,9 +34,12 @@ export interface NetworkConfiguration {
 }
 
 export interface PlayerNetworkConfiguration {
-  manifest: NetworkConfiguration;
-  segment: NetworkConfiguration;
-  license: NetworkConfiguration;
+  [RequestType.DashManifest]: NetworkConfiguration;
+  [RequestType.HlsPlaylist]: NetworkConfiguration;
+  [RequestType.License]: NetworkConfiguration;
+  [RequestType.Key]: NetworkConfiguration;
+  [RequestType.MediaSegment]: NetworkConfiguration;
+  [RequestType.InitSegment]: NetworkConfiguration;
 }
 
 export interface PlayerConfiguration {

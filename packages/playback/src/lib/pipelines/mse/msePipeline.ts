@@ -1,3 +1,3 @@
-import { Pipeline } from '../basePipeline';
+import { BasePipeline } from '../basePipeline';
 
-export default abstract class MsePipeLine extends Pipeline {}
+export default abstract class MsePipeLine extends BasePipeline {}

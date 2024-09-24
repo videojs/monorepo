@@ -26,8 +26,11 @@ import type { PlaybackStats } from './types/playbackStats.declarations';
 import type { IAudioTrack } from './types/tracks.declarations';
 import { NoSupportedPipelineError } from './errors/pipelineErrors';
 import { Source } from './utils/source';
-import type { INetworkManager } from './types/networkingManager.declarations';
+import type { INetworkManager } from './types/network.declarations';
 import { NetworkManager } from './network/networkManager';
+import { InterceptorsStorage } from './utils/interceptorsStorage';
+import { InterceptorType } from './consts/interceptorType';
+import type { InterceptorTypeToInterceptorMap } from './types/interceptorTypeToInterceptorMap.declarations';
 
 interface PlayerDependencies {
   logger?: ILogger;
@@ -74,6 +77,7 @@ export class Player {
   private readonly eventEmitter_: IEventEmitter<EventTypeToEventMap>;
   private readonly envCapabilitiesProvider_: IEnvCapabilitiesProvider;
   private readonly networkManager_: INetworkManager;
+  private readonly interceptorsStorage_: InterceptorsStorage;
 
   /**
    * You can pass your own implementations via dependencies.
@@ -81,12 +85,33 @@ export class Player {
    * @param dependencies - optional dependencies
    */
   public constructor(dependencies: PlayerDependencies = {}) {
+    this.interceptorsStorage_ = new InterceptorsStorage();
     this.logger_ = dependencies.logger ?? new Logger(console, 'Player');
     this.configurationManager_ = dependencies.configurationManager ?? new ConfigurationManager();
     this.eventEmitter_ = dependencies.eventEmitter ?? new EventEmitter<EventTypeToEventMap>();
     this.envCapabilitiesProvider_ = dependencies.envCapabilitiesProvider ?? new EnvCapabilitiesProvider();
     this.networkManager_ =
-      dependencies.networkManager ?? new NetworkManager({ logger: this.logger_.createSubLogger('NetworkManager') });
+      dependencies.networkManager ??
+      new NetworkManager({
+        logger: this.logger_.createSubLogger('NetworkManager'),
+        eventEmitter: this.eventEmitter_,
+        configuration: this.configurationManager_.getSnapshot().network,
+        networkInterceptorsProvider: {
+          getNetworkRequestInterceptors: (): Set<InterceptorTypeToInterceptorMap[InterceptorType.NetworkRequest]> =>
+            this.interceptorsStorage_.getInterceptorsSet(InterceptorType.NetworkRequest),
+        },
+      });
+  }
+
+  /**
+   * MARK: Interceptors API
+   */
+
+  /**
+   * interceptors storage getter
+   */
+  public getInterceptorsStorage(): InterceptorsStorage {
+    return this.interceptorsStorage_;
   }
 
   /**
@@ -178,6 +203,7 @@ export class Player {
    */
   public updateConfiguration(configurationChunk: DeepPartial<PlayerConfiguration>): void {
     this.configurationManager_.update(configurationChunk);
+    this.networkManager_.updateConfiguration(this.configurationManager_.getSnapshot().network);
     this.eventEmitter_.emitEvent(new ConfigurationChangedEvent(this.getConfigurationSnapshot()));
   }
 
@@ -186,6 +212,7 @@ export class Player {
    */
   public resetConfiguration(): void {
     this.configurationManager_.reset();
+    this.networkManager_.updateConfiguration(this.configurationManager_.getSnapshot().network);
     this.eventEmitter_.emitEvent(new ConfigurationChangedEvent(this.getConfigurationSnapshot()));
   }
 
@@ -311,6 +338,8 @@ export class Player {
    */
   public dispose(): void {
     this.detach();
+    this.eventEmitter_.removeAllEventListeners();
+    this.interceptorsStorage_.removeAllInterceptors();
     this.mimeTypeToPipelineFactoryMap_.clear();
   }
 

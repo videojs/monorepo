@@ -1,11 +1,11 @@
-import { Pipeline } from '../basePipeline';
+import { BasePipeline } from '../basePipeline';
 import type { PipelineDependencies } from '../../types/pipeline.declarations';
 import type { IAudioTrack, ITextTrack } from '../../types/tracks.declarations';
 import type PlayerTimeRange from '../../utils/timeRanges';
 import type { PlaybackState } from '../../consts/playbackState';
 import type { PlaybackStats } from '../../types/playbackStats.declarations';
 
-export default class NativePipeline extends Pipeline {
+export default class NativePipeline extends BasePipeline {
   public static create(dependencies: PipelineDependencies): Promise<NativePipeline> {
     dependencies.logger = dependencies.logger.createSubLogger('NativePipeline');
 

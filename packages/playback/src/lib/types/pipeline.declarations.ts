@@ -3,9 +3,11 @@ import type { PlaybackState } from '../consts/playbackState';
 import type { PlaybackStats } from './playbackStats.declarations';
 import type { IAudioTrack, ITextTrack } from './tracks.declarations';
 import type { ILogger } from './logger.declarations';
+import type { INetworkManager } from './network.declarations';
 
 export interface PipelineDependencies {
   videoElement: HTMLVideoElement;
+  networkManager: INetworkManager;
   logger: ILogger;
 }
 

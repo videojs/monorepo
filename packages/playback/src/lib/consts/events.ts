@@ -6,4 +6,8 @@ export enum PlayerEventType {
   VolumeChanged = 'VolumeChanged',
   MutedStatusChanged = 'MutedStatusChanged',
   Error = 'Error',
+  NetworkRequestStarted = 'NetworkRequestStarted',
+  NetworkResponseCompletedSuccessfully = 'NetworkResponseCompletedSuccessfully',
+  NetworkResponseCompletedUnsuccessfully = 'NetworkResponseCompletedUnsuccessfully',
+  NetworkRequestFailed = 'NetworkRequestFailed',
 }

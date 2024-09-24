@@ -1,7 +1,3 @@
-export class RequestInterceptorNetworkError extends Error {}
-
-export class ResponseInterceptorNetworkError extends Error {}
-
 export class RequestAbortedNetworkError extends Error {}
 
 export class TimeoutNetworkError extends Error {}
