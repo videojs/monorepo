@@ -5,26 +5,48 @@ import { ConfigurationChangedEvent, LoggerLevelChangedEvent, VolumeChangedEvent 
 import EventEmitter from '../src/lib/utils/eventEmitter';
 import type { EventTypeToEventMap } from '../src/lib/types/eventTypeToEventMap.declarations';
 import type { PlayerEvent } from '../src/lib/events/basePlayerEvent';
+import { RequestType } from '../src/lib/consts/requestType';
 // import type { ILogger } from '../src/lib/types/logger';
 // import { instance, mock, verify, when } from '@typestrong/ts-mockito';
 
 const createPlayerDefaultConfiguration = (): PlayerConfiguration => ({
   network: {
-    manifest: {
+    [RequestType.DashManifest]: {
       maxAttempts: 2,
       initialDelay: 2_000,
       delayFactor: 0.2,
       fuzzFactor: 0.2,
       timeout: 20_000,
     },
-    license: {
+    [RequestType.HlsPlaylist]: {
       maxAttempts: 2,
       initialDelay: 2_000,
       delayFactor: 0.2,
       fuzzFactor: 0.2,
       timeout: 20_000,
     },
-    segment: {
+    [RequestType.Key]: {
+      maxAttempts: 2,
+      initialDelay: 2_000,
+      delayFactor: 0.2,
+      fuzzFactor: 0.2,
+      timeout: 20_000,
+    },
+    [RequestType.MediaSegment]: {
+      maxAttempts: 2,
+      initialDelay: 2_000,
+      delayFactor: 0.2,
+      fuzzFactor: 0.2,
+      timeout: 20_000,
+    },
+    [RequestType.InitSegment]: {
+      maxAttempts: 2,
+      initialDelay: 2_000,
+      delayFactor: 0.2,
+      fuzzFactor: 0.2,
+      timeout: 20_000,
+    },
+    [RequestType.License]: {
       maxAttempts: 2,
       initialDelay: 2_000,
       delayFactor: 0.2,
@@ -95,11 +117,11 @@ describe('Player spec', () => {
       });
 
       const snapshot1 = player.getConfigurationSnapshot();
-      expect(snapshot1.network.license.maxAttempts).toBe(2);
+      expect(snapshot1.network[RequestType.License].maxAttempts).toBe(2);
 
       player.updateConfiguration({
         network: {
-          license: {
+          [RequestType.License]: {
             maxAttempts: 1,
           },
         },
@@ -107,8 +129,8 @@ describe('Player spec', () => {
 
       const snapshot2 = player.getConfigurationSnapshot();
       expectedEvents.push(new ConfigurationChangedEvent(snapshot2));
-      expect(snapshot2.network.license.maxAttempts).toBe(1);
-      expect(snapshot1.network.license.maxAttempts).toBe(2);
+      expect(snapshot2.network[RequestType.License].maxAttempts).toBe(1);
+      expect(snapshot1.network[RequestType.License].maxAttempts).toBe(2);
       expect(expectedEvents).toEqual(actualEvents);
     });
   });
@@ -123,11 +145,11 @@ describe('Player spec', () => {
       });
 
       const snapshot1 = player.getConfigurationSnapshot();
-      expect(snapshot1.network.license.maxAttempts).toBe(2);
+      expect(snapshot1.network[RequestType.License].maxAttempts).toBe(2);
 
       player.updateConfiguration({
         network: {
-          license: {
+          [RequestType.License]: {
             maxAttempts: 1,
           },
         },
@@ -135,13 +157,13 @@ describe('Player spec', () => {
 
       const snapshot2 = player.getConfigurationSnapshot();
       expectedEvents.push(new ConfigurationChangedEvent(snapshot2));
-      expect(snapshot2.network.license.maxAttempts).toBe(1);
+      expect(snapshot2.network[RequestType.License].maxAttempts).toBe(1);
 
       player.resetConfiguration();
 
       const snapshot3 = player.getConfigurationSnapshot();
       expectedEvents.push(new ConfigurationChangedEvent(snapshot3));
-      expect(snapshot3.network.license.maxAttempts).toBe(2);
+      expect(snapshot3.network[RequestType.License].maxAttempts).toBe(2);
 
       expect(expectedEvents).toEqual(actualEvents);
     });

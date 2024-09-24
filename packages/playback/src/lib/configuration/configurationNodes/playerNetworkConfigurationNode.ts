@@ -1,5 +1,6 @@
 import { StoreNode } from '../../utils/store';
 import type { NetworkConfiguration, PlayerNetworkConfiguration } from '../../types/configuration.declarations';
+import { RequestType } from '../../consts/requestType';
 
 class NetworkConfigurationImpl extends StoreNode<NetworkConfiguration> {
   public static default(): NetworkConfigurationImpl {
@@ -16,9 +17,12 @@ class NetworkConfigurationImpl extends StoreNode<NetworkConfiguration> {
 export default class PlayerNetworkConfigurationImpl extends StoreNode<PlayerNetworkConfiguration> {
   public static default(): PlayerNetworkConfigurationImpl {
     return new PlayerNetworkConfigurationImpl({
-      manifest: NetworkConfigurationImpl.default(),
-      segment: NetworkConfigurationImpl.default(),
-      license: NetworkConfigurationImpl.default(),
+      [RequestType.DashManifest]: NetworkConfigurationImpl.default(),
+      [RequestType.HlsPlaylist]: NetworkConfigurationImpl.default(),
+      [RequestType.License]: NetworkConfigurationImpl.default(),
+      [RequestType.Key]: NetworkConfigurationImpl.default(),
+      [RequestType.InitSegment]: NetworkConfigurationImpl.default(),
+      [RequestType.MediaSegment]: NetworkConfigurationImpl.default(),
     });
   }
 }
