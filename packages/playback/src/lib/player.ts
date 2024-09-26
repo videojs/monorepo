@@ -23,6 +23,7 @@ import { Source } from './utils/source';
 import type { INetworkManager } from './types/network.declarations';
 import type { IInterceptorsStorage } from './types/interceptors.declarations';
 import { ServiceLocator } from './serviceLocator';
+import type { IQualityLevel } from './types/qualiyLevel.declarations';
 import type { IPlayerTimeRange } from './types/playerTimeRange.declarations';
 import type { IPlayerAudioTrack } from './types/audioTrack.declarations';
 
@@ -598,6 +599,41 @@ export class Player {
    */
   public selectAudioTrack(id: string): boolean {
     return this.safeAttemptOnPipeline_('selectAudioTrack', (pipeline) => pipeline.selectAudioTrack(id), false);
+  }
+
+  // MARK: Playback API: Quality Levels
+
+  /**
+   * current playback session quality levels getter
+   */
+  public getQualityLevels(): Array<IQualityLevel> {
+    return this.safeAttemptOnPipeline_('getQualityLevels', (pipeline) => pipeline.getQualityLevels(), []);
+  }
+
+  /**
+   * Active quality level getter
+   */
+  public getActiveQualityLevel(): IQualityLevel | null {
+    return this.getQualityLevels().find((qualityLevel) => qualityLevel.isActive) ?? null;
+  }
+
+  /**
+   * select specific quality level, this will disable ABR
+   * @param id - quality level id
+   */
+  public selectQualityLevel(id: string): boolean {
+    return this.safeAttemptOnPipeline_('selectQualityLevel', (pipeline) => pipeline.selectQualityLevel(id), false);
+  }
+
+  /**
+   * enable ABR
+   */
+  public selectAutoQualityLevel(): boolean {
+    return this.safeAttemptOnPipeline_(
+      'selectAutoQualityLevel',
+      (pipeline) => pipeline.selectAutoQualityLevel(),
+      false
+    );
   }
 
   private safeAttemptOnPipeline_<T>(method: string, executor: (target: IPipeline) => T, fallback: T): T {

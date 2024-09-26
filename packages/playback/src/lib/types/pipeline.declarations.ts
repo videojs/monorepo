@@ -2,6 +2,7 @@ import type { PlaybackState } from '../consts/playbackState';
 import type { PlaybackStats } from './playbackStats.declarations';
 import type { ILogger } from './logger.declarations';
 import type { INetworkManager } from './network.declarations';
+import type { IQualityLevel } from './qualiyLevel.declarations';
 import type { IPlayerTimeRange } from './playerTimeRange.declarations';
 import type { IPlayerAudioTrack } from './audioTrack.declarations';
 
@@ -36,4 +37,7 @@ export interface IPipeline {
   getAudioTracks(): Array<IPlayerAudioTrack>;
   selectAudioTrack(id: string): boolean;
   getTextTracks(): Array<ITextTrack>;
+  getQualityLevels(): Array<IQualityLevel>;
+  selectQualityLevel(id: string): boolean;
+  selectAutoQualityLevel(): boolean;
 }
