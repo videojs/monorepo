@@ -1,4 +1,4 @@
-import type { IPlayerTimeRange } from '../types/playerTimeRange';
+import type { IPlayerTimeRange } from '../types/playerTimeRange.declarations';
 
 export class PlayerTimeRange implements IPlayerTimeRange {
   private readonly rangeStart_: number;

@@ -23,7 +23,7 @@ import { Source } from './utils/source';
 import type { INetworkManager } from './types/network.declarations';
 import type { IInterceptorsStorage } from './types/interceptors.declarations';
 import { ServiceLocator } from './serviceLocator';
-import type { IPlayerTimeRange } from './types/playerTimeRange';
+import type { IPlayerTimeRange } from './types/playerTimeRange.declarations';
 import type { IPlayerAudioTrack } from './types/audioTrack.declarations';
 
 interface PlayerDependencies {

@@ -1,9 +1,9 @@
 import type { IPipeline, PipelineDependencies } from '../types/pipeline.declarations';
 import type { IAudioTrack, ITextTrack } from '../types/tracks.declarations';
-import type PlayerTimeRange from '../utils/timeRanges';
 import type { PlaybackState } from '../consts/playbackState';
 import type { PlaybackStats } from '../types/playbackStats.declarations';
 import type { INetworkManager } from '../types/network.declarations';
+import type { IPlayerTimeRange } from '../types/playerTimeRange.declarations';
 
 export abstract class BasePipeline implements IPipeline {
   protected readonly videoElement_: HTMLVideoElement;

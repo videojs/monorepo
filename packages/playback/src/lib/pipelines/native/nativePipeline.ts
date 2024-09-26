@@ -3,7 +3,6 @@ import type { PipelineDependencies } from '../../types/pipeline.declarations';
 import type { IAudioTrack, ITextTrack } from '../../types/tracks.declarations';
 import type { PlaybackState } from '../../consts/playbackState';
 import type { PlaybackStats } from '../../types/playbackStats.declarations';
-import type { IPlayerTimeRange } from '../../types/playerTimeRange';
 
 export default class NativePipeline extends BasePipeline {
   public static create(dependencies: PipelineDependencies): Promise<NativePipeline> {

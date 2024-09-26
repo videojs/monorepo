@@ -2,7 +2,7 @@ import type { PlaybackState } from '../consts/playbackState';
 import type { PlaybackStats } from './playbackStats.declarations';
 import type { ILogger } from './logger.declarations';
 import type { INetworkManager } from './network.declarations';
-import type { IPlayerTimeRange } from './playerTimeRange';
+import type { IPlayerTimeRange } from './playerTimeRange.declarations';
 import type { IPlayerAudioTrack } from './audioTrack.declarations';
 
 export interface PipelineDependencies {
