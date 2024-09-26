@@ -1,9 +1,9 @@
-import type PlayerTimeRange from '../utils/timeRanges';
 import type { PlaybackState } from '../consts/playbackState';
 import type { PlaybackStats } from './playbackStats.declarations';
 import type { IAudioTrack, ITextTrack } from './tracks.declarations';
 import type { ILogger } from './logger.declarations';
 import type { INetworkManager } from './network.declarations';
+import type { IPlayerTimeRange } from './playerTimeRange';
 
 export interface PipelineDependencies {
   videoElement: HTMLVideoElement;
@@ -28,8 +28,8 @@ export interface IPipeline {
   setVolumeLevel(volumeLevel: number): void;
   getPlaybackRate(): number;
   setPlaybackRate(playbackRate: number): void;
-  getSeekableRanges(): Array<PlayerTimeRange>;
-  getBufferedRanges(): Array<PlayerTimeRange>;
+  getSeekableRanges(): Array<IPlayerTimeRange>;
+  getBufferedRanges(): Array<IPlayerTimeRange>;
   getDuration(): number;
   getPlaybackStats(): PlaybackStats;
   dispose(): void;

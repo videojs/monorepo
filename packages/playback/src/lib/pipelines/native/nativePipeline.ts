@@ -1,9 +1,9 @@
 import { BasePipeline } from '../basePipeline';
 import type { PipelineDependencies } from '../../types/pipeline.declarations';
 import type { IAudioTrack, ITextTrack } from '../../types/tracks.declarations';
-import type PlayerTimeRange from '../../utils/timeRanges';
 import type { PlaybackState } from '../../consts/playbackState';
 import type { PlaybackStats } from '../../types/playbackStats.declarations';
+import type { IPlayerTimeRange } from '../../types/playerTimeRange';
 
 export default class NativePipeline extends BasePipeline {
   public static create(dependencies: PipelineDependencies): Promise<NativePipeline> {
@@ -18,7 +18,7 @@ export default class NativePipeline extends BasePipeline {
     throw new Error('Not implemented');
   }
 
-  public getBufferedRanges(): Array<PlayerTimeRange> {
+  public getBufferedRanges(): Array<IPlayerTimeRange> {
     throw new Error('Not implemented');
   }
 
@@ -34,7 +34,7 @@ export default class NativePipeline extends BasePipeline {
     throw new Error('Not implemented');
   }
 
-  public getSeekableRanges(): Array<PlayerTimeRange> {
+  public getSeekableRanges(): Array<IPlayerTimeRange> {
     throw new Error('Not implemented');
   }
 

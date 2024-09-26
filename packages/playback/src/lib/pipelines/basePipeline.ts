@@ -18,8 +18,6 @@ export abstract class BasePipeline implements IPipeline {
 
   public abstract getAudioTracks(): Array<IAudioTrack>;
 
-  public abstract getBufferedRanges(): Array<PlayerTimeRange>;
-
   public getCurrentTime(): number {
     return this.videoElement_.currentTime;
   }
@@ -38,9 +36,14 @@ export abstract class BasePipeline implements IPipeline {
 
   public abstract getPlaybackStats(): PlaybackStats;
 
-  public abstract getSeekableRanges(): Array<PlayerTimeRange>;
+  public getSeekableRanges(): Array<IPlayerTimeRange> {
+    return PlayerTimeRange.fromTimeRanges(this.videoElement_.seekable);
+  }
 
   public abstract getTextTracks(): Array<ITextTrack>;
+  public getBufferedRanges(): Array<IPlayerTimeRange> {
+    return PlayerTimeRange.fromTimeRanges(this.videoElement_.buffered);
+  }
 
   public getVolumeLevel(): number {
     return this.videoElement_.volume;

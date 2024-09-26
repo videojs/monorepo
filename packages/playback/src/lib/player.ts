@@ -16,7 +16,6 @@ import {
 import type { CapabilitiesProbeResult, IEnvCapabilitiesProvider } from './types/envCapabilities.declarations';
 import type { ILoadLocalSource, ILoadRemoteSource, ISourceModel } from './types/source.declarations';
 import type { IPipeline, IPipelineFactory } from './types/pipeline.declarations';
-import type PlayerTimeRange from './utils/timeRanges';
 import { PlaybackState } from './consts/playbackState';
 import type { PlaybackStats } from './types/playbackStats.declarations';
 import type { IAudioTrack } from './types/tracks.declarations';
@@ -25,6 +24,7 @@ import { Source } from './utils/source';
 import type { INetworkManager } from './types/network.declarations';
 import type { IInterceptorsStorage } from './types/interceptors.declarations';
 import { ServiceLocator } from './serviceLocator';
+import type { IPlayerTimeRange } from './types/playerTimeRange';
 
 interface PlayerDependencies {
   readonly logger: ILogger;
@@ -537,7 +537,7 @@ export class Player {
   /**
    * get snapshot of the seekable ranges from the active pipeline
    */
-  public getSeekableRanges(): Array<PlayerTimeRange> {
+  public getSeekableRanges(): Array<IPlayerTimeRange> {
     return this.safeAttemptOnPipeline_('getSeekableRanges', (pipeline) => pipeline.getSeekableRanges(), []);
   }
 
@@ -545,14 +545,14 @@ export class Player {
    * get snapshot of the current active seekable range:
    * current time is in range inclusively
    */
-  public getActiveSeekableRange(): PlayerTimeRange | null {
+  public getActiveSeekableRange(): IPlayerTimeRange | null {
     return this.getSeekableRanges().find((range) => range.isInRangeInclusive(this.getCurrentTime())) ?? null;
   }
 
   /**
    * get snapshot of the buffered ranges from the active pipeline
    */
-  public getBufferedRanges(): Array<PlayerTimeRange> {
+  public getBufferedRanges(): Array<IPlayerTimeRange> {
     return this.safeAttemptOnPipeline_('getBufferedRanges', (pipeline) => pipeline.getBufferedRanges(), []);
   }
 
@@ -560,7 +560,7 @@ export class Player {
    * get snapshot of the current active buffered range:
    * current time is in range inclusively
    */
-  public getActiveBufferedRange(): PlayerTimeRange | null {
+  public getActiveBufferedRange(): IPlayerTimeRange | null {
     return this.getBufferedRanges().find((range) => range.isInRangeInclusive(this.getCurrentTime())) ?? null;
   }
 
