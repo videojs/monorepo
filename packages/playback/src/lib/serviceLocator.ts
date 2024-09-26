@@ -29,7 +29,7 @@ export class ServiceLocator {
   public readonly networkManager: INetworkManager;
 
   public constructor() {
-    const { console } = window;
+    const { console, fetch } = window;
 
     this.configurationManager = this.createConfigurationManager_();
 
@@ -44,6 +44,7 @@ export class ServiceLocator {
       logger: this.logger.createSubLogger('NetworkManager'),
       eventEmitter: this.eventEmitter,
       configuration: configuration.network,
+      executor: (request) => fetch(request),
       networkInterceptorsProvider: {
         getNetworkRequestInterceptors: (): Set<InterceptorTypeToInterceptorMap[InterceptorType.NetworkRequest]> =>
           this.interceptorsStorage.getInterceptorsSet(InterceptorType.NetworkRequest),

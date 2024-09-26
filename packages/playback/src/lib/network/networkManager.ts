@@ -16,12 +16,14 @@ export interface NetworkManagerDependencies {
   networkInterceptorsProvider: INetworkInterceptorsProvider;
   eventEmitter: IEventEmitter<NetworkEventMap>;
   configuration: PlayerNetworkConfiguration;
+  executor: (request: Request) => Promise<Response>;
 }
 
 export class NetworkManager implements INetworkManager {
   private readonly logger_: ILogger;
   private readonly networkInterceptorsProvider_: INetworkInterceptorsProvider;
   private readonly eventEmitter_: IEventEmitter<NetworkEventMap>;
+  private readonly executor_: (request: Request) => Promise<Response>;
   private configuration_: PlayerNetworkConfiguration;
 
   public constructor(dependencies: NetworkManagerDependencies) {
@@ -29,6 +31,7 @@ export class NetworkManager implements INetworkManager {
     this.networkInterceptorsProvider_ = dependencies.networkInterceptorsProvider;
     this.eventEmitter_ = dependencies.eventEmitter;
     this.configuration_ = dependencies.configuration;
+    this.executor_ = dependencies.executor;
   }
 
   public updateConfiguration(configuration: PlayerNetworkConfiguration): void {
@@ -61,6 +64,7 @@ export class NetworkManager implements INetworkManager {
       networkInterceptorsProvider: this.networkInterceptorsProvider_,
       eventEmitter: this.eventEmitter_,
       configuration: { ...this.configuration_[payload.requestType] },
+      executor: (request) => this.sendRequest_(request),
     });
   }
 
@@ -70,6 +74,11 @@ export class NetworkManager implements INetworkManager {
       networkInterceptorsProvider: this.networkInterceptorsProvider_,
       eventEmitter: this.eventEmitter_,
       configuration: { ...this.configuration_[payload.requestType] },
+      executor: (request) => this.sendRequest_(request),
     });
+  }
+
+  protected sendRequest_(request: Request): Promise<Response> {
+    return this.executor_(request);
   }
 }
