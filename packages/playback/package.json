@@ -4,7 +4,7 @@
   "description": "videojs playback engine",
   "type": "module",
   "scripts": {
-    "clean": "rimraf ./dist ./dist-api-reference ./dist-demo ./*.tgz ./coverage",
+    "clean": "rimraf ./dist ./dist-api-reference ./dist-demo ./*.tgz ./coverage ./node_modules",
     "prebuild": "npm run clean",
     "build": "run-p build:js build:api-reference build:demo",
     "build:js": "rollup -c rollup.config.js",
