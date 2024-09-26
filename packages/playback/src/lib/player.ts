@@ -17,8 +17,8 @@ import type { CapabilitiesProbeResult, IEnvCapabilitiesProvider } from './types/
 import type { ILoadLocalSource, ILoadRemoteSource, ISourceModel } from './types/source.declarations';
 import type { IPipeline, IPipelineFactory } from './types/pipeline.declarations';
 import { PlaybackState } from './consts/playbackState';
-import type { PlaybackStats } from './types/playbackStats.declarations';
 import type { IAudioTrack } from './types/tracks.declarations';
+import type { IPlaybackStats } from './types/playbackStats.declarations';
 import { NoSupportedPipelineError } from './errors/pipelineErrors';
 import { Source } from './utils/source';
 import type { INetworkManager } from './types/network.declarations';
@@ -567,10 +567,10 @@ export class Player {
   /**
    * active playback session stats getter
    */
-  public getPlaybackStats(): PlaybackStats {
+  public getPlaybackStats(): IPlaybackStats {
     return this.safeAttemptOnPipeline_('getPlaybackStats', (pipeline) => pipeline.getPlaybackStats(), {
-      bandwidth: 0,
-      segmentsLoaded: 0,
+      droppedVideoFrames: 0,
+      totalVideoFrames: 0,
     });
   }
 

@@ -1,4 +1,4 @@
-export interface PlaybackStats {
-  bandwidth: number;
-  segmentsLoaded: number;
+export interface IPlaybackStats {
+  droppedVideoFrames: number;
+  totalVideoFrames: number;
 }
