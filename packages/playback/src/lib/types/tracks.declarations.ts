@@ -1,9 +1,12 @@
-export interface IAudioTrack {
+export interface ITextTrack {
   id: string;
-  language: string;
+}
+
+export interface ThumbnailTrack {
+  id: string;
   isActive: boolean;
 }
 
-export interface ITextTrack {
-  id: string;
+export interface RemoteVttThumbnailTrackOptions {
+  url: URL;
 }

@@ -1,9 +1,9 @@
 import type { PlaybackState } from '../consts/playbackState';
 import type { PlaybackStats } from './playbackStats.declarations';
-import type { IAudioTrack, ITextTrack } from './tracks.declarations';
 import type { ILogger } from './logger.declarations';
 import type { INetworkManager } from './network.declarations';
 import type { IPlayerTimeRange } from './playerTimeRange';
+import type { IPlayerAudioTrack } from './audioTrack.declarations';
 
 export interface PipelineDependencies {
   videoElement: HTMLVideoElement;
@@ -33,7 +33,7 @@ export interface IPipeline {
   getDuration(): number;
   getPlaybackStats(): PlaybackStats;
   dispose(): void;
-  getAudioTracks(): Array<IAudioTrack>;
+  getAudioTracks(): Array<IPlayerAudioTrack>;
   selectAudioTrack(id: string): boolean;
   getTextTracks(): Array<ITextTrack>;
 }

@@ -17,7 +17,6 @@ import type { CapabilitiesProbeResult, IEnvCapabilitiesProvider } from './types/
 import type { ILoadLocalSource, ILoadRemoteSource, ISourceModel } from './types/source.declarations';
 import type { IPipeline, IPipelineFactory } from './types/pipeline.declarations';
 import { PlaybackState } from './consts/playbackState';
-import type { IAudioTrack } from './types/tracks.declarations';
 import type { IPlaybackStats } from './types/playbackStats.declarations';
 import { NoSupportedPipelineError } from './errors/pipelineErrors';
 import { Source } from './utils/source';
@@ -25,6 +24,7 @@ import type { INetworkManager } from './types/network.declarations';
 import type { IInterceptorsStorage } from './types/interceptors.declarations';
 import { ServiceLocator } from './serviceLocator';
 import type { IPlayerTimeRange } from './types/playerTimeRange';
+import type { IPlayerAudioTrack } from './types/audioTrack.declarations';
 
 interface PlayerDependencies {
   readonly logger: ILogger;
@@ -581,14 +581,14 @@ export class Player {
   /**
    * current playback session audio tracks getter
    */
-  public getAudioTracks(): Array<IAudioTrack> {
+  public getAudioTracks(): Array<IPlayerAudioTrack> {
     return this.safeAttemptOnPipeline_('getAudioTracks', (pipeline) => pipeline.getAudioTracks(), []);
   }
 
   /**
    * Active audio track getter
    */
-  public getActiveAudioTrack(): IAudioTrack | null {
+  public getActiveAudioTrack(): IPlayerAudioTrack | null {
     return this.getAudioTracks().find((track) => track.isActive) ?? null;
   }
 
