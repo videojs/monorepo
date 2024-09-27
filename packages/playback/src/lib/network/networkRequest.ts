@@ -30,6 +30,7 @@ interface NetworkRequestDependencies {
   networkInterceptorsProvider: INetworkInterceptorsProvider;
   eventEmitter: IEventEmitter<NetworkEventMap>;
   configuration: NetworkConfiguration;
+  executor: (request: Request) => Promise<Response>;
 }
 
 abstract class NetworkRequest<T> implements INetworkRequest<T> {
@@ -40,6 +41,7 @@ abstract class NetworkRequest<T> implements INetworkRequest<T> {
   protected readonly networkInterceptorsProvider_: INetworkInterceptorsProvider;
   protected readonly eventEmitter_: IEventEmitter<NetworkEventMap>;
   protected readonly wrappedSendRequest_: () => Promise<Response>;
+  protected readonly executor_: (request: Request) => Promise<Response>;
 
   public abstract readonly done: Promise<T>;
 
@@ -59,11 +61,12 @@ abstract class NetworkRequest<T> implements INetworkRequest<T> {
     this.networkInterceptorsProvider_ = networkInterceptorsProvider;
     this.eventEmitter_ = eventEmitter;
     this.abortController_ = new AbortController();
+    this.executor_ = dependencies.executor;
     this.requestType = requestType;
     this.configuration = configuration;
 
     const retryWrapper = new RetryWrapper(configuration);
-    const request = new Request(url, requestInit);
+    const request = new Request(url, { ...requestInit, signal: this.abortController_.signal });
 
     this.wrappedSendRequest_ = retryWrapper.wrap<Response>({
       target: () => this.sendRequest_(request, timeout),
@@ -137,7 +140,7 @@ abstract class NetworkRequest<T> implements INetworkRequest<T> {
         };
 
         this.eventEmitter_.emitEvent(new NetworkRequestStartedEvent(requestInfo));
-        return fetch(finalRequest).then(onCompleted, onFailed);
+        return this.executor_(finalRequest).then(onCompleted, onFailed);
       });
     });
   }

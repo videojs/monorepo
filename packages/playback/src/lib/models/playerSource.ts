@@ -1,6 +1,11 @@
-import type { IKeySystemConfig, ILoadLocalSource, ILoadRemoteSource, ISourceModel } from '../types/source.declarations';
+import type {
+  IKeySystemConfig,
+  ILoadLocalSource,
+  ILoadRemoteSource,
+  IPlayerSource,
+} from '../types/source.declarations';
 
-export class Source implements ISourceModel {
+export class PlayerSource implements IPlayerSource {
   private static counter_: number = 0;
 
   public readonly id: number;
@@ -14,7 +19,7 @@ export class Source implements ISourceModel {
   private isDisposed_: boolean = false;
 
   public constructor(rawSource: ILoadRemoteSource | ILoadLocalSource) {
-    this.id = ++Source.counter_;
+    this.id = ++PlayerSource.counter_;
     this.mimeType = rawSource.mimeType;
     this.baseUrl = rawSource.baseUrl ?? null;
     this.keySystems = rawSource.keySystems ?? {};

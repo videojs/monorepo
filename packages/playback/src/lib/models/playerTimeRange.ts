@@ -1,4 +1,6 @@
-export default class PlayerTimeRange {
+import type { IPlayerTimeRange } from '../types/playerTimeRange.declarations';
+
+export class PlayerTimeRange implements IPlayerTimeRange {
   private readonly rangeStart_: number;
   private readonly rangeEnd_: number;
 
@@ -36,7 +38,7 @@ export default class PlayerTimeRange {
     return `{${this.rangeStart_}-->${this.rangeEnd_}}`;
   }
 
-  public static fromTimeRanges(timeRanges: TimeRanges): Array<PlayerTimeRange> {
+  public static fromTimeRanges(timeRanges: TimeRanges): Array<IPlayerTimeRange> {
     const result = [];
 
     for (let i = 0; i < timeRanges.length; i++) {

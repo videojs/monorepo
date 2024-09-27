@@ -1,9 +1,12 @@
-import type PlayerTimeRange from '../utils/timeRanges';
 import type { PlaybackState } from '../consts/playbackState';
-import type { PlaybackStats } from './playbackStats.declarations';
-import type { IAudioTrack, ITextTrack } from './tracks.declarations';
+import type { IPlaybackStats } from './playbackStats.declarations';
 import type { ILogger } from './logger.declarations';
 import type { INetworkManager } from './network.declarations';
+import type { IQualityLevel } from './qualiyLevel.declarations';
+import type { IPlayerTimeRange } from './playerTimeRange.declarations';
+import type { IPlayerAudioTrack } from './audioTrack.declarations';
+import type { IPlayerTextTrack } from './textTrack.declarations';
+import type { IPlayerThumbnailTrack, IRemoteVttThumbnailTrackOptions } from './thumbnailTrack.declarations';
 
 export interface PipelineDependencies {
   videoElement: HTMLVideoElement;
@@ -28,12 +31,19 @@ export interface IPipeline {
   setVolumeLevel(volumeLevel: number): void;
   getPlaybackRate(): number;
   setPlaybackRate(playbackRate: number): void;
-  getSeekableRanges(): Array<PlayerTimeRange>;
-  getBufferedRanges(): Array<PlayerTimeRange>;
+  getSeekableRanges(): Array<IPlayerTimeRange>;
+  getBufferedRanges(): Array<IPlayerTimeRange>;
   getDuration(): number;
-  getPlaybackStats(): PlaybackStats;
+  getPlaybackStats(): IPlaybackStats;
   dispose(): void;
-  getAudioTracks(): Array<IAudioTrack>;
+  getAudioTracks(): Array<IPlayerAudioTrack>;
   selectAudioTrack(id: string): boolean;
-  getTextTracks(): Array<ITextTrack>;
+  getTextTracks(): Array<IPlayerTextTrack>;
+  removeRemoteThumbnailTrack(id: string): boolean;
+  addRemoteVttThumbnailTrack(options: IRemoteVttThumbnailTrackOptions): boolean;
+  selectThumbnailTrack(id: string): boolean;
+  getThumbnailTracks(): Array<IPlayerThumbnailTrack>;
+  getQualityLevels(): Array<IQualityLevel>;
+  selectQualityLevel(id: string): boolean;
+  selectAutoQualityLevel(): boolean;
 }

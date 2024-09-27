@@ -14,17 +14,19 @@ import {
   VolumeChangedEvent,
 } from './events/playerEvents';
 import type { CapabilitiesProbeResult, IEnvCapabilitiesProvider } from './types/envCapabilities.declarations';
-import type { ILoadLocalSource, ILoadRemoteSource, ISourceModel } from './types/source.declarations';
+import type { ILoadLocalSource, ILoadRemoteSource, IPlayerSource } from './types/source.declarations';
 import type { IPipeline, IPipelineFactory } from './types/pipeline.declarations';
-import type PlayerTimeRange from './utils/timeRanges';
 import { PlaybackState } from './consts/playbackState';
-import type { PlaybackStats } from './types/playbackStats.declarations';
-import type { IAudioTrack } from './types/tracks.declarations';
+import type { IPlaybackStats } from './types/playbackStats.declarations';
 import { NoSupportedPipelineError } from './errors/pipelineErrors';
-import { Source } from './utils/source';
 import type { INetworkManager } from './types/network.declarations';
 import type { IInterceptorsStorage } from './types/interceptors.declarations';
 import { ServiceLocator } from './serviceLocator';
+import type { IQualityLevel } from './types/qualiyLevel.declarations';
+import type { IPlayerTimeRange } from './types/playerTimeRange.declarations';
+import type { IPlayerAudioTrack } from './types/audioTrack.declarations';
+import type { IPlayerThumbnailTrack, IRemoteVttThumbnailTrackOptions } from './types/thumbnailTrack.declarations';
+import { PlayerSource } from './models/playerSource';
 
 interface PlayerDependencies {
   readonly logger: ILogger;
@@ -62,7 +64,7 @@ export class Player {
    */
 
   private activeVideoElement_: HTMLVideoElement | null = null;
-  private activeSource_: ISourceModel | null = null;
+  private activeSource_: IPlayerSource | null = null;
   private activePipeline_: IPipeline | null = null;
 
   private readonly mimeTypeToPipelineFactoryMap_ = new Map<string, IPipelineFactory>();
@@ -349,7 +351,7 @@ export class Player {
       this.stop('load');
     }
 
-    const sourceModel = new Source(source);
+    const sourceModel = new PlayerSource(source);
 
     this.logger_.debug('received a load request: ', sourceModel);
 
@@ -376,7 +378,7 @@ export class Player {
   /**
    * current source getter
    */
-  public getCurrentSource(): ISourceModel | null {
+  public getCurrentSource(): IPlayerSource | null {
     return this.activeSource_;
   }
 
@@ -537,7 +539,7 @@ export class Player {
   /**
    * get snapshot of the seekable ranges from the active pipeline
    */
-  public getSeekableRanges(): Array<PlayerTimeRange> {
+  public getSeekableRanges(): Array<IPlayerTimeRange> {
     return this.safeAttemptOnPipeline_('getSeekableRanges', (pipeline) => pipeline.getSeekableRanges(), []);
   }
 
@@ -545,14 +547,14 @@ export class Player {
    * get snapshot of the current active seekable range:
    * current time is in range inclusively
    */
-  public getActiveSeekableRange(): PlayerTimeRange | null {
+  public getActiveSeekableRange(): IPlayerTimeRange | null {
     return this.getSeekableRanges().find((range) => range.isInRangeInclusive(this.getCurrentTime())) ?? null;
   }
 
   /**
    * get snapshot of the buffered ranges from the active pipeline
    */
-  public getBufferedRanges(): Array<PlayerTimeRange> {
+  public getBufferedRanges(): Array<IPlayerTimeRange> {
     return this.safeAttemptOnPipeline_('getBufferedRanges', (pipeline) => pipeline.getBufferedRanges(), []);
   }
 
@@ -560,17 +562,17 @@ export class Player {
    * get snapshot of the current active buffered range:
    * current time is in range inclusively
    */
-  public getActiveBufferedRange(): PlayerTimeRange | null {
+  public getActiveBufferedRange(): IPlayerTimeRange | null {
     return this.getBufferedRanges().find((range) => range.isInRangeInclusive(this.getCurrentTime())) ?? null;
   }
 
   /**
    * active playback session stats getter
    */
-  public getPlaybackStats(): PlaybackStats {
+  public getPlaybackStats(): IPlaybackStats {
     return this.safeAttemptOnPipeline_('getPlaybackStats', (pipeline) => pipeline.getPlaybackStats(), {
-      bandwidth: 0,
-      segmentsLoaded: 0,
+      droppedVideoFrames: 0,
+      totalVideoFrames: 0,
     });
   }
 
@@ -581,14 +583,14 @@ export class Player {
   /**
    * current playback session audio tracks getter
    */
-  public getAudioTracks(): Array<IAudioTrack> {
+  public getAudioTracks(): Array<IPlayerAudioTrack> {
     return this.safeAttemptOnPipeline_('getAudioTracks', (pipeline) => pipeline.getAudioTracks(), []);
   }
 
   /**
    * Active audio track getter
    */
-  public getActiveAudioTrack(): IAudioTrack | null {
+  public getActiveAudioTrack(): IPlayerAudioTrack | null {
     return this.getAudioTracks().find((track) => track.isActive) ?? null;
   }
 
@@ -598,6 +600,89 @@ export class Player {
    */
   public selectAudioTrack(id: string): boolean {
     return this.safeAttemptOnPipeline_('selectAudioTrack', (pipeline) => pipeline.selectAudioTrack(id), false);
+  }
+
+  // MARK: Playback API: Thumbnails Tracks
+
+  /**
+   * current playback session thumbnail tracks getter
+   */
+  public getThumbnailTracks(): Array<IPlayerThumbnailTrack> {
+    return this.safeAttemptOnPipeline_('getThumbnailTracks', (pipeline) => pipeline.getThumbnailTracks(), []);
+  }
+
+  /**
+   * Active thumbnail track getter
+   */
+  public getActiveThumbnailTrack(): IPlayerThumbnailTrack | null {
+    return this.getThumbnailTracks().find((track) => track.isActive) ?? null;
+  }
+
+  /**
+   * select thumbnails track by id
+   * @param id - track id
+   */
+  public selectThumbnailTrack(id: string): boolean {
+    return this.safeAttemptOnPipeline_('selectThumbnailTrack', (pipeline) => pipeline.selectThumbnailTrack(id), false);
+  }
+
+  /**
+   * add remote vtt thumbnail track (only VOD), should return false for live
+   * @param options - options
+   */
+  public addRemoteVttThumbnailTrack(options: IRemoteVttThumbnailTrackOptions): boolean {
+    return this.safeAttemptOnPipeline_(
+      'addRemoteVttThumbnailTrack',
+      (pipeline) => pipeline.addRemoteVttThumbnailTrack(options),
+      false
+    );
+  }
+
+  /**
+   * remove remote vtt thumbnail trac (only VOD), should return false for live
+   * @param id - track id
+   */
+  public removeRemoteThumbnailTrack(id: string): boolean {
+    return this.safeAttemptOnPipeline_(
+      'removeRemoteThumbnailTrack',
+      (pipeline) => pipeline.removeRemoteThumbnailTrack(id),
+      false
+    );
+  }
+
+  // MARK: Playback API: Quality Levels
+
+  /**
+   * current playback session quality levels getter
+   */
+  public getQualityLevels(): Array<IQualityLevel> {
+    return this.safeAttemptOnPipeline_('getQualityLevels', (pipeline) => pipeline.getQualityLevels(), []);
+  }
+
+  /**
+   * Active quality level getter
+   */
+  public getActiveQualityLevel(): IQualityLevel | null {
+    return this.getQualityLevels().find((qualityLevel) => qualityLevel.isActive) ?? null;
+  }
+
+  /**
+   * select specific quality level, this will disable ABR
+   * @param id - quality level id
+   */
+  public selectQualityLevel(id: string): boolean {
+    return this.safeAttemptOnPipeline_('selectQualityLevel', (pipeline) => pipeline.selectQualityLevel(id), false);
+  }
+
+  /**
+   * enable ABR
+   */
+  public selectAutoQualityLevel(): boolean {
+    return this.safeAttemptOnPipeline_(
+      'selectAutoQualityLevel',
+      (pipeline) => pipeline.selectAutoQualityLevel(),
+      false
+    );
   }
 
   private safeAttemptOnPipeline_<T>(method: string, executor: (target: IPipeline) => T, fallback: T): T {

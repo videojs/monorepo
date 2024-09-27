@@ -38,7 +38,7 @@ export interface ILoadLocalSource extends ILoadSource {
   readonly asset: string | ArrayBuffer | Blob | File;
 }
 
-export interface ISourceModel {
+export interface IPlayerSource {
   readonly isDisposed: boolean;
   readonly id: number;
   readonly mimeType: string;

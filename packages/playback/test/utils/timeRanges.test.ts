@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import PlayerTimeRange from '../../src/lib/utils/timeRanges';
+import { PlayerTimeRange } from '../../src/lib/models/playerTimeRange';
 
 class MockTimeRange implements TimeRanges {
   public constructor(private timeRangeArray_: Array<{ start: number; end: number }>) {}

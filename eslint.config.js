@@ -63,7 +63,15 @@ export default [
    * list of ignores:
    */
   {
-    ignores: ['node_modules/**', '**/rollup.config.js', '**/dist/**', '**/dist-api-reference/**', '**/coverage/**'],
+    ignores: [
+      'node_modules/**',
+      '**/node_modules/**',
+      '**/rollup.config.js',
+      '**/dist/**',
+      '**/dist-api-reference/**',
+      '**/dist-demo/**',
+      '**/coverage/**',
+    ],
   },
 
   /**
