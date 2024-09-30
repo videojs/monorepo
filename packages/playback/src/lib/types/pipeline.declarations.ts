@@ -7,30 +7,44 @@ import type { IPlayerTimeRange } from './player-time-range.declarations';
 import type { IPlayerAudioTrack } from './audio-track.declarations';
 import type { IPlayerTextTrack } from './text-track.declarations';
 import type { IPlayerThumbnailTrack, IRemoteVttThumbnailTrackOptions } from './thumbnail-track.declarations';
+import type { IPlayerSource } from './source.declarations';
 
-export interface PipelineDependencies {
+export interface IPipelineDependencies {
   videoElement: HTMLVideoElement;
   networkManager: INetworkManager;
   logger: ILogger;
+  source: IPlayerSource;
 }
 
 export interface IPipelineFactory {
-  create(deps: PipelineDependencies): Promise<IPipeline>;
+  create(deps: IPipelineDependencies): IPipeline;
+}
+
+export interface IPipelineLoader {
+  load(): Promise<IPipeline>;
+  abort(): void;
+}
+
+export interface IPipelineLoaderDependencies extends IPipelineDependencies {
+  vodFactory?: IPipelineFactory;
+  liveFactory?: IPipelineFactory;
+}
+
+export interface IPipelineLoaderFactory {
+  create(deps: IPipelineLoaderDependencies): IPipelineLoader;
+}
+
+export interface IPipelineFactoryConfiguration {
+  loader: IPipelineLoaderFactory;
+  live?: IPipelineFactory;
+  vod?: IPipelineFactory;
 }
 
 export interface IPipeline {
   play(): void;
   pause(): void;
   getPlaybackState(): PlaybackState;
-  mute(): void;
-  unmute(): void;
-  getIsMuted(): boolean;
   seek(seekTarget: number): boolean;
-  getCurrentTime(): number;
-  getVolumeLevel(): number;
-  setVolumeLevel(volumeLevel: number): void;
-  getPlaybackRate(): number;
-  setPlaybackRate(playbackRate: number): void;
   getSeekableRanges(): Array<IPlayerTimeRange>;
   getBufferedRanges(): Array<IPlayerTimeRange>;
   getDuration(): number;
@@ -46,4 +60,5 @@ export interface IPipeline {
   getQualityLevels(): Array<IQualityLevel>;
   selectQualityLevel(id: string): boolean;
   selectAutoQualityLevel(): boolean;
+  start(): void;
 }
