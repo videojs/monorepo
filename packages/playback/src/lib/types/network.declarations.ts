@@ -1,7 +1,7 @@
-import type { RequestType } from '../consts/requestType';
+import type { RequestType } from '../consts/request-type';
 import type { NetworkConfiguration, PlayerNetworkConfiguration } from './configuration.declarations';
-import type { InterceptorTypeToInterceptorMap } from './interceptorTypeToInterceptorMap.declarations';
-import type { InterceptorType } from '../consts/interceptorType';
+import type { InterceptorTypeToInterceptorMap } from './interceptor-type-to-interceptor-map.declarations';
+import type { InterceptorType } from '../consts/interceptor-type';
 
 export interface IRequestPayload {
   url: URL;

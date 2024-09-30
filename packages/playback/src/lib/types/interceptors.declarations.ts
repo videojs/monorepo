@@ -1,5 +1,5 @@
-import type { InterceptorType } from '../consts/interceptorType';
-import type { InterceptorTypeToInterceptorMap } from './interceptorTypeToInterceptorMap.declarations';
+import type { InterceptorType } from '../consts/interceptor-type';
+import type { InterceptorTypeToInterceptorMap } from './interceptor-type-to-interceptor-map.declarations';
 
 export interface IInterceptorsStorage {
   addInterceptor<K extends InterceptorType>(interceptorType: K, interceptor: InterceptorTypeToInterceptorMap[K]): void;

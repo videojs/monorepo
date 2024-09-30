@@ -1,4 +1,4 @@
-import { LoggerLevel } from '../consts/loggerLevel';
+import { LoggerLevel } from '../consts/logger-level';
 import type { ILogger } from '../types/logger.declarations';
 
 const style = 'background: #333; padding: 3px; color: #bada55';

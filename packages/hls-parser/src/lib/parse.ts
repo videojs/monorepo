@@ -1,5 +1,5 @@
-import createStateMachine from './stateMachine';
-import type { StateMachineTransition } from './stateMachine';
+import createStateMachine from './state-machine';
+import type { StateMachineTransition } from './state-machine';
 import {
   failedToResolveUri,
   ignoreTagWarn,
@@ -51,10 +51,10 @@ import type {
   TransformTagAttributes,
   TransformTagValue,
   WarnCallback,
-} from './types/parserOptions';
-import type { ParsedPlaylist } from './types/parsedPlaylist';
-import type { SharedState } from './types/sharedState';
-import type { EmptyTagProcessor } from './tags/emptyTagProcessors';
+} from './types/parser-options';
+import type { ParsedPlaylist } from './types/parsed-playlist';
+import type { SharedState } from './types/shared-state';
+import type { EmptyTagProcessor } from './tags/empty-tag-processors';
 import {
   ExtXEndList,
   ExtXIframesOnly,
@@ -62,8 +62,8 @@ import {
   ExtXDiscontinuity,
   ExtXGap,
   ExtM3u,
-} from './tags/emptyTagProcessors';
-import type { TagWithValueProcessor } from './tags/tagWithValueProcessors';
+} from './tags/empty-tag-processors';
+import type { TagWithValueProcessor } from './tags/tag-with-value-processors';
 import {
   ExtXBitrate,
   ExtXByteRange,
@@ -74,8 +74,8 @@ import {
   ExtXTargetDuration,
   ExtXVersion,
   ExtXProgramDateTime,
-} from './tags/tagWithValueProcessors';
-import type { TagWithAttributesProcessor } from './tags/tagWithAttributesProcessors';
+} from './tags/tag-with-value-processors';
+import type { TagWithAttributesProcessor } from './tags/tag-with-attributes-processors';
 import {
   ExtXPartInf,
   ExtXServerControl,
@@ -94,7 +94,7 @@ import {
   ExtXSessionKey,
   ExtXContentSteering,
   ExtXDefine,
-} from './tags/tagWithAttributesProcessors';
+} from './tags/tag-with-attributes-processors';
 import {
   createDefaultParsedPlaylist,
   createDefaultSegment,

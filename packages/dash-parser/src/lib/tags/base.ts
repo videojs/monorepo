@@ -1,5 +1,5 @@
-import type { WarnCallback } from '../types/parserOptions';
-import type { TagInfo } from '../stateMachine';
+import type { WarnCallback } from '../types/parser-options';
+import type { TagInfo } from '../state-machine';
 import {
   ADAPTATION_SET,
   BASE_URL,
@@ -17,14 +17,14 @@ import type {
   ParsedManifest,
   UTCTimingScheme,
   Segment,
-} from '../types/parsedManifest';
-import type { SharedState } from '../types/sharedState';
-import type { PendingProcessors } from '../pendingProcessors';
+} from '../types/parsed-manifest';
+import type { SharedState } from '../types/shared-state';
+import type { PendingProcessors } from '../pending-processors';
 import { missingRequiredAttributeWarn } from '../utils/warn';
-import { parseAttributes } from '../parseAttributes';
-import { parseUTCTimingScheme } from '../utils/parseUTCTimingScheme';
-import { segmentsFromTemplate } from '../segments/segmentParser';
-import { resolveURL } from '../segments/resolveUrl';
+import { parseAttributes } from '../parse-attributes';
+import { parseUtcTimingScheme } from '../utils/parse-utc-timing-scheme';
+import { segmentsFromTemplate } from '../segments/segment-parser';
+import { resolveUrl } from '../segments/resolve-url';
 
 export abstract class TagProcessor {
   protected readonly warnCallback_: WarnCallback;
@@ -185,7 +185,7 @@ export class BaseUrl extends TagProcessor {
       sharedState.baseUrls.push({ uri, attributes, parentKey: parentTagInfo?.tagKey });
     } else {
       for (const base of prevBaseURLs) {
-        const resolved = resolveURL(uri, base.uri);
+        const resolved = resolveUrl(uri, base.uri);
 
         // URI is absolute
         if (resolved === uri) {
@@ -366,7 +366,7 @@ export class UTCTiming extends TagProcessor {
     const attributes = parseAttributes(tagInfo.tagAttributes);
 
     // Attributes other than SCHEME_ID_URI are added in the below function.
-    const utcAttributes = parseUTCTimingScheme(attributes);
+    const utcAttributes = parseUtcTimingScheme(attributes);
     parsedManifest.utcTimingScheme = utcAttributes as UTCTimingScheme;
   }
 }

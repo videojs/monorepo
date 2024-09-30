@@ -1,12 +1,12 @@
-import type { PlaybackState } from '../consts/playbackState';
-import type { IPlaybackStats } from './playbackStats.declarations';
+import type { PlaybackState } from '../consts/playback-state';
+import type { IPlaybackStats } from './playback-stats.declarations';
 import type { ILogger } from './logger.declarations';
 import type { INetworkManager } from './network.declarations';
-import type { IQualityLevel } from './qualiyLevel.declarations';
-import type { IPlayerTimeRange } from './playerTimeRange.declarations';
-import type { IPlayerAudioTrack } from './audioTrack.declarations';
-import type { IPlayerTextTrack } from './textTrack.declarations';
-import type { IPlayerThumbnailTrack, IRemoteVttThumbnailTrackOptions } from './thumbnailTrack.declarations';
+import type { IQualityLevel } from './quality-level.declarations';
+import type { IPlayerTimeRange } from './player-time-range.declarations';
+import type { IPlayerAudioTrack } from './audio-track.declarations';
+import type { IPlayerTextTrack } from './text-track.declarations';
+import type { IPlayerThumbnailTrack, IRemoteVttThumbnailTrackOptions } from './thumbnail-track.declarations';
 
 export interface PipelineDependencies {
   videoElement: HTMLVideoElement;

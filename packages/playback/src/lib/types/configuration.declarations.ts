@@ -1,4 +1,4 @@
-import type { RequestType } from '../consts/requestType';
+import type { RequestType } from '../consts/request-type';
 
 export interface NetworkConfiguration {
   /**

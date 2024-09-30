@@ -1,4 +1,4 @@
-import type { WarnCallback } from '../types/parserOptions';
+import type { WarnCallback } from '../types/parser-options';
 
 export abstract class TagProcessor {
   protected readonly warnCallback_: WarnCallback;

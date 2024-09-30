@@ -1,7 +1,7 @@
 export { Player } from './lib/player';
 
 // consts
-export { LoggerLevel } from './lib/consts/loggerLevel';
+export { LoggerLevel } from './lib/consts/logger-level';
 
 // types
 export type { ILogger } from './lib/types/logger.declarations';

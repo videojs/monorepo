@@ -1,4 +1,4 @@
-import type { LoggerLevel } from '../consts/loggerLevel';
+import type { LoggerLevel } from '../consts/logger-level';
 
 export interface ILogger {
   createSubLogger(subLabel: string): ILogger;
