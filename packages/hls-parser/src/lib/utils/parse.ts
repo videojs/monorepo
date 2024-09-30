@@ -1,4 +1,4 @@
-import type { Define } from '../types/parsedPlaylist';
+import type { Define } from '../types/parsed-playlist';
 
 export const parseBoolean = (val: string, fallback: boolean): boolean => {
   if (val === 'YES') {

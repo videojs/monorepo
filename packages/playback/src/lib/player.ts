@@ -1,10 +1,10 @@
 import type { ILogger } from './types/logger.declarations';
-import { LoggerLevel } from './consts/loggerLevel';
+import { LoggerLevel } from './consts/logger-level';
 import type { PlayerConfiguration } from './types/configuration.declarations';
 import type { IStore } from './types/store.declarations';
 import type { DeepPartial } from './types/utility.declarations';
-import type { EventListener, IEventEmitter } from './types/eventEmitter.declarations';
-import type { EventTypeToEventMap } from './types/eventTypeToEventMap.declarations';
+import type { EventListener, IEventEmitter } from './types/event-emitter.declarations';
+import type { EventTypeToEventMap } from './types/event-type-to-event-map.declarations';
 import { PlayerEventType } from './consts/events';
 import {
   ConfigurationChangedEvent,
@@ -12,21 +12,21 @@ import {
   MutedStatusChangedEvent,
   PlayerErrorEvent,
   VolumeChangedEvent,
-} from './events/playerEvents';
-import type { CapabilitiesProbeResult, IEnvCapabilitiesProvider } from './types/envCapabilities.declarations';
+} from './events/player-events';
+import type { CapabilitiesProbeResult, IEnvCapabilitiesProvider } from './types/env-capabilities.declarations';
 import type { ILoadLocalSource, ILoadRemoteSource, IPlayerSource } from './types/source.declarations';
 import type { IPipeline, IPipelineFactory } from './types/pipeline.declarations';
-import { PlaybackState } from './consts/playbackState';
-import type { IPlaybackStats } from './types/playbackStats.declarations';
-import { NoSupportedPipelineError } from './errors/pipelineErrors';
+import { PlaybackState } from './consts/playback-state';
+import type { IPlaybackStats } from './types/playback-stats.declarations';
+import { NoSupportedPipelineError } from './errors/pipeline-errors';
 import type { INetworkManager } from './types/network.declarations';
 import type { IInterceptorsStorage } from './types/interceptors.declarations';
-import { ServiceLocator } from './serviceLocator';
-import type { IQualityLevel } from './types/qualiyLevel.declarations';
-import type { IPlayerTimeRange } from './types/playerTimeRange.declarations';
-import type { IPlayerAudioTrack } from './types/audioTrack.declarations';
-import type { IPlayerThumbnailTrack, IRemoteVttThumbnailTrackOptions } from './types/thumbnailTrack.declarations';
-import { PlayerSource } from './models/playerSource';
+import { ServiceLocator } from './service-locator';
+import type { IQualityLevel } from './types/quality-level.declarations';
+import type { IPlayerTimeRange } from './types/player-time-range.declarations';
+import type { IPlayerAudioTrack } from './types/audio-track.declarations';
+import type { IPlayerThumbnailTrack, IRemoteVttThumbnailTrackOptions } from './types/thumbnail-track.declarations';
+import { PlayerSource } from './models/player-source';
 
 interface PlayerDependencies {
   readonly logger: ILogger;

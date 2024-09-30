@@ -1,5 +1,5 @@
-import type { Define, ParsedPlaylist, Segment, VariantStream } from '../types/parsedPlaylist';
-import type { SharedState } from '../types/sharedState';
+import type { Define, ParsedPlaylist, Segment, VariantStream } from '../types/parsed-playlist';
+import type { SharedState } from '../types/shared-state';
 
 export const createDefaultSegment = (): Segment => ({
   duration: 0,

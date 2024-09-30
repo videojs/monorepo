@@ -6,6 +6,7 @@ import vitest from 'eslint-plugin-vitest';
 import globals from 'globals';
 import reactHooks from 'eslint-plugin-react-hooks';
 import reactRefresh from 'eslint-plugin-react-refresh';
+import unicorn from 'eslint-plugin-unicorn';
 
 /**
  * most of the configurations are glob-based,
@@ -156,6 +157,22 @@ export default [
       'no-console': 'error',
       'no-unused-vars': ['error', { caughtErrors: 'none' }],
       'jsdoc/require-returns': 'off',
+    },
+  },
+
+  {
+    files: ['**/*.{ts,js}'],
+    plugins: {
+      unicorn,
+    },
+
+    rules: {
+      'unicorn/filename-case': [
+        'error',
+        {
+          case: 'kebabCase',
+        },
+      ],
     },
   },
 ];

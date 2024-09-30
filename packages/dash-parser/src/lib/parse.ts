@@ -5,8 +5,8 @@ import type {
   CustomTagMap,
   TransformTagAttributes,
   TransformTagValue,
-} from './types/parserOptions';
-import type { ParsedManifest } from './types/parsedManifest';
+} from './types/parser-options';
+import type { ParsedManifest } from './types/parsed-manifest';
 import type { TagProcessor } from './tags/base';
 import {
   ADAPTATION_SET,
@@ -20,11 +20,11 @@ import {
   BASE_URL,
 } from './consts/tags';
 import { AdaptationSet, Mpd, Period, Representation, UTCTiming, SegmentTemplate, BaseUrl } from './tags/base';
-import type { TagInfo, StateMachineTransition } from './stateMachine';
+import type { TagInfo, StateMachineTransition } from './state-machine';
 import { ignoreTagWarn, unsupportedTagWarn } from './utils/warn';
-import createStateMachine from './stateMachine';
-import { PendingProcessors } from './pendingProcessors';
-import type { SharedState } from './types/sharedState';
+import createStateMachine from './state-machine';
+import { PendingProcessors } from './pending-processors';
+import type { SharedState } from './types/shared-state';
 import { createDefaultParsedManifest } from './consts/defaults';
 
 class Parser {

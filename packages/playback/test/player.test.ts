@@ -1,10 +1,14 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { Player } from '../src/lib/player';
 import type { PlayerConfiguration } from '../src/lib/types/configuration.declarations';
-import { ConfigurationChangedEvent, LoggerLevelChangedEvent, VolumeChangedEvent } from '../src/lib/events/playerEvents';
-import type { PlayerEvent } from '../src/lib/events/basePlayerEvent';
-import { RequestType } from '../src/lib/consts/requestType';
-import { ServiceLocator } from '../src/lib/serviceLocator';
+import {
+  ConfigurationChangedEvent,
+  LoggerLevelChangedEvent,
+  VolumeChangedEvent,
+} from '../src/lib/events/player-events';
+import type { PlayerEvent } from '../src/lib/events/base-player-event';
+import { RequestType } from '../src/lib/consts/request-type';
+import { ServiceLocator } from '../src/lib/service-locator';
 // import type { ILogger } from '../src/lib/types/logger';
 // import { instance, mock, verify, when } from '@typestrong/ts-mockito';
 

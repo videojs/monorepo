@@ -1,4 +1,4 @@
-import type { ParsedManifest } from '../types/parsedManifest';
+import type { ParsedManifest } from '../types/parsed-manifest';
 
 export const createDefaultParsedManifest = (): ParsedManifest => ({
   representations: [],
