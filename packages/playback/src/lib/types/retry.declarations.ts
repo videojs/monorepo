@@ -1,5 +1,6 @@
-export interface RetryInfo {
+export interface AttemptInfo {
   attemptNumber: number;
-  delay: number;
-  retryReason: Error;
+  currentBaseDelay: number;
+  minDelay: number;
+  maxDelay: number;
 }
