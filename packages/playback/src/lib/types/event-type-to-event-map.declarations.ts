@@ -8,17 +8,17 @@ import type {
   PlayerErrorEvent,
 } from '../events/player-events';
 import type {
-  NetworkResponseCompletedSuccessfullyEvent,
-  NetworkResponseCompletedUnsuccessfullyEvent,
-  NetworkRequestFailedEvent,
-  NetworkRequestStartedEvent,
+  NetworkRequestAttemptCompletedSuccessfullyEvent,
+  NetworkRequestAttemptCompletedUnsuccessfullyEvent,
+  NetworkRequestAttemptFailedEvent,
+  NetworkRequestAttemptStartedEvent,
 } from '../events/network-events';
 
 export interface NetworkEventMap {
-  [PlayerEventType.NetworkRequestStarted]: NetworkRequestStartedEvent;
-  [PlayerEventType.NetworkResponseCompletedSuccessfully]: NetworkResponseCompletedSuccessfullyEvent;
-  [PlayerEventType.NetworkResponseCompletedUnsuccessfully]: NetworkResponseCompletedUnsuccessfullyEvent;
-  [PlayerEventType.NetworkRequestFailed]: NetworkRequestFailedEvent;
+  [PlayerEventType.NetworkRequestAttemptStarted]: NetworkRequestAttemptStartedEvent;
+  [PlayerEventType.NetworkRequestAttemptCompletedSuccessfully]: NetworkRequestAttemptCompletedSuccessfullyEvent;
+  [PlayerEventType.NetworkRequestAttemptCompletedUnsuccessfully]: NetworkRequestAttemptCompletedUnsuccessfullyEvent;
+  [PlayerEventType.NetworkRequestAttemptFailed]: NetworkRequestAttemptFailedEvent;
 }
 
 export interface PlayerEventMap {

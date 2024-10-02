@@ -1,93 +1,81 @@
-import type { RetryInfo } from '../types/retry.declarations';
-import { noop, t } from './fn';
+import type { AttemptInfo } from '../types/retry.declarations';
+import { t } from './fn';
 
-class MaxAttemptsExceeded extends Error {
-  public constructor() {
-    super(`Max attempts number is exceeded.`);
-  }
-}
-
-type WrappedWithRetry<T> = (...args: Array<unknown>) => Promise<T>;
-
-interface WrapPayload<T> {
-  target: (...args: Array<unknown>) => Promise<T>;
-  shouldRetry?: (error: Error) => boolean;
-  onRetry?: (retryInfo: RetryInfo) => void;
-}
-
-interface RetryWrapperOptions {
+interface RetryWrapperOptions<T> {
   maxAttempts: number;
   initialDelay: number;
   delayFactor: number;
   fuzzFactor: number;
+  target: (...args: Array<unknown>) => Promise<T>;
+  shouldRetry?: (error: Error) => boolean;
 }
 
 const wait = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
 
-export default class RetryWrapper {
+export default class RetryWrapper<T> {
   private readonly maxAttempts_: number;
   private readonly initialDelay_: number;
   private readonly delayFactor_: number;
   private readonly fuzzFactor_: number;
+  private readonly target_: (...args: Array<unknown>) => Promise<T>;
+  private readonly shouldRetry_: (error: Error) => boolean;
 
-  public constructor(options: RetryWrapperOptions) {
+  private attemptNumber_: number;
+  private currentBaseDelay_: number;
+
+  public constructor(options: RetryWrapperOptions<T>) {
     this.maxAttempts_ = options.maxAttempts;
     this.initialDelay_ = options.initialDelay;
     this.delayFactor_ = options.delayFactor;
     this.fuzzFactor_ = options.fuzzFactor;
+    this.target_ = options.target;
+    this.shouldRetry_ = options.shouldRetry ?? t;
+
+    this.attemptNumber_ = 1;
+    this.currentBaseDelay_ = this.initialDelay_;
   }
 
-  public wrap<T>(payload: WrapPayload<T>): WrappedWithRetry<T> {
-    const { target, shouldRetry = t, onRetry = noop } = payload;
-
-    let attemptNumber = 1;
-    let delay = this.initialDelay_;
-    let retryReason: Error;
-
-    const wrapped = async (...args: Array<unknown>): Promise<T> => {
-      if (attemptNumber > this.maxAttempts_) {
-        if (retryReason) {
-          throw retryReason;
-        }
-
-        throw new MaxAttemptsExceeded();
-      }
-
-      try {
-        return await target(...args);
-      } catch (e) {
-        const error = e as Error;
-
-        if (!shouldRetry(error)) {
-          throw error;
-        }
-
-        await wait(this.applyFuzzFactor_(delay));
-
-        retryReason = error;
-        attemptNumber++;
-        delay += delay * this.delayFactor_;
-
-        onRetry({ attemptNumber, delay, retryReason });
-
-        return wrapped(...args);
-      }
+  public getAttemptInfo(): AttemptInfo {
+    return {
+      attemptNumber: this.attemptNumber_,
+      currentBaseDelay: this.currentBaseDelay_,
+      minDelay: (1 - this.fuzzFactor_) * this.currentBaseDelay_,
+      maxDelay: (1 + this.fuzzFactor_) * this.currentBaseDelay_,
     };
-
-    return wrapped;
   }
 
-  /**
-   * For example fuzzFactor is 0.1
-   * This means ±10% deviation
-   * So if we have delay as 1000
-   * This function can generate any value from 900 to 1100
-   * @param delay - current delay
-   */
-  private applyFuzzFactor_(delay: number): number {
-    const lowValue = (1 - this.fuzzFactor_) * delay;
-    const highValue = (1 + this.fuzzFactor_) * delay;
+  public async execute(...args: Array<unknown>): Promise<T> {
+    try {
+      return await this.target_(...args);
+    } catch (e) {
+      const error = e as Error;
 
-    return lowValue + Math.random() * (highValue - lowValue);
+      if (this.attemptNumber_ >= this.maxAttempts_) {
+        throw error;
+      }
+
+      if (!this.shouldRetry_(error)) {
+        throw error;
+      }
+
+      /**
+       * For example fuzzFactor is 0.1
+       * This means ±10% deviation
+       * So if we have delay as 1000
+       * This function will generate min=900 and max=1100
+       */
+      const { minDelay, maxDelay } = this.getAttemptInfo();
+      /**
+       * pick up any value from min to max
+       */
+      const randomizedDelay = minDelay + Math.random() * (maxDelay - minDelay);
+
+      await wait(randomizedDelay);
+
+      this.attemptNumber_++;
+      this.currentBaseDelay_ += this.currentBaseDelay_ * this.delayFactor_;
+
+      return this.execute(...args);
+    }
   }
 }

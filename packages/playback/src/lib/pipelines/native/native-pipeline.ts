@@ -1,5 +1,5 @@
 import { BasePipeline } from '../base-pipeline';
-import type { PipelineDependencies } from '../../types/pipeline.declarations';
+import type { IPipelineDependencies } from '../../types/pipeline.declarations';
 import type { IPlayerAudioTrack } from '../../types/audio-track.declarations';
 import { PlayerAudioTrack } from '../../models/player-audio-track';
 import type { IQualityLevel } from '../../types/quality-level.declarations';
@@ -10,10 +10,13 @@ import type {
   IPlayerThumbnailTrack,
 } from 'src/lib/types/thumbnail-track.declarations';
 
-export default class NativePipeline extends BasePipeline {
-  public dispose(): void {
-    throw new Error('Method not implemented.');
+export class NativePipeline extends BasePipeline {
+  public static create(dependencies: IPipelineDependencies): NativePipeline {
+    dependencies.logger = dependencies.logger.createSubLogger('NativePipeline');
+
+    return new NativePipeline(dependencies);
   }
+
   public getTextTracks(): Array<IPlayerTextTrack> {
     throw new Error('Method not implemented.');
   }
@@ -37,11 +40,6 @@ export default class NativePipeline extends BasePipeline {
   }
   public getPlaybackState(): PlaybackState {
     throw new Error('Method not implemented.');
-  }
-  public static create(dependencies: PipelineDependencies): Promise<NativePipeline> {
-    dependencies.logger = dependencies.logger.createSubLogger('NativePipeline');
-
-    return Promise.resolve(new NativePipeline(dependencies));
   }
 
   public getAudioTracks(): Array<IPlayerAudioTrack> {
@@ -84,5 +82,17 @@ export default class NativePipeline extends BasePipeline {
 
   public selectAutoQualityLevel(): boolean {
     return false;
+  }
+
+  public start(): void {
+    this.videoElement_.src = this.source_.url.toString();
+
+    // TODO: check for autoplay/preload/etc
+    this.videoElement_.load();
+  }
+
+  public dispose(): void {
+    this.videoElement_.removeAttribute('src');
+    this.videoElement_.load();
   }
 }

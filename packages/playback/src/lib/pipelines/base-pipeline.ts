@@ -1,4 +1,4 @@
-import type { IPipeline, PipelineDependencies } from '../types/pipeline.declarations';
+import type { IPipeline, IPipelineDependencies } from '../types/pipeline.declarations';
 import { PlayerTimeRange } from '../models/player-time-range';
 import type { PlaybackState } from '../consts/playback-state';
 import type { IPlaybackStats } from '../types/playback-stats.declarations';
@@ -9,16 +9,19 @@ import type { IPlayerAudioTrack } from '../types/audio-track.declarations';
 import type { ILogger } from '../types/logger.declarations';
 import type { IPlayerTextTrack } from '../types/text-track.declarations';
 import type { IPlayerThumbnailTrack, IRemoteVttThumbnailTrackOptions } from '../types/thumbnail-track.declarations';
+import type { IPlayerSource } from '../types/source.declarations';
 
 export abstract class BasePipeline implements IPipeline {
   protected readonly videoElement_: HTMLVideoElement;
   protected readonly networkManager_: INetworkManager;
   protected readonly logger_: ILogger;
+  protected readonly source_: IPlayerSource;
 
-  public constructor(dependencies: PipelineDependencies) {
+  public constructor(dependencies: IPipelineDependencies) {
     this.videoElement_ = dependencies.videoElement;
     this.networkManager_ = dependencies.networkManager;
     this.logger_ = dependencies.logger;
+    this.source_ = dependencies.source;
   }
 
   public abstract dispose(): void;
@@ -45,11 +48,10 @@ export abstract class BasePipeline implements IPipeline {
 
   public abstract getPlaybackState(): PlaybackState;
 
+  public abstract start(): void;
+
   public getPlaybackStats(): IPlaybackStats {
     return this.videoElement_.getVideoPlaybackQuality();
-  }
-  public getCurrentTime(): number {
-    return this.videoElement_.currentTime;
   }
 
   public getDuration(): number {
@@ -62,34 +64,6 @@ export abstract class BasePipeline implements IPipeline {
 
   public getBufferedRanges(): Array<IPlayerTimeRange> {
     return PlayerTimeRange.fromTimeRanges(this.videoElement_.buffered);
-  }
-
-  public getPlaybackRate(): number {
-    return this.videoElement_.playbackRate;
-  }
-
-  public setPlaybackRate(playbackRate: number): void {
-    this.videoElement_.playbackRate = playbackRate;
-  }
-
-  public getVolumeLevel(): number {
-    return this.videoElement_.volume;
-  }
-
-  public setVolumeLevel(volumeLevel: number): void {
-    this.videoElement_.volume = volumeLevel;
-  }
-
-  public mute(): void {
-    this.videoElement_.muted = true;
-  }
-
-  public unmute(): void {
-    this.videoElement_.muted = false;
-  }
-
-  public getIsMuted(): boolean {
-    return this.videoElement_.muted;
   }
 
   public pause(): void {

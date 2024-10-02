@@ -14,3 +14,15 @@ export class NoSupportedPipelineError extends PipelineError {
     this.isFatal = isFatal;
   }
 }
+
+export class PipelineLoaderFailedToDeterminePipelineError extends PipelineError {
+  public readonly code = ErrorCode.PipelineLoaderFailedToDeterminePipeline;
+  public readonly isFatal: boolean;
+  public readonly reason: Error;
+
+  public constructor(isFatal: boolean, reason: Error) {
+    super();
+    this.isFatal = isFatal;
+    this.reason = reason;
+  }
+}

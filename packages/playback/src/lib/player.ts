@@ -15,10 +15,10 @@ import {
 } from './events/player-events';
 import type { CapabilitiesProbeResult, IEnvCapabilitiesProvider } from './types/env-capabilities.declarations';
 import type { ILoadLocalSource, ILoadRemoteSource, IPlayerSource } from './types/source.declarations';
-import type { IPipeline, IPipelineFactory } from './types/pipeline.declarations';
+import type { IPipeline, IPipelineFactoryConfiguration, IPipelineLoader } from './types/pipeline.declarations';
 import { PlaybackState } from './consts/playback-state';
 import type { IPlaybackStats } from './types/playback-stats.declarations';
-import { NoSupportedPipelineError } from './errors/pipeline-errors';
+import { NoSupportedPipelineError, PipelineLoaderFailedToDeterminePipelineError } from './errors/pipeline-errors';
 import type { INetworkManager } from './types/network.declarations';
 import type { IInterceptorsStorage } from './types/interceptors.declarations';
 import { ServiceLocator } from './service-locator';
@@ -27,6 +27,7 @@ import type { IPlayerTimeRange } from './types/player-time-range.declarations';
 import type { IPlayerAudioTrack } from './types/audio-track.declarations';
 import type { IPlayerThumbnailTrack, IRemoteVttThumbnailTrackOptions } from './types/thumbnail-track.declarations';
 import { PlayerSource } from './models/player-source';
+import { NativePipeline } from './pipelines/native/native-pipeline';
 
 interface PlayerDependencies {
   readonly logger: ILogger;
@@ -66,8 +67,9 @@ export class Player {
   private activeVideoElement_: HTMLVideoElement | null = null;
   private activeSource_: IPlayerSource | null = null;
   private activePipeline_: IPipeline | null = null;
+  private activePipelineLoader_: IPipelineLoader | null = null;
 
-  private readonly mimeTypeToPipelineFactoryMap_ = new Map<string, IPipelineFactory>();
+  private readonly mimeTypeToPipelineFactoryMap_ = new Map<string, IPipelineFactoryConfiguration>();
 
   /**
    * MARK: Private services
@@ -112,17 +114,24 @@ export class Player {
   /**
    * Add pipeline factory for a specific mime type
    * @param mimeType - mime type
-   * @param factory - pipeline factory
+   * @param configuration - pipeline factory configuration
    */
-  public addPipelineFactory(mimeType: string, factory: IPipelineFactory): void {
-    this.mimeTypeToPipelineFactoryMap_.set(mimeType, factory);
+  public addPipelineFactoryConfiguration(mimeType: string, configuration: IPipelineFactoryConfiguration): boolean {
+    if (!configuration.live && !configuration.vod) {
+      this.logger_.warn('Either live or vod pipeline factory must be provided');
+      return false;
+    }
+
+    this.mimeTypeToPipelineFactoryMap_.set(mimeType, configuration);
+
+    return true;
   }
 
   /**
    * Check if player already has pipeline factory for a specific mime type
    * @param mimeType - mime type
    */
-  public hasPipelineFactory(mimeType: string): boolean {
+  public hasPipelineFactoryConfiguration(mimeType: string): boolean {
     return this.mimeTypeToPipelineFactoryMap_.has(mimeType);
   }
 
@@ -130,7 +139,7 @@ export class Player {
    * Returns pipeline factory or null for a specific mime type
    * @param mimeType - mime type
    */
-  public getPipelineFactory(mimeType: string): IPipelineFactory | null {
+  public getPipelineFactoryConfiguration(mimeType: string): IPipelineFactoryConfiguration | null {
     return this.mimeTypeToPipelineFactoryMap_.get(mimeType) ?? null;
   }
 
@@ -138,7 +147,7 @@ export class Player {
    * remove pipeline factory for a specific mime type
    * @param mimeType - mime type
    */
-  public removePipelineFactory(mimeType: string): boolean {
+  public removePipelineFactoryConfiguration(mimeType: string): boolean {
     return this.mimeTypeToPipelineFactoryMap_.delete(mimeType);
   }
 
@@ -316,8 +325,9 @@ export class Player {
    */
   public stop(reason: string): void {
     this.logger_.debug('stop is called. reason: ', reason);
-    // TODO: call pipeline stop
 
+    this.activePipelineLoader_?.abort();
+    this.activePipelineLoader_ = null;
     this.activeSource_?.dispose();
     this.activeSource_ = null;
     this.activePipeline_?.dispose();
@@ -351,24 +361,52 @@ export class Player {
       this.stop('load');
     }
 
-    const sourceModel = new PlayerSource(source);
+    this.activeSource_ = new PlayerSource(source);
 
-    this.logger_.debug('received a load request: ', sourceModel);
+    this.logger_.debug('received a load request: ', this.activeSource_);
 
-    this.activeSource_ = sourceModel;
+    if (this.hasPipelineFactoryConfiguration(this.activeSource_.mimeType)) {
+      const { loader, vod, live } = this.getPipelineFactoryConfiguration(this.activeSource_.mimeType)!;
+      this.activePipelineLoader_ = loader.create({
+        logger: this.logger_,
+        videoElement: this.activeVideoElement_,
+        networkManager: this.networkManager_,
+        source: this.activeSource_,
+        vodFactory: vod,
+        liveFactory: live,
+      });
 
-    if (this.hasPipelineFactory(source.mimeType)) {
-      // TODO: custom pipelines flow
+      this.activePipelineLoader_.load().then(
+        (pipeline) => {
+          this.activePipeline_ = pipeline;
+        },
+        (error) => {
+          this.eventEmitter_.emitEvent(
+            new PlayerErrorEvent(new PipelineLoaderFailedToDeterminePipelineError(true, error))
+          );
+        }
+      );
+
       return;
     }
 
     this.logger_.debug(
-      `No registered pipelines found for the provided mime type (${sourceModel.mimeType}). Trying to fallback to the native pipeline...`
+      `No registered pipeline's configuration found for the provided mime type (${this.activeSource_.mimeType}).`
     );
 
-    if (this.activeVideoElement_.canPlayType(sourceModel.mimeType)) {
-      // TODO: native pipeline flow
+    if (this.activeVideoElement_.canPlayType(this.activeSource_.mimeType)) {
+      this.logger_.debug('Native Pipeline can play the provided mime type. Fallback to the Native Pipeline');
+      this.activePipeline_ = NativePipeline.create({
+        logger: this.logger_,
+        videoElement: this.activeVideoElement_,
+        networkManager: this.networkManager_,
+        source: this.activeSource_,
+      });
+
+      this.activePipeline_.start();
       return;
+    } else {
+      this.logger_.debug('Native Pipeline can not play the provided mime type.');
     }
 
     this.logger_.warn('No supported pipelines found for ', source.mimeType);
@@ -436,14 +474,14 @@ export class Player {
    * current time getter
    */
   public getCurrentTime(): number {
-    return this.safeAttemptOnPipeline_('getCurrentTime', (pipeline) => pipeline.getCurrentTime(), 0);
+    return this.activeVideoElement_?.currentTime ?? 0;
   }
 
   /**
    * playback rate getter
    */
   public getPlaybackRate(): number {
-    return this.safeAttemptOnPipeline_('getCurrentTime', (pipeline) => pipeline.getPlaybackRate(), 0);
+    return this.activeVideoElement_?.playbackRate ?? 1;
   }
 
   /**
@@ -451,51 +489,43 @@ export class Player {
    * @param rate - playback rate
    */
   public setPlaybackRate(rate: number): void {
-    return this.voidSafeAttemptOnPipeline_('setPlaybackRate', (pipeline) => pipeline.setPlaybackRate(rate));
+    if (this.activeVideoElement_) {
+      this.activeVideoElement_.playbackRate = rate;
+    }
   }
 
   /**
    * mute active playback session
    */
   public mute(): void {
-    return this.voidSafeAttemptOnPipeline_('mute', (pipeline) => {
-      if (pipeline.getIsMuted()) {
-        // already muted
-        return;
-      }
-
-      pipeline.mute();
+    if (this.activeVideoElement_ && !this.activeVideoElement_.muted) {
+      this.activeVideoElement_.muted = true;
       this.eventEmitter_.emitEvent(new MutedStatusChangedEvent(true));
-    });
+    }
   }
 
   /**
    * unmute active playback session
    */
   public unmute(): void {
-    return this.voidSafeAttemptOnPipeline_('unmute', (pipeline) => {
-      if (!pipeline.getIsMuted()) {
-        // already un-muted
-        return;
-      }
-
-      pipeline.unmute();
+    if (this.activeVideoElement_ && this.activeVideoElement_.muted) {
+      this.activeVideoElement_.muted = false;
       this.eventEmitter_.emitEvent(new MutedStatusChangedEvent(false));
-    });
+    }
   }
 
   /**
    * muted status getter
    */
   public getIsMuted(): boolean {
-    return this.safeAttemptOnPipeline_('getIsMuted', (pipeline) => pipeline.getIsMuted(), false);
+    return this.activeVideoElement_?.muted ?? false;
   }
 
   /**
    * volume level getter
    */
   public getVolumeLevel(): number {
-    return this.safeAttemptOnPipeline_('getVolumeLevel', (pipeline) => pipeline.getVolumeLevel(), 0);
+    return this.activeVideoElement_?.volume ?? 0;
   }
 
   /**
@@ -515,7 +545,9 @@ export class Player {
       level = volumeLevel;
     }
 
-    return this.voidSafeAttemptOnPipeline_('setVolumeLevel', (pipeline) => pipeline.setVolumeLevel(level));
+    if (this.activeVideoElement_) {
+      this.activeVideoElement_.volume = level;
+    }
   }
 
   /**
@@ -687,7 +719,7 @@ export class Player {
 
   private safeAttemptOnPipeline_<T>(method: string, executor: (target: IPipeline) => T, fallback: T): T {
     if (this.activePipeline_ === null) {
-      this.logger_.warn(
+      this.logger_.debug(
         `Attempt to call "${method}", but player does not have an active pipeline. Please call "load" first.`
       );
 
