@@ -16,9 +16,13 @@ export class Logger implements ILogger {
 
   private level_: LoggerLevel = LoggerLevel.Debug;
 
+  private get cLabel_(): string {
+    return `%c${this.label_}`;
+  }
+
   public constructor(dependencies: LoggerDependencies) {
     this.console_ = dependencies.console;
-    this.label_ = `%c${dependencies.label}`;
+    this.label_ = dependencies.label;
     this.delimiter_ = dependencies.delimiter;
   }
 
@@ -43,7 +47,7 @@ export class Logger implements ILogger {
       return;
     }
 
-    this.console_.debug(this.label_, style, ...args);
+    this.console_.debug(this.cLabel_, style, ...args);
   }
 
   public info(...args: Array<unknown>): void {
@@ -51,7 +55,7 @@ export class Logger implements ILogger {
       return;
     }
 
-    this.console_.info(this.label_, style, ...args);
+    this.console_.info(this.cLabel_, style, ...args);
   }
 
   public warn(...args: Array<unknown>): void {
@@ -59,7 +63,7 @@ export class Logger implements ILogger {
       return;
     }
 
-    this.console_.warn(this.label_, style, ...args);
+    this.console_.warn(this.cLabel_, style, ...args);
   }
 
   public error(...args: Array<unknown>): void {
@@ -67,6 +71,6 @@ export class Logger implements ILogger {
       return;
     }
 
-    this.console_.error(this.label_, style, ...args);
+    this.console_.error(this.cLabel_, style, ...args);
   }
 }

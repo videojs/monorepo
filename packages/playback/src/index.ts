@@ -1,4 +1,5 @@
 export { Player } from './lib/player';
+export { ServiceLocator } from './lib/service-locator';
 
 // consts
 export { LoggerLevel } from './lib/consts/logger-level';

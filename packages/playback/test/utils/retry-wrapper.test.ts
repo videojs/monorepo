@@ -90,17 +90,17 @@ describe('RetryWrapper', () => {
     expect(result[0].minDelay).toBe(0.9 * 100);
     expect(result[0].maxDelay).toBe(1.1 * 100);
 
-    expect(result[1].currentBaseDelay).toBe(150);
+    expect(result[1].currentBaseDelay).toBe(150); // 100 + (100 * 0.5)
     expect(result[1].attemptNumber).toBe(2);
     expect(result[1].minDelay).toBe(0.9 * 150);
     expect(result[1].maxDelay).toBe(1.1 * 150);
 
-    expect(result[2].currentBaseDelay).toBe(225);
+    expect(result[2].currentBaseDelay).toBe(225); // 150 + (150 * 0.5)
     expect(result[2].attemptNumber).toBe(3);
     expect(result[2].minDelay).toBe(0.9 * 225);
     expect(result[2].maxDelay).toBe(1.1 * 225);
 
-    expect(result[3].currentBaseDelay).toBe(337.5);
+    expect(result[3].currentBaseDelay).toBe(337.5); // 225 + (225 * 0.5)
     expect(result[3].attemptNumber).toBe(4);
     expect(result[3].minDelay).toBe(0.9 * 337.5);
     expect(result[3].maxDelay).toBe(1.1 * 337.5);

@@ -5,6 +5,7 @@ import type {
   INetworkRequest,
   IRequestPayloadWithChunkHandler,
   INetworkInterceptorsProvider,
+  IRequestPayload,
 } from '../types/network.declarations';
 import { NetworkRequestWithChunkHandler, NetworkRequestWithMapper } from './network-request';
 import type { PlayerNetworkConfiguration } from '../types/configuration.declarations';
@@ -39,27 +40,27 @@ export class NetworkManager implements INetworkManager {
   }
 
   public get<T>(payload: IRequestPayloadWithMapper<T>): INetworkRequest<T> {
-    (payload.requestInit as RequestInit).method = 'GET';
+    this.updateRequestInit_(payload, 'GET');
     return this.createNetworkRequestWithMapper_(payload);
   }
 
   public getProgressive(payload: IRequestPayloadWithChunkHandler): INetworkRequest<void> {
-    (payload.requestInit as RequestInit).method = 'GET';
+    this.updateRequestInit_(payload, 'GET');
     return this.createNetworkRequestWithChunkHandler_(payload);
   }
 
   public post<T>(payload: IRequestPayloadWithMapper<T>): INetworkRequest<T> {
-    (payload.requestInit as RequestInit).method = 'POST';
+    this.updateRequestInit_(payload, 'POST');
     return this.createNetworkRequestWithMapper_(payload);
   }
 
   public postProgressive(payload: IRequestPayloadWithChunkHandler): INetworkRequest<void> {
-    (payload.requestInit as RequestInit).method = 'POST';
+    this.updateRequestInit_(payload, 'POST');
     return this.createNetworkRequestWithChunkHandler_(payload);
   }
 
   private createNetworkRequestWithMapper_<T>(payload: IRequestPayloadWithMapper<T>): INetworkRequest<T> {
-    return new NetworkRequestWithMapper<T>(payload, {
+    return NetworkRequestWithMapper.create(payload, {
       logger: this.logger_,
       networkInterceptorsProvider: this.networkInterceptorsProvider_,
       eventEmitter: this.eventEmitter_,
@@ -69,13 +70,20 @@ export class NetworkManager implements INetworkManager {
   }
 
   private createNetworkRequestWithChunkHandler_(payload: IRequestPayloadWithChunkHandler): INetworkRequest<void> {
-    return new NetworkRequestWithChunkHandler(payload, {
+    return NetworkRequestWithChunkHandler.create(payload, {
       logger: this.logger_,
       networkInterceptorsProvider: this.networkInterceptorsProvider_,
       eventEmitter: this.eventEmitter_,
       configuration: { ...this.configuration_[payload.requestType] },
       executor: (request) => this.sendRequest_(request),
     });
+  }
+
+  private updateRequestInit_(payload: IRequestPayload, method: string): IRequestPayload {
+    payload.requestInit = payload.requestInit || {};
+    (payload.requestInit as RequestInit).method = method;
+
+    return payload;
   }
 
   protected sendRequest_(request: Request): Promise<Response> {

@@ -25,7 +25,7 @@ import {
 } from '../events/network-events';
 import type { NetworkConfiguration } from '../types/configuration.declarations';
 
-interface NetworkRequestDependencies {
+export interface NetworkRequestDependencies {
   logger: ILogger;
   networkInterceptorsProvider: INetworkInterceptorsProvider;
   eventEmitter: IEventEmitter<NetworkEventMap>;
@@ -34,11 +34,11 @@ interface NetworkRequestDependencies {
 }
 
 abstract class NetworkRequest<T> implements INetworkRequest<T> {
-  private static counter_ = 0;
+  protected static counter_ = 0;
 
   private isAborted_ = false;
+  private abortController_: AbortController;
 
-  protected readonly abortController_: AbortController;
   protected readonly logger_: ILogger;
   protected readonly networkInterceptorsProvider_: INetworkInterceptorsProvider;
   protected readonly eventEmitter_: IEventEmitter<NetworkEventMap>;
@@ -55,14 +55,12 @@ abstract class NetworkRequest<T> implements INetworkRequest<T> {
     return this.isAborted_;
   }
 
-  protected constructor(payload: IRequestPayload, dependencies: NetworkRequestDependencies) {
-    NetworkRequest.counter_++;
-
+  protected constructor(id: string, payload: IRequestPayload, dependencies: NetworkRequestDependencies) {
     const { logger, networkInterceptorsProvider, configuration, eventEmitter } = dependencies;
     const { requestType, requestInit, url } = payload;
 
-    this.id = `${NetworkRequest.counter_}--${requestType}`;
-    this.logger_ = logger.createSubLogger(`NetworkRequest (${this.id})`);
+    this.id = id;
+    this.logger_ = logger;
     this.networkInterceptorsProvider_ = networkInterceptorsProvider;
     this.eventEmitter_ = eventEmitter;
     this.abortController_ = new AbortController();
@@ -70,11 +68,9 @@ abstract class NetworkRequest<T> implements INetworkRequest<T> {
     this.requestType = requestType;
     this.configuration = configuration;
 
-    const request = new Request(url, { ...requestInit, signal: this.abortController_.signal });
-
     this.retryWrapper_ = new RetryWrapper({
       ...configuration,
-      target: (): Promise<Response> => this.sendRequest_(request),
+      target: (): Promise<Response> => this.sendRequest_(url, requestInit as RequestInit),
       shouldRetry: (e): boolean => !(e instanceof RequestAbortedNetworkError),
     });
   }
@@ -84,10 +80,12 @@ abstract class NetworkRequest<T> implements INetworkRequest<T> {
    * so network manager will apply request interceptors on each network attempt.
    * This make sense, since retry wrapper will gradually increase delay for each attempt,
    * so user's credentials may expire between attempts.
-   * @param initialRequest - init request
+   * @param url - request url
+   * @param requestInit - request init
    */
-  private async sendRequest_(initialRequest: Request): Promise<Response> {
-    const finalRequest = await this.applyRequestInterceptors_(initialRequest);
+  private async sendRequest_(url: URL, requestInit: RequestInit): Promise<Response> {
+    const request = new Request(url, { ...requestInit, signal: this.abortController_.signal });
+    const finalRequest = await this.applyRequestInterceptors_(request);
 
     return await this.wrapNetworkRequestExecutor_(finalRequest);
   }
@@ -135,6 +133,9 @@ abstract class NetworkRequest<T> implements INetworkRequest<T> {
         } else if (hitTimeout) {
           // aborted from timeout
           error = new TimeoutNetworkError();
+          // we have to re-create abort controller,
+          // to update abort signal for the next request attempt
+          this.abortController_ = new AbortController();
         } else {
           // aborted externally
           error = new RequestAbortedNetworkError();
@@ -184,8 +185,22 @@ abstract class NetworkRequest<T> implements INetworkRequest<T> {
 export class NetworkRequestWithMapper<T> extends NetworkRequest<T> {
   public readonly done: Promise<T>;
 
-  public constructor(payload: IRequestPayloadWithMapper<T>, dependencies: NetworkRequestDependencies) {
-    super(payload, dependencies);
+  /* v8 ignore start */
+  public static create<T>(
+    payload: IRequestPayloadWithMapper<T>,
+    dependencies: NetworkRequestDependencies
+  ): NetworkRequestWithMapper<T> {
+    NetworkRequest.counter_++;
+
+    const id = `mapper-${payload.requestType}-${NetworkRequest.counter_}`;
+    dependencies.logger = dependencies.logger.createSubLogger(`NetworkRequestWithMapper (${id})`);
+
+    return new NetworkRequestWithMapper(id, payload, dependencies);
+  }
+  /* v8 ignore stop */
+
+  public constructor(id: string, payload: IRequestPayloadWithMapper<T>, dependencies: NetworkRequestDependencies) {
+    super(id, payload, dependencies);
 
     this.done = this.retryWrapper_
       .execute()
@@ -197,8 +212,22 @@ export class NetworkRequestWithMapper<T> extends NetworkRequest<T> {
 export class NetworkRequestWithChunkHandler extends NetworkRequest<void> {
   public readonly done: Promise<void>;
 
-  public constructor(payload: IRequestPayloadWithChunkHandler, dependencies: NetworkRequestDependencies) {
-    super(payload, dependencies);
+  /* v8 ignore start */
+  public static create(
+    payload: IRequestPayloadWithChunkHandler,
+    dependencies: NetworkRequestDependencies
+  ): NetworkRequestWithChunkHandler {
+    NetworkRequest.counter_++;
+
+    const id = `chunk-${payload.requestType}-${NetworkRequest.counter_}`;
+    dependencies.logger = dependencies.logger.createSubLogger(`NetworkRequestWithChunkHandler (${id})`);
+
+    return new NetworkRequestWithChunkHandler(id, payload, dependencies);
+  }
+  /* v8 ignore stop */
+
+  public constructor(id: string, payload: IRequestPayloadWithChunkHandler, dependencies: NetworkRequestDependencies) {
+    super(id, payload, dependencies);
 
     this.done = this.retryWrapper_.execute().then((response) => {
       const reader = response.body?.getReader();
