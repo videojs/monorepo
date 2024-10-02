@@ -3,7 +3,7 @@ import { capture, instance, mock, when } from '@typestrong/ts-mockito';
 
 import type { Mock } from 'vitest';
 
-import type { ILogger } from '../../dist/types';
+import type { ILogger } from '../../src/lib/types/logger.declarations';
 import type {
   INetworkInterceptorsProvider,
   INetworkResponseInfo,
