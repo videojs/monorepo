@@ -10,26 +10,27 @@ export interface LoggerDependencies {
 }
 
 export class Logger implements ILogger {
+  public readonly label: string;
+
   private readonly console_: Console;
-  private readonly label_: string;
   private readonly delimiter_: string;
 
   private level_: LoggerLevel = LoggerLevel.Debug;
 
   private get cLabel_(): string {
-    return `%c${this.label_}`;
+    return `%c${this.label}`;
   }
 
   public constructor(dependencies: LoggerDependencies) {
     this.console_ = dependencies.console;
-    this.label_ = dependencies.label;
+    this.label = dependencies.label;
     this.delimiter_ = dependencies.delimiter;
   }
 
   public createSubLogger(subLabel: string): Logger {
     return new Logger({
       console: this.console_,
-      label: `${this.label_} ${this.delimiter_} ${subLabel}`,
+      label: `${this.label} ${this.delimiter_} ${subLabel}`,
       delimiter: this.delimiter_,
     });
   }
