@@ -1,5 +1,5 @@
 import type { InterceptorType } from '../consts/interceptor-type';
-import type { InterceptorTypeToInterceptorMap } from '../types/interceptor-type-to-interceptor-map.declarations';
+import type { InterceptorTypeToInterceptorMap } from '../types/mappers/interceptor-type-to-interceptor-map.declarations';
 import type { IInterceptorsStorage } from '../types/interceptors.declarations';
 
 export class InterceptorsStorage implements IInterceptorsStorage {
