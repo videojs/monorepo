@@ -17,7 +17,7 @@ export class InterceptorsStorage implements IInterceptorsStorage {
   }
 
   public getInterceptorsSet<K extends InterceptorType>(interceptorType: K): Set<InterceptorTypeToInterceptorMap[K]> {
-    return new Set(this.storage_.get(interceptorType) ?? []);
+    return new Set((this.storage_.get(interceptorType) as Set<InterceptorTypeToInterceptorMap[K]>) ?? []);
   }
 
   public removeInterceptor<K extends InterceptorType>(
