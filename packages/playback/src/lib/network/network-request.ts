@@ -16,7 +16,7 @@ import {
 } from './network-manager-errors';
 import type { ILogger } from '../types/logger.declarations';
 import type { IEventEmitter } from '../types/event-emitter.declarations';
-import type { NetworkEventMap } from '../types/event-type-to-event-map.declarations';
+import type { NetworkEventMap } from '../types/mappers/event-type-to-event-map.declarations';
 import {
   NetworkRequestAttemptStartedEvent,
   NetworkRequestAttemptFailedEvent,

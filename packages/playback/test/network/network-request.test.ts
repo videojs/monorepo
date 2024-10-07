@@ -11,7 +11,7 @@ import type {
   IRequestPayloadWithMapper,
 } from '../../src/lib/types/network.declarations';
 import type { IEventEmitter } from '../../src/lib/types/event-emitter.declarations';
-import type { NetworkEventMap } from '../../src/lib/types/event-type-to-event-map.declarations';
+import type { NetworkEventMap } from '../../src/lib/types/mappers/event-type-to-event-map.declarations';
 import type { NetworkRequestDependencies } from '../../src/lib/network/network-request';
 import type { NetworkConfiguration } from '../../src/lib/types/configuration.declarations';
 

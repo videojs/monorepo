@@ -1,6 +1,8 @@
 import type { LoggerLevel } from '../consts/logger-level';
 
 export interface ILogger {
+  readonly label: string;
+
   createSubLogger(subLabel: string): ILogger;
 
   setLoggerLevel(level: LoggerLevel): void;

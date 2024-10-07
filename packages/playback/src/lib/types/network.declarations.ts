@@ -1,6 +1,6 @@
 import type { RequestType } from '../consts/request-type';
 import type { NetworkConfiguration, PlayerNetworkConfiguration } from './configuration.declarations';
-import type { InterceptorTypeToInterceptorMap } from './interceptor-type-to-interceptor-map.declarations';
+import type { InterceptorTypeToInterceptorMap } from './mappers/interceptor-type-to-interceptor-map.declarations';
 import type { InterceptorType } from '../consts/interceptor-type';
 import type { AttemptInfo } from './retry.declarations';
 

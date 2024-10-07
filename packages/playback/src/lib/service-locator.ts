@@ -5,10 +5,10 @@ import type { IInterceptorsStorage } from './types/interceptors.declarations';
 import type { PlayerConfiguration } from './types/configuration.declarations';
 import type { IStore } from './types/store.declarations';
 import type { IEventEmitter } from './types/event-emitter.declarations';
-import type { EventTypeToEventMap } from './types/event-type-to-event-map.declarations';
+import type { EventTypeToEventMap } from './types/mappers/event-type-to-event-map.declarations';
 import type { IEnvCapabilitiesProvider } from './types/env-capabilities.declarations';
 import type { INetworkManager } from './types/network.declarations';
-import type { InterceptorTypeToInterceptorMap } from './types/interceptor-type-to-interceptor-map.declarations';
+import type { InterceptorTypeToInterceptorMap } from './types/mappers/interceptor-type-to-interceptor-map.declarations';
 import type { NetworkManagerDependencies } from './network/network-manager';
 
 // Implementations

@@ -4,7 +4,7 @@ import type { PlayerConfiguration } from './types/configuration.declarations';
 import type { IStore } from './types/store.declarations';
 import type { DeepPartial } from './types/utility.declarations';
 import type { EventListener, IEventEmitter } from './types/event-emitter.declarations';
-import type { EventTypeToEventMap } from './types/event-type-to-event-map.declarations';
+import type { EventTypeToEventMap } from './types/mappers/event-type-to-event-map.declarations';
 import { PlayerEventType } from './consts/events';
 import {
   ConfigurationChangedEvent,

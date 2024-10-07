@@ -1,18 +1,18 @@
 // mapping for types purposes
-import type { PlayerEventType } from '../consts/events';
+import type { PlayerEventType } from '../../consts/events';
 import type {
   ConfigurationChangedEvent,
   LoggerLevelChangedEvent,
   MutedStatusChangedEvent,
   VolumeChangedEvent,
   PlayerErrorEvent,
-} from '../events/player-events';
+} from '../../events/player-events';
 import type {
   NetworkRequestAttemptCompletedSuccessfullyEvent,
   NetworkRequestAttemptCompletedUnsuccessfullyEvent,
   NetworkRequestAttemptFailedEvent,
   NetworkRequestAttemptStartedEvent,
-} from '../events/network-events';
+} from '../../events/network-events';
 
 export interface NetworkEventMap {
   [PlayerEventType.NetworkRequestAttemptStarted]: NetworkRequestAttemptStartedEvent;

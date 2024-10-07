@@ -10,7 +10,7 @@ import type {
 import { NetworkRequestWithChunkHandler, NetworkRequestWithMapper } from './network-request';
 import type { PlayerNetworkConfiguration } from '../types/configuration.declarations';
 import type { IEventEmitter } from '../types/event-emitter.declarations';
-import type { NetworkEventMap } from '../types/event-type-to-event-map.declarations';
+import type { NetworkEventMap } from '../types/mappers/event-type-to-event-map.declarations';
 
 export interface NetworkManagerDependencies {
   logger: ILogger;
