@@ -13,7 +13,7 @@ import {
   PlayerErrorEvent,
   VolumeChangedEvent,
 } from './events/player-events';
-import type { CapabilitiesProbeResult, IEnvCapabilitiesProvider } from './types/env-capabilities.declarations';
+import type { ICapabilitiesProbeResult, IEnvCapabilitiesProvider } from './types/env-capabilities.declarations';
 import type { ILoadLocalSource, ILoadRemoteSource, IPlayerSource } from './types/source.declarations';
 import type { IPipeline, IPipelineFactoryConfiguration, IPipelineLoader } from './types/pipeline.declarations';
 import { PlaybackState } from './consts/playback-state';
@@ -274,7 +274,7 @@ export class Player {
   /**
    * Probe env capabilities
    */
-  public probeEnvCapabilities(): Promise<CapabilitiesProbeResult> {
+  public probeEnvCapabilities(): Promise<ICapabilitiesProbeResult> {
     return this.envCapabilitiesProvider_.probe();
   }
 

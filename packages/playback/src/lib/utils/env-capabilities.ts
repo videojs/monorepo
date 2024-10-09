@@ -1,6 +1,7 @@
 import type {
-  CapabilitiesProbeResult,
-  CodecCapabilities,
+  ICapabilitiesProbeResult,
+  ICodecCapabilities,
+  IEnvCapabilitiesContext,
   IEnvCapabilitiesProvider,
 } from '../types/env-capabilities.declarations';
 import { KeySystem } from '../consts/key-system';
@@ -25,14 +26,16 @@ const persistentEmeConfig = {
 };
 
 export class EnvCapabilitiesProvider implements IEnvCapabilitiesProvider {
-  private cache_: CapabilitiesProbeResult | null = null;
+  private readonly context_: IEnvCapabilitiesContext;
+  private readonly videoElement_: HTMLVideoElement;
 
-  public async probe(): Promise<CapabilitiesProbeResult> {
-    if (this.cache_) {
-      return this.cache_;
-    }
+  public constructor(context: IEnvCapabilitiesContext, videoElement: HTMLVideoElement) {
+    this.context_ = context;
+    this.videoElement_ = videoElement;
+  }
 
-    const probeResult: CapabilitiesProbeResult = {
+  public async probe(): Promise<ICapabilitiesProbeResult> {
+    const probeResult: ICapabilitiesProbeResult = {
       isSecureContext: false,
       isHttps: false,
       eme: {
@@ -98,46 +101,38 @@ export class EnvCapabilitiesProvider implements IEnvCapabilitiesProvider {
       },
     };
 
-    const videoElement = document.createElement('video');
-
     await Promise.all([
       this.probeSecureContext_(probeResult),
       this.probeIsHttps_(probeResult),
       this.probeEmeCapabilities_(probeResult),
-      this.probeMediaCapabilities_(probeResult, videoElement),
-      this.probeStreamingProtocolsCapabilities_(probeResult, videoElement),
+      this.probeMediaCapabilities_(probeResult),
+      this.probeStreamingProtocolsCapabilities_(probeResult),
     ]);
 
-    this.cache_ = probeResult as CapabilitiesProbeResult;
-    return this.cache_;
+    return probeResult;
   }
 
-  private async probeStreamingProtocolsCapabilities_(
-    probeResult: CapabilitiesProbeResult,
-    videoElement: HTMLVideoElement
-  ): Promise<void> {
+  protected async probeStreamingProtocolsCapabilities_(probeResult: ICapabilitiesProbeResult): Promise<void> {
     // we consider that we support hls and dash in any MSE context
-    // we do not support ManagedMediaSource right now
     // we do not support HSS in MSE context, so it should always be false
-    probeResult.streaming.hls.mse = 'MediaSource' in window;
-    probeResult.streaming.dash.mse = 'MediaSource' in window;
+    probeResult.streaming.hls.mse = 'MediaSource' in this.context_;
+    probeResult.streaming.dash.mse = 'MediaSource' in this.context_;
     probeResult.streaming.hss.mse = false;
 
     probeResult.streaming.hls.native =
-      Boolean(videoElement.canPlayType(HlsVndMpegMimeType)) || Boolean(videoElement.canPlayType(HlsXMpegMimeType));
+      Boolean(this.videoElement_.canPlayType(HlsVndMpegMimeType)) ||
+      Boolean(this.videoElement_.canPlayType(HlsXMpegMimeType));
 
-    probeResult.streaming.dash.native = Boolean(videoElement.canPlayType(DashMimeType));
-    probeResult.streaming.hss.native = Boolean(videoElement.canPlayType(HssMimeType));
+    probeResult.streaming.dash.native = Boolean(this.videoElement_.canPlayType(DashMimeType));
+    probeResult.streaming.hss.native = Boolean(this.videoElement_.canPlayType(HssMimeType));
   }
 
-  private async probeMediaCapabilities_(
-    probeResult: CapabilitiesProbeResult,
-    videoElement: HTMLVideoElement
-  ): Promise<void> {
-    const getCodecsCapabilities = (probeData: { mime: string; transmuxer?: boolean }): CodecCapabilities => {
-      const { mime, transmuxer = false } = probeData;
-      const mse = window.MediaSource && window.MediaSource.isTypeSupported(mime);
-      const native = Boolean(videoElement.canPlayType(mime));
+  protected async probeMediaCapabilities_(probeResult: ICapabilitiesProbeResult): Promise<void> {
+    const getCodecsCapabilities = (probeData: { mime: string }): ICodecCapabilities => {
+      const { mime } = probeData;
+      const mse = Boolean(this.context_.MediaSource && this.context_.MediaSource.isTypeSupported(mime));
+      const native = Boolean(this.videoElement_.canPlayType(mime));
+      const transmuxer = Boolean(this.context_.transmuxer && this.context_.transmuxer.isTypeSupported(mime));
 
       return { mse, native, transmuxer };
     };
@@ -229,15 +224,15 @@ export class EnvCapabilitiesProvider implements IEnvCapabilitiesProvider {
     });
   }
 
-  private async probeSecureContext_(probeResult: CapabilitiesProbeResult): Promise<void> {
-    probeResult.isSecureContext = window.isSecureContext;
+  protected async probeSecureContext_(probeResult: ICapabilitiesProbeResult): Promise<void> {
+    probeResult.isSecureContext = this.context_.isSecureContext;
   }
 
-  private async probeIsHttps_(probeResult: CapabilitiesProbeResult): Promise<void> {
-    probeResult.isHttps = window.location.protocol === 'https:';
+  protected async probeIsHttps_(probeResult: ICapabilitiesProbeResult): Promise<void> {
+    probeResult.isHttps = this.context_.location.protocol === 'https:';
   }
 
-  private async probeEmeCapabilities_(probeResult: CapabilitiesProbeResult): Promise<void> {
+  private async probeEmeCapabilities_(probeResult: ICapabilitiesProbeResult): Promise<void> {
     const keySystemsValues = Object.values(KeySystem);
 
     const basicPromises = keySystemsValues.map(async (keySystem) => {
@@ -259,7 +254,7 @@ export class EnvCapabilitiesProvider implements IEnvCapabilitiesProvider {
 
   private async probeEmeConfig_(keySystem: string, config: MediaKeySystemConfiguration): Promise<boolean> {
     try {
-      await navigator.requestMediaKeySystemAccess(keySystem, [config]);
+      await this.context_.navigator.requestMediaKeySystemAccess(keySystem, [config]);
       return true;
     } catch (e) {
       return false;

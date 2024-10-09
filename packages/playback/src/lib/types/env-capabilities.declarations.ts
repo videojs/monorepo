@@ -3,30 +3,38 @@ import type { StreamingProtocol } from '../consts/streaming-protocol';
 import type { Container } from '../consts/container';
 import type { AudioCodecs, VideoCodecs } from '../consts/codecs';
 
-export interface KeySystemCapabilities {
+export interface IEnvCapabilitiesContext {
+  readonly location: Location;
+  readonly navigator: Navigator;
+  readonly isSecureContext: boolean;
+  readonly MediaSource?: { isTypeSupported: (type: string) => boolean };
+  readonly transmuxer?: { isTypeSupported: (type: string) => boolean };
+}
+
+export interface IKeySystemCapabilities {
   persistent: boolean;
   basic: boolean;
 }
 
-export interface EmeCapabilities {
-  [KeySystem.Widevine]: KeySystemCapabilities;
-  [KeySystem.Playready]: KeySystemCapabilities;
-  [KeySystem.Fairplay]: KeySystemCapabilities;
-  [KeySystem.FairplayLegacy]: KeySystemCapabilities;
+export interface IEmeCapabilities {
+  [KeySystem.Widevine]: IKeySystemCapabilities;
+  [KeySystem.Playready]: IKeySystemCapabilities;
+  [KeySystem.Fairplay]: IKeySystemCapabilities;
+  [KeySystem.FairplayLegacy]: IKeySystemCapabilities;
 }
 
-export interface StreamingProtocolCapabilities {
+export interface IStreamingProtocolCapabilities {
   mse: boolean;
   native: boolean;
 }
 
 export interface StreamingCapabilities {
-  [StreamingProtocol.Hls]: StreamingProtocolCapabilities;
-  [StreamingProtocol.Dash]: StreamingProtocolCapabilities;
-  [StreamingProtocol.Hss]: StreamingProtocolCapabilities;
+  [StreamingProtocol.Hls]: IStreamingProtocolCapabilities;
+  [StreamingProtocol.Dash]: IStreamingProtocolCapabilities;
+  [StreamingProtocol.Hss]: IStreamingProtocolCapabilities;
 }
 
-export interface CodecCapabilities {
+export interface ICodecCapabilities {
   mse: boolean;
   native: boolean;
   transmuxer: boolean;
@@ -35,98 +43,98 @@ export interface CodecCapabilities {
   // lets consider baseline profile support here
 }
 
-export interface Mp4VideoCodecsCapabilities {
+export interface IMp4VideoCodecsCapabilities {
   // 'video/mp4; codecs="avc1.42E01E"'
-  [VideoCodecs.H264]: CodecCapabilities;
+  [VideoCodecs.H264]: ICodecCapabilities;
   // 'video/mp4; codecs="hvc1.1.6.L93.90"'
-  [VideoCodecs.H265]: CodecCapabilities;
+  [VideoCodecs.H265]: ICodecCapabilities;
   // 'video/mp4; codecs="vp09.00.10.08"'
-  [VideoCodecs.Vp9]: CodecCapabilities;
+  [VideoCodecs.Vp9]: ICodecCapabilities;
 }
 
-export interface Mp4AudioCodecsCapabilities {
+export interface IMp4AudioCodecsCapabilities {
   // 'audio/mp4; codecs="mp4a.40.2"'
-  [AudioCodecs.Aac]: CodecCapabilities;
+  [AudioCodecs.Aac]: ICodecCapabilities;
   // 'audio/mp4; codecs="ac-3"'
-  [AudioCodecs.Ac3]: CodecCapabilities;
+  [AudioCodecs.Ac3]: ICodecCapabilities;
   // 'audio/mp4; codecs="ec-3"'
-  [AudioCodecs.Ec3]: CodecCapabilities;
+  [AudioCodecs.Ec3]: ICodecCapabilities;
   // 'audio/mp4; codecs="opus"'
-  [AudioCodecs.Opus]: CodecCapabilities;
+  [AudioCodecs.Opus]: ICodecCapabilities;
   // 'audio/mp4; codecs="flac"'
-  [AudioCodecs.Flac]: CodecCapabilities;
+  [AudioCodecs.Flac]: ICodecCapabilities;
 }
 
-export interface OggVideoCodecsCapabilities {
+export interface IOggVideoCodecsCapabilities {
   // 'video/ogg; codecs="theora"'
-  [VideoCodecs.Theora]: CodecCapabilities;
+  [VideoCodecs.Theora]: ICodecCapabilities;
   // 'video/ogg; codecs="vp8"'
-  [VideoCodecs.Vp8]: CodecCapabilities;
+  [VideoCodecs.Vp8]: ICodecCapabilities;
   // 'video/ogg; codecs="vp9"'
-  [VideoCodecs.Vp9]: CodecCapabilities;
+  [VideoCodecs.Vp9]: ICodecCapabilities;
 }
 
-export interface OggAudioCodecsCapabilities {
+export interface IOggAudioCodecsCapabilities {
   // 'audio/ogg; codecs="flac"'
-  [AudioCodecs.Flac]: CodecCapabilities;
+  [AudioCodecs.Flac]: ICodecCapabilities;
   // 'audio/ogg; codecs="opus"'
-  [AudioCodecs.Opus]: CodecCapabilities;
+  [AudioCodecs.Opus]: ICodecCapabilities;
   // 'audio/ogg; codecs="vorbis"'
-  [AudioCodecs.Vorbis]: CodecCapabilities;
+  [AudioCodecs.Vorbis]: ICodecCapabilities;
 }
 
-export interface WebMVideoCodecsCapabilities {
+export interface IWebMVideoCodecsCapabilities {
   // 'video/webm; codecs="vp8"'
-  [VideoCodecs.Vp8]: CodecCapabilities;
+  [VideoCodecs.Vp8]: ICodecCapabilities;
   // 'video/webm; codecs="vp9"'
-  [VideoCodecs.Vp9]: CodecCapabilities;
+  [VideoCodecs.Vp9]: ICodecCapabilities;
 }
 
-export interface WebMAudioCodecsCapabilities {
+export interface IWebMAudioCodecsCapabilities {
   // 'audio/webm; codecs="vorbis"'
-  [AudioCodecs.Vorbis]: CodecCapabilities;
+  [AudioCodecs.Vorbis]: ICodecCapabilities;
   // 'audio/webm; codecs="opus"'
-  [AudioCodecs.Opus]: CodecCapabilities;
+  [AudioCodecs.Opus]: ICodecCapabilities;
 }
 
-export interface Mpeg2tsVideoCodecsCapabilities {
+export interface IMpeg2tsVideoCodecsCapabilities {
   // 'video/mp2t; codecs="avc1.42E01E"'
-  [VideoCodecs.H264]: CodecCapabilities;
+  [VideoCodecs.H264]: ICodecCapabilities;
   // 'video/mp2t; codecs="hvc1.1.6.L93.90"'
-  [VideoCodecs.H265]: CodecCapabilities;
+  [VideoCodecs.H265]: ICodecCapabilities;
 }
 
 // Should use video/mp2t for audio codecs as well,
 // see: https://w3c.github.io/mse-byte-stream-format-mp2t/#mime-parameters
-export interface Mpeg2tsAudioCodecsCapabilities {
+export interface IMpeg2tsAudioCodecsCapabilities {
   // 'video/mp2t; codecs="mp4a.40.2"'
-  [AudioCodecs.Aac]: CodecCapabilities;
+  [AudioCodecs.Aac]: ICodecCapabilities;
   // 'video/mp2t; codecs="ac-3"'
-  [AudioCodecs.Ac3]: CodecCapabilities;
+  [AudioCodecs.Ac3]: ICodecCapabilities;
   // 'video/mp2t; codecs="ec-3"'
-  [AudioCodecs.Ec3]: CodecCapabilities;
+  [AudioCodecs.Ec3]: ICodecCapabilities;
 }
 
-export interface ContainerCapabilities<V, A> {
+export interface IContainerCapabilities<V, A> {
   video: V;
   audio: A;
 }
 
-export interface MediaCapabilities {
-  [Container.Mp4]: ContainerCapabilities<Mp4VideoCodecsCapabilities, Mp4AudioCodecsCapabilities>;
-  [Container.Ogg]: ContainerCapabilities<OggVideoCodecsCapabilities, OggAudioCodecsCapabilities>;
-  [Container.WebM]: ContainerCapabilities<WebMVideoCodecsCapabilities, WebMAudioCodecsCapabilities>;
-  [Container.Mpeg2Ts]: ContainerCapabilities<Mpeg2tsVideoCodecsCapabilities, Mpeg2tsAudioCodecsCapabilities>;
+export interface IMediaCapabilities {
+  [Container.Mp4]: IContainerCapabilities<IMp4VideoCodecsCapabilities, IMp4AudioCodecsCapabilities>;
+  [Container.Ogg]: IContainerCapabilities<IOggVideoCodecsCapabilities, IOggAudioCodecsCapabilities>;
+  [Container.WebM]: IContainerCapabilities<IWebMVideoCodecsCapabilities, IWebMAudioCodecsCapabilities>;
+  [Container.Mpeg2Ts]: IContainerCapabilities<IMpeg2tsVideoCodecsCapabilities, IMpeg2tsAudioCodecsCapabilities>;
 }
 
-export interface CapabilitiesProbeResult {
+export interface ICapabilitiesProbeResult {
   isSecureContext: boolean;
   isHttps: boolean;
-  eme: EmeCapabilities;
+  eme: IEmeCapabilities;
   streaming: StreamingCapabilities;
-  media: MediaCapabilities;
+  media: IMediaCapabilities;
 }
 
 export interface IEnvCapabilitiesProvider {
-  probe(): Promise<CapabilitiesProbeResult>;
+  probe(): Promise<ICapabilitiesProbeResult>;
 }
