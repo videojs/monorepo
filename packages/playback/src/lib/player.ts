@@ -122,7 +122,7 @@ export class Player {
       return false;
     }
 
-    this.mimeTypeToPipelineFactoryMap_.set(mimeType, configuration);
+    this.mimeTypeToPipelineFactoryMap_.set(mimeType.toLowerCase(), configuration);
 
     return true;
   }
@@ -132,7 +132,7 @@ export class Player {
    * @param mimeType - mime type
    */
   public hasPipelineFactoryConfiguration(mimeType: string): boolean {
-    return this.mimeTypeToPipelineFactoryMap_.has(mimeType);
+    return this.mimeTypeToPipelineFactoryMap_.has(mimeType.toLowerCase());
   }
 
   /**
@@ -140,7 +140,7 @@ export class Player {
    * @param mimeType - mime type
    */
   public getPipelineFactoryConfiguration(mimeType: string): IPipelineFactoryConfiguration | null {
-    return this.mimeTypeToPipelineFactoryMap_.get(mimeType) ?? null;
+    return this.mimeTypeToPipelineFactoryMap_.get(mimeType.toLowerCase()) ?? null;
   }
 
   /**
@@ -148,7 +148,7 @@ export class Player {
    * @param mimeType - mime type
    */
   public removePipelineFactoryConfiguration(mimeType: string): boolean {
-    return this.mimeTypeToPipelineFactoryMap_.delete(mimeType);
+    return this.mimeTypeToPipelineFactoryMap_.delete(mimeType.toLowerCase());
   }
 
   /**
@@ -365,8 +365,8 @@ export class Player {
 
     this.logger_.debug('received a load request: ', this.activeSource_);
 
-    if (this.hasPipelineFactoryConfiguration(this.activeSource_.mimeType)) {
-      const { loader, vod, live } = this.getPipelineFactoryConfiguration(this.activeSource_.mimeType)!;
+    if (this.hasPipelineFactoryConfiguration(this.activeSource_.mimeType.toLowerCase())) {
+      const { loader, vod, live } = this.getPipelineFactoryConfiguration(this.activeSource_.mimeType.toLowerCase())!;
       this.activePipelineLoader_ = loader.create({
         logger: this.logger_,
         videoElement: this.activeVideoElement_,
