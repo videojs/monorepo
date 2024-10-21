@@ -7,6 +7,7 @@ export interface IKeySystemConfig {
   videoRobustness?: string;
   audioRobustness?: string;
   sessionType?: MediaKeySessionType;
+  sessionId?: string;
   getContentId?: (contentId: string) => string;
 }
 
