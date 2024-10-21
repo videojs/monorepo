@@ -1,48 +1,3 @@
-import createStateMachine from './state-machine';
-import type { StateMachineTransition } from './state-machine';
-import {
-  failedToResolveUri,
-  ignoreTagWarn,
-  missingRequiredVariableForUriSubstitutionWarn,
-  missingTagValueWarn,
-  segmentDurationExceededTargetDuration,
-  unsupportedTagWarn,
-} from './utils/warn';
-
-import {
-  EXT_X_DEFINE,
-  EXT_X_DISCONTINUITY_SEQUENCE,
-  EXT_X_ENDLIST,
-  EXT_X_I_FRAMES_ONLY,
-  EXT_X_INDEPENDENT_SEGMENTS,
-  EXT_X_MEDIA_SEQUENCE,
-  EXT_X_PART_INF,
-  EXT_X_PLAYLIST_TYPE,
-  EXT_X_SERVER_CONTROL,
-  EXT_X_START,
-  EXT_X_TARGETDURATION,
-  EXT_X_VERSION,
-  EXTINF,
-  EXT_X_BYTERANGE,
-  EXT_X_DISCONTINUITY,
-  EXT_X_KEY,
-  EXT_X_MAP,
-  EXT_X_GAP,
-  EXT_X_BITRATE,
-  EXT_X_PART,
-  EXT_X_PROGRAM_DATE_TIME,
-  EXT_X_MEDIA,
-  EXT_X_STREAM_INF,
-  EXT_X_SKIP,
-  EXT_X_I_FRAME_STREAM_INF,
-  EXT_X_DATERANGE,
-  EXT_X_PRELOAD_HINT,
-  EXT_X_RENDITION_REPORT,
-  EXT_X_SESSION_DATA,
-  EXTM3U,
-  EXT_X_SESSION_KEY,
-  EXT_X_CONTENT_STEERING,
-} from './consts/tags';
 import type {
   CustomTagMap,
   DebugCallback,
@@ -51,59 +6,102 @@ import type {
   TransformTagAttributes,
   TransformTagValue,
   WarnCallback,
-} from './types/parser-options';
-import type { ParsedPlaylist } from './types/parsed-playlist';
-import type { SharedState } from './types/shared-state';
-import type { EmptyTagProcessor } from './tags/empty-tag-processors';
+} from '../types/parser-options';
+import type { EmptyTagProcessor } from '../tags/empty-tag-processors';
 import {
+  ExtM3u,
+  ExtXDiscontinuity,
   ExtXEndList,
+  ExtXGap,
   ExtXIframesOnly,
   ExtXIndependentSegments,
-  ExtXDiscontinuity,
-  ExtXGap,
-  ExtM3u,
-} from './tags/empty-tag-processors';
-import type { TagWithValueProcessor } from './tags/tag-with-value-processors';
+} from '../tags/empty-tag-processors';
+import type { TagWithValueProcessor } from '../tags/tag-with-value-processors';
 import {
+  ExtInf,
   ExtXBitrate,
   ExtXByteRange,
-  ExtInf,
   ExtXDiscontinuitySequence,
   ExtXMediaSequence,
   ExtXPlaylistType,
+  ExtXProgramDateTime,
   ExtXTargetDuration,
   ExtXVersion,
-  ExtXProgramDateTime,
-} from './tags/tag-with-value-processors';
-import type { TagWithAttributesProcessor } from './tags/tag-with-attributes-processors';
+} from '../tags/tag-with-value-processors';
+import type { TagWithAttributesProcessor } from '../tags/tag-with-attributes-processors';
 import {
-  ExtXPartInf,
-  ExtXServerControl,
-  ExtXStart,
+  ExtXContentSteering,
+  ExtXDateRange,
+  ExtXDefine,
+  ExtXIFrameStreamInf,
   ExtXKey,
   ExtXMap,
-  ExtXPart,
   ExtXMedia,
-  ExtXStreamInf,
-  ExtXSkip,
-  ExtXIFrameStreamInf,
-  ExtXDateRange,
+  ExtXPart,
+  ExtXPartInf,
   ExtXPreloadHint,
   ExtXRenditionReport,
+  ExtXServerControl,
   ExtXSessionData,
   ExtXSessionKey,
-  ExtXContentSteering,
-  ExtXDefine,
-} from './tags/tag-with-attributes-processors';
+  ExtXSkip,
+  ExtXStart,
+  ExtXStreamInf,
+} from '../tags/tag-with-attributes-processors';
+import type { ParsedPlaylist } from '../types/parsed-playlist';
+import type { SharedState } from '../types/shared-state';
 import {
   createDefaultParsedPlaylist,
   createDefaultSegment,
   createDefaultSharedState,
   createDefaultVariantStream,
-} from './consts/defaults';
-import { resolveUri, substituteVariables } from './utils/parse';
+} from '../consts/defaults';
+import {
+  EXT_X_BITRATE,
+  EXT_X_BYTERANGE,
+  EXT_X_CONTENT_STEERING,
+  EXT_X_DATERANGE,
+  EXT_X_DEFINE,
+  EXT_X_DISCONTINUITY,
+  EXT_X_DISCONTINUITY_SEQUENCE,
+  EXT_X_ENDLIST,
+  EXT_X_GAP,
+  EXT_X_I_FRAME_STREAM_INF,
+  EXT_X_I_FRAMES_ONLY,
+  EXT_X_INDEPENDENT_SEGMENTS,
+  EXT_X_KEY,
+  EXT_X_MAP,
+  EXT_X_MEDIA,
+  EXT_X_MEDIA_SEQUENCE,
+  EXT_X_PART,
+  EXT_X_PART_INF,
+  EXT_X_PLAYLIST_TYPE,
+  EXT_X_PRELOAD_HINT,
+  EXT_X_PROGRAM_DATE_TIME,
+  EXT_X_RENDITION_REPORT,
+  EXT_X_SERVER_CONTROL,
+  EXT_X_SESSION_DATA,
+  EXT_X_SESSION_KEY,
+  EXT_X_SKIP,
+  EXT_X_START,
+  EXT_X_STREAM_INF,
+  EXT_X_TARGETDURATION,
+  EXT_X_VERSION,
+  EXTINF,
+  EXTM3U,
+} from '../consts/tags';
+import {
+  failedToResolveUri,
+  ignoreTagWarn,
+  missingRequiredVariableForUriSubstitutionWarn,
+  missingTagValueWarn,
+  segmentDurationExceededTargetDuration,
+  unsupportedTagWarn,
+} from '../utils/warn';
+import { resolveUri, substituteVariables } from '../utils/parse';
+import type { StateMachineTransition } from '../state-machine';
 
-class Parser {
+export class Parser {
   private readonly warnCallback_: WarnCallback;
   private readonly debugCallback_: DebugCallback;
   private readonly customTagMap_: CustomTagMap;
@@ -322,83 +320,5 @@ class Parser {
     this.sharedState_.baseDefine = options.baseDefine;
     this.sharedState_.baseUrl = options.baseUrl;
     this.sharedState_.baseTime = options.baseTime || 0;
-  }
-}
-
-export class FullPlaylistParser extends Parser {
-  public static create(options: ParserOptions): FullPlaylistParser {
-    return new FullPlaylistParser(options);
-  }
-
-  public parseFullPlaylistString(playlist: string, options: ParseOptions): ParsedPlaylist {
-    this.gatherParseOptions_(options);
-
-    const stateMachine = createStateMachine(this.tagInfoCallback_, this.uriInfoCallback_);
-    const length = playlist.length;
-
-    for (let i = 0; i < length; i++) {
-      stateMachine(playlist[i]);
-    }
-
-    this.transitionToNewLine_(stateMachine);
-
-    return this.clean_();
-  }
-
-  public parseFullPlaylistBuffer(playlist: Uint8Array, options: ParseOptions): ParsedPlaylist {
-    this.gatherParseOptions_(options);
-
-    const stateMachine = createStateMachine(this.tagInfoCallback_, this.uriInfoCallback_);
-    const length = playlist.length;
-
-    for (let i = 0; i < length; i++) {
-      stateMachine(String.fromCharCode(playlist[i]));
-    }
-
-    this.transitionToNewLine_(stateMachine);
-
-    return this.clean_();
-  }
-}
-
-export class ProgressiveParser extends Parser {
-  public static create(options: ParserOptions): ProgressiveParser {
-    return new ProgressiveParser(options);
-  }
-
-  private stateMachine_: StateMachineTransition | null = null;
-
-  public pushString(chunk: string, options: ParseOptions): void {
-    this.gatherParseOptions_(options);
-
-    if (this.stateMachine_ === null) {
-      this.stateMachine_ = createStateMachine(this.tagInfoCallback_, this.uriInfoCallback_);
-    }
-
-    for (let i = 0; i < chunk.length; i++) {
-      this.stateMachine_(chunk[i]);
-    }
-  }
-
-  public pushBuffer(chunk: Uint8Array, options: ParseOptions): void {
-    this.gatherParseOptions_(options);
-
-    if (this.stateMachine_ === null) {
-      this.stateMachine_ = createStateMachine(this.tagInfoCallback_, this.uriInfoCallback_);
-    }
-
-    for (let i = 0; i < chunk.length; i++) {
-      this.stateMachine_(String.fromCharCode(chunk[i]));
-    }
-  }
-
-  public done(): ParsedPlaylist {
-    if (this.stateMachine_) {
-      this.transitionToNewLine_(this.stateMachine_);
-    }
-
-    this.stateMachine_ = null;
-
-    return this.clean_();
   }
 }
