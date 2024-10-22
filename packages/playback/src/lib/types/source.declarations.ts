@@ -13,6 +13,7 @@ export interface IKeySystemConfig {
 
 export interface ILoadSource {
   mimeType: string;
+  loaderAlias?: string;
   keySystems?: Record<string, IKeySystemConfig>;
   /**
    * You have to provide baseUrl for MPEG-DASH or HLS parsing
