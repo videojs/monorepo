@@ -38,16 +38,6 @@ interface PlayerDependencies {
   readonly networkManager: INetworkManager;
 }
 
-interface VersionInfo {
-  version: string;
-  hash: string;
-  isExperimental: boolean;
-}
-
-declare const __COMMIT_HASH: string;
-declare const __VERSION: string;
-declare const __EXPERIMENTAL: boolean;
-
 export class Player {
   /**
    * MARK: Static members
@@ -149,21 +139,6 @@ export class Player {
    */
   public removePipelineFactoryConfiguration(mimeType: string): boolean {
     return this.mimeTypeToPipelineFactoryMap_.delete(mimeType.toLowerCase());
-  }
-
-  /**
-   * MARK: Version API
-   */
-
-  /**
-   * getter for version info object
-   */
-  public getVersionInfo(): VersionInfo {
-    return {
-      version: __VERSION,
-      hash: __COMMIT_HASH,
-      isExperimental: __EXPERIMENTAL,
-    };
   }
 
   /**
