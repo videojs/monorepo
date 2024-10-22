@@ -18,6 +18,9 @@
       * [Notes](#notes-5)
     * [LifeCycle API](#lifecycle-api)
       * [Notes](#notes-6)
+      * [Playback API](#playback-api)
+      * [Notes](#notes-7)
+      * [architecture considerations](#architecture-considerations)
 <!-- TOC -->
 
 ## Trade-offs
@@ -52,7 +55,7 @@ interface VersionInfo {
 >
 > This API simpy returns data that is injected during bundling.
 >
-> Should be static.
+> Should be static. (Done)
 
 
 ### Debug API
@@ -244,3 +247,117 @@ interface Player {
 > 3) (main thread) it should fall back to the native pipeline on the main thread
 >
 > `getCurrentSource` is just a getter for the main thread to get the current source reference. Please Note that getters are not transferable via `postMessage`, so source model should be created on the worker thread.
+
+#### Playback API
+
+```ts
+interface Player {
+  //...
+  play(): void;
+  pause(): void;
+  seek(seekTarget: number): boolean;
+  getCurrentTime(): number;
+
+  getPlaybackRate(): number;
+  setPlaybackRate(rate: number): void;
+
+  mute(): void;
+  unmute(): void;
+  getIsMuted(): boolean;
+
+  getVolumeLevel(): number;
+  setVolumeLevel(volumeLevel: number): void;
+
+  getDuration(): number;
+
+  getPlaybackState(): PlaybackState;
+
+  getPlaybackStats(): IPlaybackStats;
+
+  getSeekableRanges(): Array<IPlayerTimeRange>;
+  getActiveSeekableRange(): IPlayerTimeRange | null;
+
+  getBufferedRanges(): Array<IPlayerTimeRange>;
+  getActiveBufferedRange(): IPlayerTimeRange | null;
+
+  getQualityLevels(): Array<IQualityLevel>;
+  getActiveQualityLevel(): IQualityLevel | null;
+  selectQualityLevel(id: string): boolean;
+  selectAutoQualityLevel(): boolean;
+
+  getAudioTracks(): Array<IPlayerAudioTrack>;
+  getActiveAudioTrack(): IPlayerAudioTrack | null;
+  selectAudioTrack(id: string): boolean;
+
+  getTextTracks(): Array<IPlayerTextTrack>;
+  getActiveTextTrack(): IPlayerTextTrack | null;
+  selectTextTrack(id: string): boolean;
+  addRemoteTextTrack(remoteTextTrackOptions: RemoteTextTrackOptions): boolean;
+  removeRemoteTextTrack(id: string): boolean;
+
+  getMetadataTracks(): Array<IPlayerMetadataTrack>;
+
+  getThumbnailTracks(): Array<IPlayerThumbnailTrack>;
+  getActiveThumbnailTrack(): IPlayerThumbnailTrack | null;
+  selectThumbnailTrack(id: string): boolean;
+  addRemoteThumbnailTrack(options: IRemoteVttThumbnailTrackOptions): boolean;
+  removeRemoteThumbnailTrack(id: string): boolean;
+
+
+  //...
+}
+```
+#### Notes
+> `Playback API` should operate on **the main thread only** and does require communication with the worker thread.
+>
+> Player should have internal state for all getters. The worker thread should notify when some state related info has changed, so player can update its internal counterpart.
+>
+> Actions like play/pause/mute/select/add/remove/setters should notify the worker thread about the action.
+
+
+#### architecture considerations
+
+Idea:
+Use everything in workers by default and use mse-in-workers by default if available.
+If not fallback to mse on the main thread.
+Reasoning:
+we already use workers for
+- Transmuxing ts to mp4,
+- Extracting cea608/708,
+- Extracting id3 metadata,
+- Parsing mp4 boxes
+- Aes decryption
+
+So, why not just move to the worker leftover parts (it is not that many):
+- Fetching playlist/manifest
+- Parsing playlist/manifest
+- Fetching segments
+
+Regarding interceptors:
+On the main thread we still await customers interceptors
+On worker thread we will do the same, so it should not be that different performance wise.
+
+that way we will simplify codebase, since we will have only worker player.
+So we can simply provide multiple bundles, or provde CLI to create a custom bundle.
+
+We can of course go ahead and do the following:
+
+create abstract class Player with shared logic
+create Main thread Player which will extend Player and implement all main thread logic
+create Worker Player which will extend Player and implement all worker thread logic (eg listen to message events and coordinate postMessage)
+we should design services that will be re-used on both main and worker thread (eg pipelines, parsers, network manager, etc)
+to not expect  that services that are available only on main the (eg: configuration manager, interceptros storage, event emitter etc..) to be injected
+We should desing it with generic callbacks or functions, or objects...
+example:
+so instead of passing interceptorsStorate to the networkManager, we should pass just executeInterceptors function.
+
+I am not sure if we want to provide alternative main-thread only, because it will use only main thread for EVERYTHING.
+but probably would be nice to have such alternative to estimate worker performance gain.
+and probably main-thread only would have better customizability, since it will be easier to override service during runtime.
+
+every service is a small standalone tool, with a separate entry point, and predictable dependencies (and or static members)
+
+for example:
+
+import { HlsLoader } from '@videojs/playback/hls/loader';
+import { HlsVodPipeline } from '@videojs/playback/hls/vod/pipeline';
