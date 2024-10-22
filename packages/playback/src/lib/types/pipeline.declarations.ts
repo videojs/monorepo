@@ -36,8 +36,7 @@ export interface IPipelineLoaderFactory {
 
 export interface IPipelineFactoryConfiguration {
   loader: IPipelineLoaderFactory;
-  live?: IPipelineFactory;
-  vod?: IPipelineFactory;
+  alias: string;
 }
 
 export interface IPipeline {
