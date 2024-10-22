@@ -1,30 +1,42 @@
-import type { InterceptorType } from '../consts/interceptor-type';
-import type { InterceptorTypeToInterceptorMap } from '../types/mappers/interceptor-type-to-interceptor-map.declarations';
-import type { IInterceptorsStorage } from '../types/interceptors.declarations';
+import type { IInterceptorsStorage, Interceptor } from '../types/interceptors.declarations';
 
-export class InterceptorsStorage implements IInterceptorsStorage {
-  private readonly storage_ = new Map<InterceptorType, Set<InterceptorTypeToInterceptorMap[InterceptorType]>>();
+export class InterceptorsStorage<M> implements IInterceptorsStorage<M> {
+  private readonly storage_ = new Map<keyof M, Set<Interceptor<unknown>>>();
 
-  public addInterceptor<K extends InterceptorType>(
-    interceptorType: K,
-    interceptor: InterceptorTypeToInterceptorMap[K]
-  ): void {
+  public addInterceptor<K extends keyof M>(interceptorType: K, interceptor: Interceptor<M[K]>): void {
     if (!this.storage_.has(interceptorType)) {
       this.storage_.set(interceptorType, new Set());
     }
 
-    this.storage_.get(interceptorType)?.add(interceptor);
+    const typedSet = this.storage_.get(interceptorType) as Set<Interceptor<M[K]>>;
+
+    typedSet.add(interceptor);
   }
 
-  public getInterceptorsSet<K extends InterceptorType>(interceptorType: K): Set<InterceptorTypeToInterceptorMap[K]> {
-    return new Set((this.storage_.get(interceptorType) as Set<InterceptorTypeToInterceptorMap[K]>) ?? []);
+  public async executeInterceptors<K extends keyof M>(interceptorType: K, payload: M[K]): Promise<M[K]> {
+    const set = this.storage_.get(interceptorType);
+
+    if (!set) {
+      return payload;
+    }
+
+    let result = payload;
+
+    for (const i of set) {
+      const interceptor = i as Interceptor<M[K]>;
+      try {
+        result = await interceptor(payload);
+      } catch (e) {
+        //ignore
+      }
+    }
+
+    return result;
   }
 
-  public removeInterceptor<K extends InterceptorType>(
-    interceptorType: K,
-    interceptor: InterceptorTypeToInterceptorMap[K]
-  ): void {
-    const interceptors = this.storage_.get(interceptorType);
+  public removeInterceptor<K extends keyof M>(interceptorType: K, interceptor: Interceptor<M[K]>): void {
+    const interceptors = this.storage_.get(interceptorType) as Set<Interceptor<M[K]>>;
+
     if (interceptors) {
       interceptors.delete(interceptor);
       if (interceptors.size === 0) {
@@ -33,7 +45,7 @@ export class InterceptorsStorage implements IInterceptorsStorage {
     }
   }
 
-  public removeAllInterceptorsForType<K extends InterceptorType>(interceptorType: K): void {
+  public removeAllInterceptorsForType<K extends keyof M>(interceptorType: K): void {
     this.storage_.delete(interceptorType);
   }
 

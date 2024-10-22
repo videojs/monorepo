@@ -4,6 +4,7 @@ import { PlayerEventType } from '../../consts/events';
 // types
 import type { IPlayerSource } from '../../types/source.declarations';
 import type { IInterceptorsStorage } from '../../types/interceptors.declarations';
+import type { IInterceptorsStorage, Interceptor } from '../../types/interceptors.declarations';
 import type { ILogger } from '../../types/logger.declarations';
 import type { PlayerConfiguration } from '../../types/configuration.declarations';
 import type { DeepPartial } from '../../types/utility.declarations';
@@ -16,6 +17,8 @@ import { ConfigurationChangedEvent, LoggerLevelChangedEvent, VolumeChangedEvent 
 // errors
 // pipelines
 import { PipelineLoaderFactoryStorage } from './pipeline-loader-factory-storage';
+import type { InterceptorType } from '../../consts/interceptor-type';
+import type { InterceptorTypeToInterceptorPayloadMap } from '../../types/mappers/interceptor-type-to-interceptor-map.declarations';
 
 declare const __COMMIT_HASH: string;
 declare const __VERSION: string;
@@ -23,7 +26,7 @@ declare const __EXPERIMENTAL: boolean;
 
 export interface PlayerDependencies {
   readonly logger: ILogger;
-  readonly interceptorsStorage: IInterceptorsStorage;
+  readonly interceptorsStorage: IInterceptorsStorage<InterceptorTypeToInterceptorPayloadMap>;
   readonly configurationManager: IStore<PlayerConfiguration>;
   readonly eventEmitter: IEventEmitter<EventTypeToEventMap>;
 }
@@ -91,13 +94,13 @@ export abstract class BasePlayer {
   protected readonly eventEmitter_: IEventEmitter<EventTypeToEventMap>;
 
   /**
-   * MARK: PRIVATE INSTANCE MEMBERS
-   */
-
-  /**
    * internal interceptor's storage service
    */
-  private readonly interceptorsStorage_: IInterceptorsStorage;
+  protected readonly interceptorsStorage_: IInterceptorsStorage<InterceptorTypeToInterceptorPayloadMap>;
+
+  /**
+   * MARK: PRIVATE INSTANCE MEMBERS
+   */
 
   /**
    * internal configuration manager service
@@ -116,10 +119,42 @@ export abstract class BasePlayer {
    */
 
   /**
-   * interceptor's storage getter
+   * add new interceptor for a specific type
+   * @param interceptorType - specific interceptor type
+   * @param interceptor - interceptor
    */
-  public getInterceptorsStorage(): IInterceptorsStorage {
-    return this.interceptorsStorage_;
+  public addInterceptor<K extends InterceptorType>(
+    interceptorType: K,
+    interceptor: Interceptor<InterceptorTypeToInterceptorPayloadMap[K]>
+  ): void {
+    this.interceptorsStorage_.addInterceptor(interceptorType, interceptor);
+  }
+
+  /**
+   * remove specific interceptor for a specific type
+   * @param interceptorType - specific interceptor type
+   * @param interceptor - interceptor
+   */
+  public removeInterceptor<K extends InterceptorType>(
+    interceptorType: K,
+    interceptor: Interceptor<InterceptorTypeToInterceptorPayloadMap[K]>
+  ): void {
+    this.interceptorsStorage_.removeInterceptor(interceptorType, interceptor);
+  }
+
+  /**
+   * remove all interceptors for a specific type
+   * @param interceptorType - specific interceptor type
+   */
+  public removeAllInterceptorsForType<K extends InterceptorType>(interceptorType: K): void {
+    this.interceptorsStorage_.removeAllInterceptorsForType(interceptorType);
+  }
+
+  /**
+   * remove all interceptors
+   */
+  public removeAllInterceptors(): void {
+    this.interceptorsStorage_.removeAllInterceptors();
   }
 
   /**
