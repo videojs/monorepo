@@ -9,7 +9,6 @@ export type * from './lib/types/mappers/event-type-to-event-map.declarations';
 export type * from './lib/types/mappers/interceptor-type-to-interceptor-map.declarations';
 export type * from './lib/types/audio-track.declarations';
 export type * from './lib/types/configuration.declarations';
-export type * from './lib/types/env-capabilities.declarations';
 export type * from './lib/types/event-emitter.declarations';
 export type * from './lib/types/interceptors.declarations';
 export type * from './lib/types/logger.declarations';

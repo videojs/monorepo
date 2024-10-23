@@ -1,0 +1,56 @@
+{
+  "name": "@videojs/env-capabilities",
+  "version": "0.0.0",
+  "description": "Probe Playback Env Capabilities",
+  "type": "module",
+  "scripts": {
+    "clean": "rimraf ./dist ./dist-api-reference ./dist-demo ./*.tgz ./coverage ./node_modules",
+    "prebuild": "npm run clean",
+    "build": "run-p build:js build:api-reference build:demo",
+    "build:js": "rollup -c rollup.config.js",
+    "build:api-reference": "npx typedoc --options typedoc.json",
+    "build:demo": "vite build",
+    "dev": "vite",
+    "verify:bundle-size": "npx bundlesize --config bundlesize.json",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "test:vitest-ui": "vitest --ui",
+    "test:browser": "npx playwright install && vitest run --browser",
+    "lint": "eslint .",
+    "pack": "npm pack"
+  },
+  "keywords": [
+    "videojs",
+    "playback",
+    "probe-support",
+    "media-support",
+    "playback-support",
+    "video",
+    "streaming",
+    "mse",
+    "eme",
+    "drm"
+  ],
+  "author": "Brightcove, Inc",
+  "license": "Apache-2.0",
+  "files": [
+    "./dist/",
+    "CHANGELOG.md"
+  ],
+  "main": "./dist/cjs/index.min.js",
+  "module": "./dist/es/index.min.js",
+  "es2015": "./dist/es/index.min.js",
+  "types": "./dist/types/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/types/index.d.ts",
+      "require": "./dist/cjs/index.min.js",
+      "import": "./dist/es/index.min.js"
+    },
+    "./debug": {
+      "types": "./dist/types/index.d.ts",
+      "require": "./dist/cjs/index.debug.js",
+      "import": "./dist/es/index.debug.js"
+    }
+  }
+}

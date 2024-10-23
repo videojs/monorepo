@@ -20,10 +20,12 @@ jobs:
             message += '### Api Reference \n'
             message += `- https://deploy-preview-${context.issue.number}--videojsdev.netlify.app/api-reference/dash-parser \n`
             message += `- https://deploy-preview-${context.issue.number}--videojsdev.netlify.app/api-reference/hls-parser \n`
+            message += `- https://deploy-preview-${context.issue.number}--videojsdev.netlify.app/api-reference/env-capabilities \n`
             message += `- https://deploy-preview-${context.issue.number}--videojsdev.netlify.app/api-reference/playback \n`
             message += '### Demo \n'
             message += `- https://deploy-preview-${context.issue.number}--videojsdev.netlify.app/demo/dash-parser \n`
             message += `- https://deploy-preview-${context.issue.number}--videojsdev.netlify.app/demo/hls-parser \n`
+            message += `- https://deploy-preview-${context.issue.number}--videojsdev.netlify.app/demo/env-capabilities \n`
             message += `- https://deploy-preview-${context.issue.number}--videojsdev.netlify.app/demo/playback \n`
 
             github.rest.issues.createComment({

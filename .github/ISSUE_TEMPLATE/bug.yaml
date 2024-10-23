@@ -23,7 +23,8 @@ body:
       options:
         - @videojs/playback
         - @videojs/hls-parser
-        - @videos/dash-parser
+        - @videojs/dash-parser
+        - @videojs/env-capabilities
         - videojs.dev
       default: 0
     validations:

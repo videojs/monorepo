@@ -13,7 +13,6 @@ import {
   PlayerErrorEvent,
   VolumeChangedEvent,
 } from './events/player-events';
-import type { ICapabilitiesProbeResult, IEnvCapabilitiesProvider } from './types/env-capabilities.declarations';
 import type { ILoadLocalSource, ILoadRemoteSource, IPlayerSource } from './types/source.declarations';
 import type { IPipeline, IPipelineFactoryConfiguration, IPipelineLoader } from './types/pipeline.declarations';
 import { PlaybackState } from './consts/playback-state';
@@ -34,7 +33,6 @@ interface PlayerDependencies {
   readonly interceptorsStorage: IInterceptorsStorage;
   readonly configurationManager: IStore<PlayerConfiguration>;
   readonly eventEmitter: IEventEmitter<EventTypeToEventMap>;
-  readonly envCapabilitiesProvider: IEnvCapabilitiesProvider;
   readonly networkManager: INetworkManager;
 }
 
@@ -68,7 +66,6 @@ export class Player {
   private readonly logger_: ILogger;
   private readonly configurationManager_: IStore<PlayerConfiguration>;
   private readonly eventEmitter_: IEventEmitter<EventTypeToEventMap>;
-  private readonly envCapabilitiesProvider_: IEnvCapabilitiesProvider;
   private readonly networkManager_: INetworkManager;
   private readonly interceptorsStorage_: IInterceptorsStorage;
 
@@ -82,7 +79,6 @@ export class Player {
     this.logger_ = dependencies.logger;
     this.configurationManager_ = dependencies.configurationManager;
     this.eventEmitter_ = dependencies.eventEmitter;
-    this.envCapabilitiesProvider_ = dependencies.envCapabilitiesProvider;
     this.networkManager_ = dependencies.networkManager;
   }
 
@@ -240,17 +236,6 @@ export class Player {
    */
   public removeAllEventListeners(): void {
     return this.eventEmitter_.removeAllEventListeners();
-  }
-
-  /**
-   * MARK: Env Capabilities API
-   */
-
-  /**
-   * Probe env capabilities
-   */
-  public probeEnvCapabilities(): Promise<ICapabilitiesProbeResult> {
-    return this.envCapabilitiesProvider_.probe();
   }
 
   /**

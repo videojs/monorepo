@@ -36,6 +36,7 @@ Please, check the changelog in the root of the project.
 
 ${createEntryForPackage(version, '@videojs/hls-parser')}
 ${createEntryForPackage(version, '@videojs/dash-parser')}
+${createEntryForPackage(version, '@videojs/env-capabilities')}
 ${createEntryForPackage(version, '@videojs/playback')}
 `;
 };
