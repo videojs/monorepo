@@ -28,6 +28,7 @@ This is the videojs NX monorepo that has the following sub-packages:
 - [@videojs/dash-parser (publishable library)](packages/dash-parser/README.md)
 - [@videojs/hls-parser (publishable library)](packages/hls-parser/README.md)
 - [@videojs/playback (publishable library)](packages/playback/README.md)
+- [@videojs/env-capabilities (publishable library)](packages/env-capabilities/README.md)
 - [videojs.dev (application)](packages/videojs.dev/README.md)
 
 # Browser Support Matrix
@@ -45,6 +46,9 @@ TBD
 - `@videojs/playback`
   - API Reference: https://videojsdev.netlify.app/api-reference/playback
   - Demo: https://videojsdev.netlify.app/demo/playback
+- `@videojs/env-capabilities`
+  - API Reference: https://videojsdev.netlify.app/api-reference/env-capabilities
+  - Demo: https://videojsdev.netlify.app/demo/env-capabilities
 
 # Contributing
 
