@@ -1,4 +1,4 @@
-import { FullPlaylistParser, ProgressiveParser } from '../src';
+import { FullPlaylistParser, ChunkPlaylistParser } from '../src';
 import type { ParsedPlaylist, ParseOptions } from '../src';
 import type { Mock } from 'vitest';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
@@ -7,7 +7,7 @@ describe('hls-parser spec', () => {
   const baseUrl = 'https://baseurl.com';
 
   let fullPlaylistParser: FullPlaylistParser;
-  let progressivePlaylistParser: ProgressiveParser;
+  let chunkPlaylistParser: ChunkPlaylistParser;
   let warnCallback: Mock<(warn: string) => void>;
 
   const testAllCombinations = (
@@ -17,14 +17,14 @@ describe('hls-parser spec', () => {
   ): void => {
     const buffer = new Uint8Array(playlist.split('').map((char) => char.charCodeAt(0)));
 
-    cb(fullPlaylistParser.parseFullPlaylistString(playlist, options));
-    cb(fullPlaylistParser.parseFullPlaylistBuffer(buffer, options));
+    cb(fullPlaylistParser.parse(playlist, options));
+    cb(fullPlaylistParser.parse(buffer, options));
 
-    progressivePlaylistParser.pushString(playlist, options);
-    cb(progressivePlaylistParser.done());
+    chunkPlaylistParser.push(playlist, options);
+    cb(chunkPlaylistParser.done());
 
-    progressivePlaylistParser.pushBuffer(buffer, options);
-    cb(progressivePlaylistParser.done());
+    chunkPlaylistParser.push(buffer, options);
+    cb(chunkPlaylistParser.done());
   };
 
   beforeEach(() => {
@@ -34,7 +34,7 @@ describe('hls-parser spec', () => {
       warnCallback,
       // debugCallback: (debug, info): void => console.log('Full Playlist Parser debug: ', debug, info),
     });
-    progressivePlaylistParser = new ProgressiveParser({
+    chunkPlaylistParser = new ChunkPlaylistParser({
       warnCallback,
       // debugCallback: (debug, info): void => console.log('Progressive Playlist Parser debug: ', debug, info),
     });

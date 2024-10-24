@@ -1,30 +1,67 @@
 import type { KeySystem } from '../consts/key-system';
 import type { StreamingProtocol } from '../consts/streaming-protocol';
-import type { Container } from '../consts/container';
 import type { AudioCodecs, VideoCodecs } from '../consts/codecs';
+import type { Container } from '../consts/container';
 
 export interface IEnvCapabilitiesContext {
   readonly location: Location;
   readonly navigator: Navigator;
   readonly isSecureContext: boolean;
+  readonly matchMedia: (query: string) => MediaQueryList;
   readonly MediaSource?: { isTypeSupported: (type: string) => boolean };
-  readonly transmuxer?: { isTypeSupported: (type: string) => boolean };
 }
 
-export interface IKeySystemCapabilities {
+export interface WidevineRobustnessLevelCapabilities {
+  SW_SECURE_CRYPTO: boolean;
+  SW_SECURE_DECODE: boolean;
+  HW_SECURE_CRYPTO: boolean;
+  HW_SECURE_DECODE: boolean;
+  HW_SECURE_ALL: boolean;
+}
+
+export interface PlayreadyRobustnessLevelCapabilities {
+  3000: boolean;
+  2000: boolean;
+  150: boolean;
+}
+
+export interface FairplayRobustnessLevelCapabilities {
+  // default means - empty string for robustness
+  default: boolean;
+}
+
+export interface RobustnessCapabilities<T> {
+  audio: T;
+  video: T;
+}
+
+export interface HdcpCapabilities {
+  hdcp1_0: MediaKeyStatus | 'api-not-available';
+  hdcp1_1: MediaKeyStatus | 'api-not-available';
+  hdcp1_2: MediaKeyStatus | 'api-not-available';
+  hdcp1_3: MediaKeyStatus | 'api-not-available';
+  hdcp1_4: MediaKeyStatus | 'api-not-available';
+  hdcp2_0: MediaKeyStatus | 'api-not-available';
+  hdcp2_1: MediaKeyStatus | 'api-not-available';
+  hdcp2_2: MediaKeyStatus | 'api-not-available';
+  hdcp2_3: MediaKeyStatus | 'api-not-available';
+}
+
+export interface IKeySystemCapabilities<T> {
   persistent: boolean;
   basic: boolean;
+  robustness: RobustnessCapabilities<T>;
+  hdcp: HdcpCapabilities;
 }
 
 export interface IEmeCapabilities {
-  [KeySystem.Widevine]: IKeySystemCapabilities;
-  [KeySystem.Playready]: IKeySystemCapabilities;
-  [KeySystem.Fairplay]: IKeySystemCapabilities;
-  [KeySystem.FairplayLegacy]: IKeySystemCapabilities;
+  [KeySystem.Widevine]: IKeySystemCapabilities<WidevineRobustnessLevelCapabilities>;
+  [KeySystem.Playready]: IKeySystemCapabilities<PlayreadyRobustnessLevelCapabilities>;
+  [KeySystem.Fairplay]: IKeySystemCapabilities<FairplayRobustnessLevelCapabilities>;
+  [KeySystem.FairplayLegacy]: IKeySystemCapabilities<FairplayRobustnessLevelCapabilities>;
 }
 
 export interface IStreamingProtocolCapabilities {
-  mse: boolean;
   native: boolean;
 }
 
@@ -37,7 +74,6 @@ export interface StreamingCapabilities {
 export interface ICodecCapabilities {
   mse: boolean;
   native: boolean;
-  transmuxer: boolean;
   // we could add profiles for each mse/native support
   // but this might be overkill,
   // lets consider baseline profile support here
@@ -127,9 +163,15 @@ export interface IMediaCapabilities {
   [Container.Mpeg2Ts]: IContainerCapabilities<IMpeg2tsVideoCodecsCapabilities, IMpeg2tsAudioCodecsCapabilities>;
 }
 
+export interface VideoRangeCapabilities {
+  sdr: boolean;
+  hdr: boolean;
+}
+
 export interface ICapabilitiesProbeResult {
   isSecureContext: boolean;
   isHttps: boolean;
+  videoRange: VideoRangeCapabilities;
   eme: IEmeCapabilities;
   streaming: StreamingCapabilities;
   media: IMediaCapabilities;
@@ -137,4 +179,7 @@ export interface ICapabilitiesProbeResult {
 
 export interface IEnvCapabilitiesProvider {
   probe(): Promise<ICapabilitiesProbeResult>;
+  probeStreamingProtocolsCapabilities(): Promise<StreamingCapabilities>;
+  probeMediaCapabilities(): Promise<IMediaCapabilities>;
+  probeEmeCapabilities(): Promise<IEmeCapabilities>;
 }

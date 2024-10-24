@@ -4,7 +4,6 @@ import type {
   IRequestPayloadWithMapper,
   INetworkRequest,
   IRequestPayloadWithChunkHandler,
-  INetworkInterceptorsProvider,
   IRequestPayload,
 } from '../types/network.declarations';
 import { NetworkRequestWithChunkHandler, NetworkRequestWithMapper } from './network-request';
@@ -14,7 +13,6 @@ import type { NetworkEventMap } from '../types/mappers/event-type-to-event-map.d
 
 export interface NetworkManagerDependencies {
   logger: ILogger;
-  networkInterceptorsProvider: INetworkInterceptorsProvider;
   eventEmitter: IEventEmitter<NetworkEventMap>;
   configuration: PlayerNetworkConfiguration;
   executor: (request: Request) => Promise<Response>;
@@ -22,14 +20,12 @@ export interface NetworkManagerDependencies {
 
 export class NetworkManager implements INetworkManager {
   private readonly logger_: ILogger;
-  private readonly networkInterceptorsProvider_: INetworkInterceptorsProvider;
   private readonly eventEmitter_: IEventEmitter<NetworkEventMap>;
   private readonly executor_: (request: Request) => Promise<Response>;
   private configuration_: PlayerNetworkConfiguration;
 
   public constructor(dependencies: NetworkManagerDependencies) {
     this.logger_ = dependencies.logger;
-    this.networkInterceptorsProvider_ = dependencies.networkInterceptorsProvider;
     this.eventEmitter_ = dependencies.eventEmitter;
     this.configuration_ = dependencies.configuration;
     this.executor_ = dependencies.executor;
@@ -62,7 +58,6 @@ export class NetworkManager implements INetworkManager {
   private createNetworkRequestWithMapper_<T>(payload: IRequestPayloadWithMapper<T>): INetworkRequest<T> {
     return NetworkRequestWithMapper.create(payload, {
       logger: this.logger_,
-      networkInterceptorsProvider: this.networkInterceptorsProvider_,
       eventEmitter: this.eventEmitter_,
       configuration: { ...this.configuration_[payload.requestType] },
       executor: (request) => this.sendRequest_(request),
@@ -72,7 +67,6 @@ export class NetworkManager implements INetworkManager {
   private createNetworkRequestWithChunkHandler_(payload: IRequestPayloadWithChunkHandler): INetworkRequest<void> {
     return NetworkRequestWithChunkHandler.create(payload, {
       logger: this.logger_,
-      networkInterceptorsProvider: this.networkInterceptorsProvider_,
       eventEmitter: this.eventEmitter_,
       configuration: { ...this.configuration_[payload.requestType] },
       executor: (request) => this.sendRequest_(request),

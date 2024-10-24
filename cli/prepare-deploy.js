@@ -16,7 +16,7 @@ mkdir('deploy', () => {
     }
   });
 
-  ['dash-parser', 'hls-parser', 'playback'].forEach((packageName) => {
+  ['dash-parser', 'hls-parser', 'playback', 'env-capabilities'].forEach((packageName) => {
     copyFromPackage(packageName, 'api-reference');
     copyFromPackage(packageName, 'demo');
   });

@@ -1,6 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { Player } from '../src/lib/player';
-import type { PlayerConfiguration } from '../src/lib/types/configuration.declarations';
+import { Player } from '../src/lib/player/main-thread/player-main';
 import {
   ConfigurationChangedEvent,
   LoggerLevelChangedEvent,
@@ -9,55 +8,7 @@ import {
 import type { PlayerEvent } from '../src/lib/events/base-player-event';
 import { RequestType } from '../src/lib/consts/request-type';
 import { ServiceLocator } from '../src/lib/service-locator';
-// import type { ILogger } from '../src/lib/types/logger';
-// import { instance, mock, verify, when } from '@typestrong/ts-mockito';
-
-const createPlayerDefaultConfiguration = (): PlayerConfiguration => ({
-  network: {
-    [RequestType.DashManifest]: {
-      maxAttempts: 2,
-      initialDelay: 2_000,
-      delayFactor: 0.2,
-      fuzzFactor: 0.2,
-      timeout: 20_000,
-    },
-    [RequestType.HlsPlaylist]: {
-      maxAttempts: 2,
-      initialDelay: 2_000,
-      delayFactor: 0.2,
-      fuzzFactor: 0.2,
-      timeout: 20_000,
-    },
-    [RequestType.Key]: {
-      maxAttempts: 2,
-      initialDelay: 2_000,
-      delayFactor: 0.2,
-      fuzzFactor: 0.2,
-      timeout: 20_000,
-    },
-    [RequestType.MediaSegment]: {
-      maxAttempts: 2,
-      initialDelay: 2_000,
-      delayFactor: 0.2,
-      fuzzFactor: 0.2,
-      timeout: 20_000,
-    },
-    [RequestType.InitSegment]: {
-      maxAttempts: 2,
-      initialDelay: 2_000,
-      delayFactor: 0.2,
-      fuzzFactor: 0.2,
-      timeout: 20_000,
-    },
-    [RequestType.License]: {
-      maxAttempts: 2,
-      initialDelay: 2_000,
-      delayFactor: 0.2,
-      fuzzFactor: 0.2,
-      timeout: 20_000,
-    },
-  },
-});
+import { getPlayerConfigurationDefaults } from '../src/lib/configuration/configuration-defaults';
 
 describe('Player spec', () => {
   let player: Player;
@@ -70,9 +21,7 @@ describe('Player spec', () => {
 
   describe('getLoggerLevel', () => {
     it('should return current logger level', () => {
-      // when(mockedLogger.getLoggerLevel()).thenReturn(Player.LoggerLevel.Warn);
       expect(player.getLoggerLevel()).toBe(Player.LoggerLevel.Debug);
-      // verify(mockedLogger.getLoggerLevel()).once();
     });
   });
 
@@ -85,7 +34,7 @@ describe('Player spec', () => {
 
       const actualEvents: Array<LoggerLevelChangedEvent> = [];
 
-      player.addEventListener(Player.Event.LoggerLevelChanged, (event) => {
+      player.addEventListener(Player.EventType.LoggerLevelChanged, (event) => {
         actualEvents.push(event);
       });
 
@@ -104,8 +53,8 @@ describe('Player spec', () => {
       const snapshot1 = player.getConfigurationSnapshot();
       const snapshot2 = player.getConfigurationSnapshot();
 
-      expect(snapshot1).toEqual(createPlayerDefaultConfiguration());
-      expect(snapshot2).toEqual(createPlayerDefaultConfiguration());
+      expect(snapshot1).toEqual(getPlayerConfigurationDefaults());
+      expect(snapshot2).toEqual(getPlayerConfigurationDefaults());
       expect(snapshot1).not.toBe(snapshot2);
     });
   });
@@ -115,7 +64,7 @@ describe('Player spec', () => {
       const expectedEvents: Array<ConfigurationChangedEvent> = [];
       const actualEvents: Array<ConfigurationChangedEvent> = [];
 
-      player.addEventListener(Player.Event.ConfigurationChanged, (event) => {
+      player.addEventListener(Player.EventType.ConfigurationChanged, (event) => {
         actualEvents.push(event);
       });
 
@@ -143,7 +92,7 @@ describe('Player spec', () => {
       const expectedEvents: Array<ConfigurationChangedEvent> = [];
       const actualEvents: Array<ConfigurationChangedEvent> = [];
 
-      player.addEventListener(Player.Event.ConfigurationChanged, (event) => {
+      player.addEventListener(Player.EventType.ConfigurationChanged, (event) => {
         actualEvents.push(event);
       });
 
@@ -181,11 +130,11 @@ describe('Player spec', () => {
       ];
       const actualEvents: Array<PlayerEvent> = [];
 
-      player.addEventListener(Player.Event.LoggerLevelChanged, (event) => {
+      player.addEventListener(Player.EventType.LoggerLevelChanged, (event) => {
         actualEvents.push(event);
       });
 
-      player.addEventListener(Player.Event.VolumeChanged, (event) => {
+      player.addEventListener(Player.EventType.VolumeChanged, (event) => {
         actualEvents.push(event);
       });
 
@@ -203,7 +152,7 @@ describe('Player spec', () => {
       const expectedEvents = [new LoggerLevelChangedEvent(Player.LoggerLevel.Warn)];
       const actualEvents: Array<PlayerEvent> = [];
 
-      player.once(Player.Event.LoggerLevelChanged, (event) => {
+      player.once(Player.EventType.LoggerLevelChanged, (event) => {
         actualEvents.push(event);
       });
 
@@ -225,17 +174,17 @@ describe('Player spec', () => {
         actualEvents.push(event);
       };
 
-      player.addEventListener(Player.Event.LoggerLevelChanged, listener);
-      player.addEventListener(Player.Event.VolumeChanged, listener);
+      player.addEventListener(Player.EventType.LoggerLevelChanged, listener);
+      player.addEventListener(Player.EventType.VolumeChanged, listener);
 
       serviceLocator.eventEmitter.emitEvent(new LoggerLevelChangedEvent(Player.LoggerLevel.Warn));
 
-      player.removeEventListener(Player.Event.LoggerLevelChanged, listener);
+      player.removeEventListener(Player.EventType.LoggerLevelChanged, listener);
 
       serviceLocator.eventEmitter.emitEvent(new LoggerLevelChangedEvent(Player.LoggerLevel.Info));
       serviceLocator.eventEmitter.emitEvent(new VolumeChangedEvent(0.5));
 
-      player.removeEventListener(Player.Event.VolumeChanged, listener);
+      player.removeEventListener(Player.EventType.VolumeChanged, listener);
 
       serviceLocator.eventEmitter.emitEvent(new VolumeChangedEvent(0.6));
 
@@ -266,13 +215,13 @@ describe('Player spec', () => {
         actualEvents.push(event);
       };
 
-      player.addEventListener(Player.Event.LoggerLevelChanged, listener1);
-      player.addEventListener(Player.Event.LoggerLevelChanged, listener2);
-      player.addEventListener(Player.Event.LoggerLevelChanged, listener3);
+      player.addEventListener(Player.EventType.LoggerLevelChanged, listener1);
+      player.addEventListener(Player.EventType.LoggerLevelChanged, listener2);
+      player.addEventListener(Player.EventType.LoggerLevelChanged, listener3);
 
       serviceLocator.eventEmitter.emitEvent(new LoggerLevelChangedEvent(Player.LoggerLevel.Info));
 
-      player.removeAllEventListenersForType(Player.Event.LoggerLevelChanged);
+      player.removeAllEventListenersForType(Player.EventType.LoggerLevelChanged);
 
       serviceLocator.eventEmitter.emitEvent(new LoggerLevelChangedEvent(Player.LoggerLevel.Info));
       serviceLocator.eventEmitter.emitEvent(new LoggerLevelChangedEvent(Player.LoggerLevel.Info));
@@ -291,8 +240,8 @@ describe('Player spec', () => {
         actualEvents.push(event);
       };
 
-      player.addEventListener(Player.Event.LoggerLevelChanged, listener);
-      player.addEventListener(Player.Event.VolumeChanged, listener);
+      player.addEventListener(Player.EventType.LoggerLevelChanged, listener);
+      player.addEventListener(Player.EventType.VolumeChanged, listener);
 
       serviceLocator.eventEmitter.emitEvent(new LoggerLevelChangedEvent(Player.LoggerLevel.Warn));
       serviceLocator.eventEmitter.emitEvent(new VolumeChangedEvent(0.5));

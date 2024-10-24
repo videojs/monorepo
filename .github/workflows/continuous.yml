@@ -56,8 +56,18 @@ jobs:
           name: dash-parser-coverage
           fail_ci_if_error: true
 
+      # upload @videojs/env-capabilities test coverage to codecov
+      - name: Upload env-capabilities Coverage
+        uses: codecov/codecov-action@v4
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          flags: env-capabilities
+          files: ./packages/env-capabilities/coverage/coverage-final.json
+          name: env-capabilities-coverage
+          fail_ci_if_error: true
+
       # upload @videojs/playback test coverage to codecov
-      - name: Upload Player Coverage
+      - name: Upload Playback Coverage
         uses: codecov/codecov-action@v4
         with:
           token: ${{ secrets.CODECOV_TOKEN }}

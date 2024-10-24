@@ -7,11 +7,13 @@ export interface IKeySystemConfig {
   videoRobustness?: string;
   audioRobustness?: string;
   sessionType?: MediaKeySessionType;
+  sessionId?: string;
   getContentId?: (contentId: string) => string;
 }
 
 export interface ILoadSource {
   mimeType: string;
+  loaderAlias?: string;
   keySystems?: Record<string, IKeySystemConfig>;
   /**
    * You have to provide baseUrl for MPEG-DASH or HLS parsing

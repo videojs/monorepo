@@ -1,5 +1,4 @@
 import type {
-  INetworkInterceptorsProvider,
   INetworkRequest,
   IRequestPayload,
   IRequestPayloadWithChunkHandler,
@@ -27,7 +26,6 @@ import type { NetworkConfiguration } from '../types/configuration.declarations';
 
 export interface NetworkRequestDependencies {
   logger: ILogger;
-  networkInterceptorsProvider: INetworkInterceptorsProvider;
   eventEmitter: IEventEmitter<NetworkEventMap>;
   configuration: NetworkConfiguration;
   executor: (request: Request) => Promise<Response>;
@@ -40,7 +38,6 @@ abstract class NetworkRequest<T> implements INetworkRequest<T> {
   private abortController_: AbortController;
 
   protected readonly logger_: ILogger;
-  protected readonly networkInterceptorsProvider_: INetworkInterceptorsProvider;
   protected readonly eventEmitter_: IEventEmitter<NetworkEventMap>;
   protected readonly retryWrapper_: RetryWrapper<Response>;
   protected readonly executor_: (request: Request) => Promise<Response>;
@@ -56,12 +53,11 @@ abstract class NetworkRequest<T> implements INetworkRequest<T> {
   }
 
   protected constructor(id: string, payload: IRequestPayload, dependencies: NetworkRequestDependencies) {
-    const { logger, networkInterceptorsProvider, configuration, eventEmitter } = dependencies;
+    const { logger, configuration, eventEmitter } = dependencies;
     const { requestType, requestInit, url } = payload;
 
     this.id = id;
     this.logger_ = logger;
-    this.networkInterceptorsProvider_ = networkInterceptorsProvider;
     this.eventEmitter_ = eventEmitter;
     this.abortController_ = new AbortController();
     this.executor_ = dependencies.executor;
@@ -163,16 +159,17 @@ abstract class NetworkRequest<T> implements INetworkRequest<T> {
   }
 
   private async applyRequestInterceptors_(request: Request): Promise<Request> {
-    const requestInterceptors = this.networkInterceptorsProvider_.getNetworkRequestInterceptors();
-
-    for (const requestInterceptor of requestInterceptors) {
-      try {
-        request = await requestInterceptor(request);
-      } catch (e) {
-        this.logger_.warn('Got an error during request interceptor execution: ', e);
-        // ignore interceptors errors
-      }
-    }
+    // TODO: use hooks instead of interceptors
+    // const requestInterceptors = this.networkInterceptorsProvider_.getNetworkRequestInterceptors();
+    //
+    // for (const requestInterceptor of requestInterceptors) {
+    //   try {
+    //     request = await requestInterceptor(request);
+    //   } catch (e) {
+    //     this.logger_.warn('Got an error during request interceptor execution: ', e);
+    //     // ignore interceptors errors
+    //   }
+    // }
 
     return request;
   }

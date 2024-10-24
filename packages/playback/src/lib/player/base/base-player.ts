@@ -1,173 +1,181 @@
-import type { ILogger } from './types/logger.declarations';
-import { LoggerLevel } from './consts/logger-level';
-import type { PlayerConfiguration } from './types/configuration.declarations';
-import type { IStore } from './types/store.declarations';
-import type { DeepPartial } from './types/utility.declarations';
-import type { EventListener, IEventEmitter } from './types/event-emitter.declarations';
-import type { EventTypeToEventMap } from './types/mappers/event-type-to-event-map.declarations';
-import { PlayerEventType } from './consts/events';
+// enums/consts
+import { LoggerLevel } from '../../consts/logger-level';
+import { PlayerEventType } from '../../consts/events';
+// types
+import type { ILoadLocalSource, ILoadRemoteSource, IPlayerSource } from '../../types/source.declarations';
+import type { IInterceptorsStorage, Interceptor } from '../../types/interceptors.declarations';
+import type { ILogger } from '../../types/logger.declarations';
+import type { PlayerConfiguration } from '../../types/configuration.declarations';
+import type { DeepPartial } from '../../types/utility.declarations';
+import type { IStore } from '../../types/store.declarations';
+import type { EventListener, IEventEmitter } from '../../types/event-emitter.declarations';
+import type { EventTypeToEventMap } from '../../types/mappers/event-type-to-event-map.declarations';
+// events
 import {
   ConfigurationChangedEvent,
   LoggerLevelChangedEvent,
   MutedStatusChangedEvent,
   PlayerErrorEvent,
   VolumeChangedEvent,
-} from './events/player-events';
-import type { ICapabilitiesProbeResult, IEnvCapabilitiesProvider } from './types/env-capabilities.declarations';
-import type { ILoadLocalSource, ILoadRemoteSource, IPlayerSource } from './types/source.declarations';
-import type { IPipeline, IPipelineFactoryConfiguration, IPipelineLoader } from './types/pipeline.declarations';
-import { PlaybackState } from './consts/playback-state';
-import type { IPlaybackStats } from './types/playback-stats.declarations';
-import { NoSupportedPipelineError, PipelineLoaderFailedToDeterminePipelineError } from './errors/pipeline-errors';
-import type { INetworkManager } from './types/network.declarations';
-import type { IInterceptorsStorage } from './types/interceptors.declarations';
-import { ServiceLocator } from './service-locator';
-import type { IQualityLevel } from './types/quality-level.declarations';
-import type { IPlayerTimeRange } from './types/player-time-range.declarations';
-import type { IPlayerAudioTrack } from './types/audio-track.declarations';
-import type { IPlayerThumbnailTrack, IRemoteVttThumbnailTrackOptions } from './types/thumbnail-track.declarations';
-import { PlayerSource } from './models/player-source';
-import { NativePipeline } from './pipelines/native/native-pipeline';
-
-interface PlayerDependencies {
-  readonly logger: ILogger;
-  readonly interceptorsStorage: IInterceptorsStorage;
-  readonly configurationManager: IStore<PlayerConfiguration>;
-  readonly eventEmitter: IEventEmitter<EventTypeToEventMap>;
-  readonly envCapabilitiesProvider: IEnvCapabilitiesProvider;
-  readonly networkManager: INetworkManager;
-}
-
-interface VersionInfo {
-  version: string;
-  hash: string;
-  isExperimental: boolean;
-}
+} from '../../events/player-events';
+// models
+import { PlayerSource } from '../../models/player-source';
+// errors
+import { NoSupportedPipelineError } from '../../errors/pipeline-errors';
+// pipelines
+import { PipelineLoaderFactoryStorage } from './pipeline-loader-factory-storage';
+import type { InterceptorType } from '../../consts/interceptor-type';
+import type { InterceptorTypeToInterceptorPayloadMap } from '../../types/mappers/interceptor-type-to-interceptor-map.declarations';
+import { PlaybackState } from '../../consts/playback-state';
+import { PlayerTimeRange } from '../../models/player-time-range';
+import type { IPlayerTimeRange } from '../../types/player-time-range.declarations';
+import type { IPlaybackStats } from '../../types/playback-stats.declarations';
+import type { IPlayerAudioTrack } from '../../types/audio-track.declarations';
+import type { IPlayerThumbnailTrack, IRemoteVttThumbnailTrackOptions } from '../../types/thumbnail-track.declarations';
+import type { IQualityLevel } from '../../types/quality-level.declarations';
+import type { VersionInfo } from '../../types/version-info.declarations';
 
 declare const __COMMIT_HASH: string;
 declare const __VERSION: string;
 declare const __EXPERIMENTAL: boolean;
 
-export class Player {
+export interface PlayerDependencies {
+  readonly logger: ILogger;
+  readonly interceptorsStorage: IInterceptorsStorage<InterceptorTypeToInterceptorPayloadMap>;
+  readonly configurationManager: IStore<PlayerConfiguration>;
+  readonly eventEmitter: IEventEmitter<EventTypeToEventMap>;
+}
+
+/**
+ * Base abstract player for main/worker thread implementations
+ */
+export abstract class BasePlayer {
   /**
-   * MARK: Static members
-   */
-
-  public static LoggerLevel = LoggerLevel;
-  public static Event = PlayerEventType;
-
-  public static create(): Player {
-    return new Player(new ServiceLocator());
-  }
-
-  /**
-   * MARK: Private Properties
-   */
-
-  private activeVideoElement_: HTMLVideoElement | null = null;
-  private activeSource_: IPlayerSource | null = null;
-  private activePipeline_: IPipeline | null = null;
-  private activePipelineLoader_: IPipelineLoader | null = null;
-
-  private readonly mimeTypeToPipelineFactoryMap_ = new Map<string, IPipelineFactoryConfiguration>();
-
-  /**
-   * MARK: Private services
-   */
-
-  private readonly logger_: ILogger;
-  private readonly configurationManager_: IStore<PlayerConfiguration>;
-  private readonly eventEmitter_: IEventEmitter<EventTypeToEventMap>;
-  private readonly envCapabilitiesProvider_: IEnvCapabilitiesProvider;
-  private readonly networkManager_: INetworkManager;
-  private readonly interceptorsStorage_: IInterceptorsStorage;
-
-  /**
-   * You can pass your own implementations via dependencies.
-   * - Pass your own logger, you have to implement ILogger interface.
-   * @param dependencies - player dependencies
-   */
-  public constructor(dependencies: PlayerDependencies) {
-    this.interceptorsStorage_ = dependencies.interceptorsStorage;
-    this.logger_ = dependencies.logger;
-    this.configurationManager_ = dependencies.configurationManager;
-    this.eventEmitter_ = dependencies.eventEmitter;
-    this.envCapabilitiesProvider_ = dependencies.envCapabilitiesProvider;
-    this.networkManager_ = dependencies.networkManager;
-  }
-
-  /**
-   * MARK: Interceptors API
+   * MARK: STATIC MEMBERS
    */
 
   /**
-   * interceptors storage getter
+   * static player's logger level enum getter
    */
-  public getInterceptorsStorage(): IInterceptorsStorage {
-    return this.interceptorsStorage_;
-  }
+  public static readonly LoggerLevel = LoggerLevel;
 
   /**
-   * MARK: Pipeline API
+   * static player's event type enum getter
    */
+  public static readonly EventType = PlayerEventType;
 
   /**
-   * Add pipeline factory for a specific mime type
-   * @param mimeType - mime type
-   * @param configuration - pipeline factory configuration
+   * static player's version info getter
    */
-  public addPipelineFactoryConfiguration(mimeType: string, configuration: IPipelineFactoryConfiguration): boolean {
-    if (!configuration.live && !configuration.vod) {
-      this.logger_.warn('Either live or vod pipeline factory must be provided');
-      return false;
-    }
-
-    this.mimeTypeToPipelineFactoryMap_.set(mimeType, configuration);
-
-    return true;
-  }
-
-  /**
-   * Check if player already has pipeline factory for a specific mime type
-   * @param mimeType - mime type
-   */
-  public hasPipelineFactoryConfiguration(mimeType: string): boolean {
-    return this.mimeTypeToPipelineFactoryMap_.has(mimeType);
-  }
-
-  /**
-   * Returns pipeline factory or null for a specific mime type
-   * @param mimeType - mime type
-   */
-  public getPipelineFactoryConfiguration(mimeType: string): IPipelineFactoryConfiguration | null {
-    return this.mimeTypeToPipelineFactoryMap_.get(mimeType) ?? null;
-  }
-
-  /**
-   * remove pipeline factory for a specific mime type
-   * @param mimeType - mime type
-   */
-  public removePipelineFactoryConfiguration(mimeType: string): boolean {
-    return this.mimeTypeToPipelineFactoryMap_.delete(mimeType);
-  }
-
-  /**
-   * MARK: Version API
-   */
-
-  /**
-   * getter for version info object
-   */
-  public getVersionInfo(): VersionInfo {
+  public static get versionIfo(): VersionInfo {
     return {
       version: __VERSION,
-      hash: __COMMIT_HASH,
+      versionHash: __COMMIT_HASH,
       isExperimental: __EXPERIMENTAL,
     };
   }
 
   /**
-   * MARK: Debug API
+   * static pipeline loader factory storage getter
+   */
+  public static readonly pipelineLoaderFactoryStorage = new PipelineLoaderFactoryStorage();
+
+  /**
+   * MARK: PROTECTED INSTANCE MEMBERS
+   */
+
+  protected currentPlaybackState_: PlaybackState = PlaybackState.Idle;
+
+  /**
+   * attached video element
+   */
+  protected activeVideoElement_: HTMLVideoElement | null = null;
+
+  /**
+   * loaded source
+   */
+  protected activeSource_: IPlayerSource | null = null;
+
+  /**
+   * internal logger service
+   */
+  protected readonly logger_: ILogger;
+
+  /**
+   * internal event emitter service
+   */
+  protected readonly eventEmitter_: IEventEmitter<EventTypeToEventMap>;
+
+  /**
+   * internal interceptor's storage service
+   */
+  protected readonly interceptorsStorage_: IInterceptorsStorage<InterceptorTypeToInterceptorPayloadMap>;
+
+  /**
+   * MARK: PRIVATE INSTANCE MEMBERS
+   */
+
+  /**
+   * internal configuration manager service
+   */
+  private readonly configurationManager_: IStore<PlayerConfiguration>;
+
+  /**
+   * You can pass your own implementations via dependencies.
+   * @param dependencies - player dependencies
+   */
+  protected constructor(dependencies: PlayerDependencies) {
+    this.logger_ = dependencies.logger;
+    this.eventEmitter_ = dependencies.eventEmitter;
+    this.interceptorsStorage_ = dependencies.interceptorsStorage;
+    this.configurationManager_ = dependencies.configurationManager;
+  }
+
+  /**
+   * MARK: INTERCEPTORS API
+   */
+
+  /**
+   * add new interceptor for a specific type
+   * @param interceptorType - specific interceptor type
+   * @param interceptor - interceptor
+   */
+  public addInterceptor<K extends InterceptorType>(
+    interceptorType: K,
+    interceptor: Interceptor<InterceptorTypeToInterceptorPayloadMap[K]>
+  ): void {
+    this.interceptorsStorage_.addInterceptor(interceptorType, interceptor);
+  }
+
+  /**
+   * remove specific interceptor for a specific type
+   * @param interceptorType - specific interceptor type
+   * @param interceptor - interceptor
+   */
+  public removeInterceptor<K extends InterceptorType>(
+    interceptorType: K,
+    interceptor: Interceptor<InterceptorTypeToInterceptorPayloadMap[K]>
+  ): void {
+    this.interceptorsStorage_.removeInterceptor(interceptorType, interceptor);
+  }
+
+  /**
+   * remove all interceptors for a specific type
+   * @param interceptorType - specific interceptor type
+   */
+  public removeAllInterceptorsForType<K extends InterceptorType>(interceptorType: K): void {
+    this.interceptorsStorage_.removeAllInterceptorsForType(interceptorType);
+  }
+
+  /**
+   * remove all interceptors
+   */
+  public removeAllInterceptors(): void {
+    this.interceptorsStorage_.removeAllInterceptors();
+  }
+
+  /**
+   * MARK: DEBUG API
    */
 
   /**
@@ -187,7 +195,7 @@ export class Player {
   }
 
   /**
-   * MARK: Configuration API
+   * MARK: CONFIGURATION API
    */
 
   /**
@@ -203,7 +211,7 @@ export class Player {
    */
   public updateConfiguration(configurationChunk: DeepPartial<PlayerConfiguration>): void {
     this.configurationManager_.update(configurationChunk);
-    this.networkManager_.updateConfiguration(this.configurationManager_.getSnapshot().network);
+    // this.networkManager_.updateConfiguration(this.configurationManager_.getSnapshot().network);
     this.eventEmitter_.emitEvent(new ConfigurationChangedEvent(this.getConfigurationSnapshot()));
   }
 
@@ -212,12 +220,12 @@ export class Player {
    */
   public resetConfiguration(): void {
     this.configurationManager_.reset();
-    this.networkManager_.updateConfiguration(this.configurationManager_.getSnapshot().network);
+    // this.networkManager_.updateConfiguration(this.configurationManager_.getSnapshot().network);
     this.eventEmitter_.emitEvent(new ConfigurationChangedEvent(this.getConfigurationSnapshot()));
   }
 
   /**
-   * MARK: Events API
+   * MARK: EVENTS API
    */
 
   /**
@@ -268,18 +276,7 @@ export class Player {
   }
 
   /**
-   * MARK: Env Capabilities API
-   */
-
-  /**
-   * Probe env capabilities
-   */
-  public probeEnvCapabilities(): Promise<ICapabilitiesProbeResult> {
-    return this.envCapabilitiesProvider_.probe();
-  }
-
-  /**
-   * MARK: Life Cycle API
+   * MARK: LIFE CYCLE API
    */
 
   /**
@@ -293,6 +290,7 @@ export class Player {
 
     this.activeVideoElement_ = videoElement;
 
+    // TODO: update list of all possible events + add EME events here as well
     this.activeVideoElement_.addEventListener('volumechange', this.handleVolumeChange_);
   }
 
@@ -314,6 +312,7 @@ export class Player {
 
     this.stop('detach');
 
+    // TODO: update list of all possible events + add EME events here as well
     this.activeVideoElement_.removeEventListener('volumechange', this.handleVolumeChange_);
 
     this.activeVideoElement_ = null;
@@ -326,12 +325,14 @@ export class Player {
   public stop(reason: string): void {
     this.logger_.debug('stop is called. reason: ', reason);
 
-    this.activePipelineLoader_?.abort();
-    this.activePipelineLoader_ = null;
     this.activeSource_?.dispose();
     this.activeSource_ = null;
-    this.activePipeline_?.dispose();
-    this.activePipeline_ = null;
+    this.transitionPlaybackState_(PlaybackState.Idle);
+
+    // this.activePipelineLoader_?.abort();
+    // this.activePipelineLoader_ = null;
+    // this.activePipeline_?.dispose();
+    // this.activePipeline_ = null;
   }
 
   /**
@@ -341,7 +342,6 @@ export class Player {
     this.detach();
     this.eventEmitter_.removeAllEventListeners();
     this.interceptorsStorage_.removeAllInterceptors();
-    this.mimeTypeToPipelineFactoryMap_.clear();
   }
 
   /**
@@ -361,34 +361,36 @@ export class Player {
       this.stop('load');
     }
 
+    this.transitionPlaybackState_(PlaybackState.Loading);
     this.activeSource_ = new PlayerSource(source);
 
     this.logger_.debug('received a load request: ', this.activeSource_);
 
-    if (this.hasPipelineFactoryConfiguration(this.activeSource_.mimeType)) {
-      const { loader, vod, live } = this.getPipelineFactoryConfiguration(this.activeSource_.mimeType)!;
-      this.activePipelineLoader_ = loader.create({
-        logger: this.logger_,
-        videoElement: this.activeVideoElement_,
-        networkManager: this.networkManager_,
-        source: this.activeSource_,
-        vodFactory: vod,
-        liveFactory: live,
-      });
-
-      this.activePipelineLoader_.load().then(
-        (pipeline) => {
-          this.activePipeline_ = pipeline;
-        },
-        (error) => {
-          this.eventEmitter_.emitEvent(
-            new PlayerErrorEvent(new PipelineLoaderFailedToDeterminePipelineError(true, error))
-          );
-        }
-      );
-
-      return;
-    }
+    // TODO: implement pipeline loader flow
+    // if (this.hasPipelineFactoryConfiguration(this.activeSource_.mimeType.toLowerCase())) {
+    //   const { loader, vod, live } = this.getPipelineFactoryConfiguration(this.activeSource_.mimeType.toLowerCase())!;
+    //   this.activePipelineLoader_ = loader.create({
+    //     logger: this.logger_,
+    //     videoElement: this.activeVideoElement_,
+    //     networkManager: this.networkManager_,
+    //     source: this.activeSource_,
+    //     vodFactory: vod,
+    //     liveFactory: live,
+    //   });
+    //
+    //   this.activePipelineLoader_.load().then(
+    //     (pipeline) => {
+    //       this.activePipeline_ = pipeline;
+    //     },
+    //     (error) => {
+    //       this.eventEmitter_.emitEvent(
+    //         new PlayerErrorEvent(new PipelineLoaderFailedToDeterminePipelineError(true, error))
+    //       );
+    //     }
+    //   );
+    //
+    //   return;
+    // }
 
     this.logger_.debug(
       `No registered pipeline's configuration found for the provided mime type (${this.activeSource_.mimeType}).`
@@ -396,14 +398,15 @@ export class Player {
 
     if (this.activeVideoElement_.canPlayType(this.activeSource_.mimeType)) {
       this.logger_.debug('Native Pipeline can play the provided mime type. Fallback to the Native Pipeline');
-      this.activePipeline_ = NativePipeline.create({
-        logger: this.logger_,
-        videoElement: this.activeVideoElement_,
-        networkManager: this.networkManager_,
-        source: this.activeSource_,
-      });
-
-      this.activePipeline_.start();
+      // TODO: implement NativePipeline flow
+      // this.activePipeline_ = NativePipeline.create({
+      //   logger: this.logger_,
+      //   videoElement: this.activeVideoElement_,
+      //   networkManager: this.networkManager_,
+      //   source: this.activeSource_,
+      // });
+      //
+      // this.activePipeline_.start();
       return;
     } else {
       this.logger_.debug('Native Pipeline can not play the provided mime type.');
@@ -420,28 +423,41 @@ export class Player {
     return this.activeSource_;
   }
 
+  /**
+   * internal volume change handler
+   * @param event - volume changed event
+   */
   private readonly handleVolumeChange_ = (event: Event): void => {
     const target = event.target as HTMLVideoElement;
 
     this.eventEmitter_.emitEvent(new VolumeChangedEvent(target.volume));
   };
 
+  private transitionPlaybackState_(to: PlaybackState): void {
+    if (this.currentPlaybackState_ !== to) {
+      this.currentPlaybackState_ = to;
+      // TODO: emit event
+    }
+  }
+
   /**
    * MARK: Playback API
    */
 
   /**
-   * resume active playback session
+   * Resumes active playback session (if any)
    */
   public play(): void {
-    return this.voidSafeAttemptOnPipeline_('play', (pipeline) => pipeline.play());
+    this.activeVideoElement_?.play();
+    // TODO: pass command to loader/pipeline
   }
 
   /**
-   * pause active playback session
+   * Pauses active playback session (if any)
    */
   public pause(): void {
-    return this.voidSafeAttemptOnPipeline_('pause', (pipeline) => pipeline.pause());
+    this.activeVideoElement_?.pause();
+    // TODO: pass command to loader/pipeline
   }
 
   /**
@@ -450,24 +466,24 @@ export class Player {
    * @param seekTarget - seek target
    */
   public seek(seekTarget: number): boolean {
-    return this.safeAttemptOnPipeline_(
-      'seek',
-      (pipeline) => {
-        const seekableRanges = this.getSeekableRanges();
-        const isValidSeekTarget = seekableRanges.some((timeRange) => timeRange.isInRangeInclusive(seekTarget));
+    if (!this.activeVideoElement_) {
+      return false;
+    }
 
-        if (!isValidSeekTarget) {
-          this.logger_.warn(
-            `Provided seek target (${seekTarget}) is out of available seekable time ranges: `,
-            seekableRanges.map((range) => range.toString()).join('\n')
-          );
-          return false;
-        }
+    const seekableRanges = this.getSeekableRanges();
+    const isValidSeekTarget = seekableRanges.some((timeRange) => timeRange.isInRangeInclusive(seekTarget));
 
-        return pipeline.seek(seekTarget);
-      },
-      false
-    );
+    if (!isValidSeekTarget) {
+      this.logger_.warn(
+        `Provided seek target (${seekTarget}) is out of available seekable time ranges: `,
+        seekableRanges.map((range) => range.toString()).join('\n')
+      );
+      return false;
+    }
+
+    this.activeVideoElement_.currentTime = seekTarget;
+    // TODO: pass command to loader/pipeline
+    return true;
   }
 
   /**
@@ -533,6 +549,10 @@ export class Player {
    * @param volumeLevel - volume level
    */
   public setVolumeLevel(volumeLevel: number): void {
+    if (!this.activeVideoElement_) {
+      return;
+    }
+
     let level: number;
 
     if (volumeLevel > 1) {
@@ -545,34 +565,33 @@ export class Player {
       level = volumeLevel;
     }
 
-    if (this.activeVideoElement_) {
-      this.activeVideoElement_.volume = level;
-    }
+    this.activeVideoElement_.volume = level;
   }
 
   /**
    * current playback session duration getter
    */
   public getDuration(): number {
-    return this.safeAttemptOnPipeline_('getDuration', (pipeline) => pipeline.getDuration(), 0);
+    // TODO: should we use (active seekable.end - active seekable.start)?
+    return this.activeVideoElement_?.duration ?? 0;
   }
 
   /**
-   * current playback session state getter
+   * Current playback session state getter
    */
   public getPlaybackState(): PlaybackState {
-    if (this.activePipeline_) {
-      return this.activePipeline_.getPlaybackState();
-    }
-
-    return PlaybackState.Idle;
+    return this.currentPlaybackState_;
   }
 
   /**
    * get snapshot of the seekable ranges from the active pipeline
    */
   public getSeekableRanges(): Array<IPlayerTimeRange> {
-    return this.safeAttemptOnPipeline_('getSeekableRanges', (pipeline) => pipeline.getSeekableRanges(), []);
+    if (this.activeVideoElement_) {
+      return PlayerTimeRange.fromTimeRanges(this.activeVideoElement_.seekable);
+    }
+
+    return [];
   }
 
   /**
@@ -587,7 +606,11 @@ export class Player {
    * get snapshot of the buffered ranges from the active pipeline
    */
   public getBufferedRanges(): Array<IPlayerTimeRange> {
-    return this.safeAttemptOnPipeline_('getBufferedRanges', (pipeline) => pipeline.getBufferedRanges(), []);
+    if (this.activeVideoElement_) {
+      return PlayerTimeRange.fromTimeRanges(this.activeVideoElement_.buffered);
+    }
+
+    return [];
   }
 
   /**
@@ -599,24 +622,31 @@ export class Player {
   }
 
   /**
-   * active playback session stats getter
+   * Active playback session stats getter
    */
   public getPlaybackStats(): IPlaybackStats {
-    return this.safeAttemptOnPipeline_('getPlaybackStats', (pipeline) => pipeline.getPlaybackStats(), {
-      droppedVideoFrames: 0,
-      totalVideoFrames: 0,
-    });
-  }
+    let droppedVideoFrames = 0;
+    let totalVideoFrames = 0;
 
-  /**
-   * MARK: Playback API -- Audio Tracks
-   */
+    if (this.activeVideoElement_) {
+      const playbackQuality = this.activeVideoElement_.getVideoPlaybackQuality();
+      droppedVideoFrames = playbackQuality.droppedVideoFrames;
+      totalVideoFrames = playbackQuality.totalVideoFrames;
+    }
+
+    // TODO: possibly collect other data from loader/pipeline/network
+    return {
+      droppedVideoFrames,
+      totalVideoFrames,
+    };
+  }
 
   /**
    * current playback session audio tracks getter
    */
   public getAudioTracks(): Array<IPlayerAudioTrack> {
-    return this.safeAttemptOnPipeline_('getAudioTracks', (pipeline) => pipeline.getAudioTracks(), []);
+    // TODO: audio tracks
+    return [];
   }
 
   /**
@@ -631,16 +661,16 @@ export class Player {
    * @param id - track id
    */
   public selectAudioTrack(id: string): boolean {
-    return this.safeAttemptOnPipeline_('selectAudioTrack', (pipeline) => pipeline.selectAudioTrack(id), false);
+    // TODO: select audio tracks
+    return Boolean(id);
   }
-
-  // MARK: Playback API: Thumbnails Tracks
 
   /**
    * current playback session thumbnail tracks getter
    */
   public getThumbnailTracks(): Array<IPlayerThumbnailTrack> {
-    return this.safeAttemptOnPipeline_('getThumbnailTracks', (pipeline) => pipeline.getThumbnailTracks(), []);
+    // TODO: thumbnails tracks
+    return [];
   }
 
   /**
@@ -655,7 +685,8 @@ export class Player {
    * @param id - track id
    */
   public selectThumbnailTrack(id: string): boolean {
-    return this.safeAttemptOnPipeline_('selectThumbnailTrack', (pipeline) => pipeline.selectThumbnailTrack(id), false);
+    // TODO: select thumbnails tracks
+    return Boolean(id);
   }
 
   /**
@@ -663,32 +694,25 @@ export class Player {
    * @param options - options
    */
   public addRemoteVttThumbnailTrack(options: IRemoteVttThumbnailTrackOptions): boolean {
-    return this.safeAttemptOnPipeline_(
-      'addRemoteVttThumbnailTrack',
-      (pipeline) => pipeline.addRemoteVttThumbnailTrack(options),
-      false
-    );
+    // TODO: add remote vtt thumbnail track
+    return Boolean(options);
   }
 
   /**
    * remove remote vtt thumbnail trac (only VOD), should return false for live
    * @param id - track id
    */
-  public removeRemoteThumbnailTrack(id: string): boolean {
-    return this.safeAttemptOnPipeline_(
-      'removeRemoteThumbnailTrack',
-      (pipeline) => pipeline.removeRemoteThumbnailTrack(id),
-      false
-    );
+  public removeRemoteVttThumbnailTrack(id: string): boolean {
+    // TODO: remove remote vtt thumbnail track
+    return Boolean(id);
   }
-
-  // MARK: Playback API: Quality Levels
 
   /**
    * current playback session quality levels getter
    */
   public getQualityLevels(): Array<IQualityLevel> {
-    return this.safeAttemptOnPipeline_('getQualityLevels', (pipeline) => pipeline.getQualityLevels(), []);
+    // TODO: quality levels
+    return [];
   }
 
   /**
@@ -703,33 +727,15 @@ export class Player {
    * @param id - quality level id
    */
   public selectQualityLevel(id: string): boolean {
-    return this.safeAttemptOnPipeline_('selectQualityLevel', (pipeline) => pipeline.selectQualityLevel(id), false);
+    // TODO: select quality level
+    return Boolean(id);
   }
 
   /**
    * enable ABR
    */
   public selectAutoQualityLevel(): boolean {
-    return this.safeAttemptOnPipeline_(
-      'selectAutoQualityLevel',
-      (pipeline) => pipeline.selectAutoQualityLevel(),
-      false
-    );
-  }
-
-  private safeAttemptOnPipeline_<T>(method: string, executor: (target: IPipeline) => T, fallback: T): T {
-    if (this.activePipeline_ === null) {
-      this.logger_.debug(
-        `Attempt to call "${method}", but player does not have an active pipeline. Please call "load" first.`
-      );
-
-      return fallback;
-    }
-
-    return executor(this.activePipeline_);
-  }
-
-  private voidSafeAttemptOnPipeline_(method: string, executor: (target: IPipeline) => void): void {
-    return this.safeAttemptOnPipeline_(method, executor, undefined);
+    // TODO: select auto quality level
+    return false;
   }
 }

@@ -54,6 +54,7 @@ jobs:
           files: |
             packages/dash-parser/videojs-dash-parser-*.tgz
             packages/hls-parser/videojs-hls-parser-*.tgz
+            packages/env-capabilities/videojs-env-capabilities-*.tgz
             packages/playback/videojs-playback-*.tgz
 
       # Deploy IIFE bundles to CDN (TBD)

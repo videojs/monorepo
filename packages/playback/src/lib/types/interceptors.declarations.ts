@@ -1,13 +1,10 @@
-import type { InterceptorType } from '../consts/interceptor-type';
-import type { InterceptorTypeToInterceptorMap } from './mappers/interceptor-type-to-interceptor-map.declarations';
+export type Interceptor<T> = (payload: T) => Promise<T>;
 
-export interface IInterceptorsStorage {
-  addInterceptor<K extends InterceptorType>(interceptorType: K, interceptor: InterceptorTypeToInterceptorMap[K]): void;
-  removeInterceptor<K extends InterceptorType>(
-    interceptorType: K,
-    interceptor: InterceptorTypeToInterceptorMap[K]
-  ): void;
-  getInterceptorsSet<K extends InterceptorType>(interceptorType: K): Set<InterceptorTypeToInterceptorMap[K]>;
-  removeAllInterceptorsForType<K extends InterceptorType>(interceptorType: K): void;
+export interface IInterceptorsStorage<M> {
+  addInterceptor<K extends keyof M>(interceptorType: K, interceptor: Interceptor<M[K]>): void;
+  removeInterceptor<K extends keyof M>(interceptorType: K, interceptor: Interceptor<M[K]>): void;
+  getInterceptorsSet<K extends keyof M>(interceptorType: K): Set<Interceptor<M[K]>>;
+  executeInterceptors<K extends keyof M>(interceptorType: K, payload: M[K]): Promise<M[K]>;
+  removeAllInterceptorsForType<K extends keyof M>(interceptorType: K): void;
   removeAllInterceptors(): void;
 }

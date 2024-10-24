@@ -6,9 +6,8 @@ import type { PlayerConfiguration } from './types/configuration.declarations';
 import type { IStore } from './types/store.declarations';
 import type { IEventEmitter } from './types/event-emitter.declarations';
 import type { EventTypeToEventMap } from './types/mappers/event-type-to-event-map.declarations';
-import type { IEnvCapabilitiesContext, IEnvCapabilitiesProvider } from './types/env-capabilities.declarations';
 import type { INetworkManager } from './types/network.declarations';
-import type { InterceptorTypeToInterceptorMap } from './types/mappers/interceptor-type-to-interceptor-map.declarations';
+import type { InterceptorTypeToInterceptorPayloadMap } from './types/mappers/interceptor-type-to-interceptor-map.declarations';
 import type { NetworkManagerDependencies } from './network/network-manager';
 
 // Implementations
@@ -16,20 +15,17 @@ import { Logger } from './utils/logger';
 import { InterceptorsStorage } from './utils/interceptors-storage';
 import { ConfigurationManager } from './configuration/configuration-manager';
 import { EventEmitter } from './utils/event-emitter';
-import { EnvCapabilitiesProvider } from './utils/env-capabilities';
 import { NetworkManager } from './network/network-manager';
-import { InterceptorType } from './consts/interceptor-type';
 
 export class ServiceLocator {
   public readonly logger: ILogger;
-  public readonly interceptorsStorage: IInterceptorsStorage;
+  public readonly interceptorsStorage: IInterceptorsStorage<InterceptorTypeToInterceptorPayloadMap>;
   public readonly configurationManager: IStore<PlayerConfiguration>;
   public readonly eventEmitter: IEventEmitter<EventTypeToEventMap>;
-  public readonly envCapabilitiesProvider: IEnvCapabilitiesProvider;
   public readonly networkManager: INetworkManager;
 
   public constructor() {
-    const { console, fetch, location, navigator, isSecureContext, MediaSource, document } = window;
+    const { console, fetch } = window;
 
     this.configurationManager = this.createConfigurationManager_();
 
@@ -39,24 +35,11 @@ export class ServiceLocator {
 
     this.interceptorsStorage = this.createInterceptorsStorage_();
     this.eventEmitter = this.createEventEmitter_();
-    this.envCapabilitiesProvider = this.createEnvCapabilitiesProvider_(
-      {
-        location,
-        navigator,
-        isSecureContext,
-        MediaSource,
-      },
-      document.createElement('video')
-    );
     this.networkManager = this.createNetworkManager_({
       logger: this.logger.createSubLogger('NetworkManager'),
       eventEmitter: this.eventEmitter,
       configuration: configuration.network,
       executor: (request) => fetch(request),
-      networkInterceptorsProvider: {
-        getNetworkRequestInterceptors: (): Set<InterceptorTypeToInterceptorMap[InterceptorType.NetworkRequest]> =>
-          this.interceptorsStorage.getInterceptorsSet(InterceptorType.NetworkRequest),
-      },
     });
   }
 
@@ -64,8 +47,8 @@ export class ServiceLocator {
     return new Logger(dependencies);
   }
 
-  protected createInterceptorsStorage_(): IInterceptorsStorage {
-    return new InterceptorsStorage();
+  protected createInterceptorsStorage_(): IInterceptorsStorage<InterceptorTypeToInterceptorPayloadMap> {
+    return new InterceptorsStorage<InterceptorTypeToInterceptorPayloadMap>();
   }
 
   protected createConfigurationManager_(): IStore<PlayerConfiguration> {
@@ -74,13 +57,6 @@ export class ServiceLocator {
 
   protected createEventEmitter_(): IEventEmitter<EventTypeToEventMap> {
     return new EventEmitter<EventTypeToEventMap>();
-  }
-
-  protected createEnvCapabilitiesProvider_(
-    context: IEnvCapabilitiesContext,
-    videoElement: HTMLVideoElement
-  ): IEnvCapabilitiesProvider {
-    return new EnvCapabilitiesProvider(context, videoElement);
   }
 
   protected createNetworkManager_(dependencies: NetworkManagerDependencies): INetworkManager {
