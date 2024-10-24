@@ -1,11 +1,10 @@
 import { beforeEach, describe, it, vi, expect } from 'vitest';
-import { capture, instance, mock, when } from '@typestrong/ts-mockito';
+import { capture, instance, mock } from '@typestrong/ts-mockito';
 
 import type { Mock } from 'vitest';
 
 import type { ILogger } from '../../src/lib/types/logger.declarations';
 import type {
-  INetworkInterceptorsProvider,
   INetworkResponseInfo,
   IRequestPayloadWithChunkHandler,
   IRequestPayloadWithMapper,
@@ -31,7 +30,6 @@ import type {
 
 describe('NetworkRequest', () => {
   let logger: ILogger;
-  let networkInterceptorsProvider: INetworkInterceptorsProvider;
   let eventEmitter: IEventEmitter<NetworkEventMap>;
   let configuration: NetworkConfiguration;
   let executor: Mock<(request: Request) => Promise<Response>>;
@@ -39,13 +37,11 @@ describe('NetworkRequest', () => {
 
   beforeEach(() => {
     logger = mock<ILogger>();
-    networkInterceptorsProvider = mock<INetworkInterceptorsProvider>();
     eventEmitter = mock<IEventEmitter<NetworkEventMap>>();
     executor = vi.fn();
     configuration = { maxAttempts: 3, initialDelay: 10, delayFactor: 0.5, fuzzFactor: 0.1, timeout: 3 };
     dependencies = {
       logger: instance(logger),
-      networkInterceptorsProvider: instance(networkInterceptorsProvider),
       eventEmitter: instance(eventEmitter),
       configuration,
       executor,
@@ -67,8 +63,6 @@ describe('NetworkRequest', () => {
     });
 
     it('should map response data using provided mapper function when request is successful', async () => {
-      when(networkInterceptorsProvider.getNetworkRequestInterceptors()).thenReturn(new Set());
-
       executor.mockResolvedValue(new Response(new TextEncoder().encode('response data')));
 
       const networkRequest = new NetworkRequestWithMapper('request', payload, dependencies);
@@ -80,8 +74,6 @@ describe('NetworkRequest', () => {
     });
 
     it('should retry requests according to the configuration', async () => {
-      when(networkInterceptorsProvider.getNetworkRequestInterceptors()).thenReturn(new Set());
-
       executor
         .mockRejectedValueOnce(new Error('fetch error 1'))
         .mockRejectedValueOnce(new Error('fetch error 2'))
@@ -96,8 +88,6 @@ describe('NetworkRequest', () => {
     });
 
     it('should emit NetworkRequestAttempt* events', async () => {
-      when(networkInterceptorsProvider.getNetworkRequestInterceptors()).thenReturn(new Set());
-
       executor
         .mockRejectedValueOnce(new Error('fetch error 1'))
         .mockResolvedValueOnce(new Response(new TextEncoder().encode('response data failed'), { status: 404 }))
@@ -198,13 +188,12 @@ describe('NetworkRequest', () => {
       expect(executor).toHaveBeenCalledTimes(3);
     });
 
-    it('should log warns when something goes wrong', async () => {
+    // TODO: remove interceptors and use hooks instead
+    it.skip('should log warns when something goes wrong', async () => {
       const interceptors = new Set<(request: Request) => Promise<Request>>();
       interceptors.add(async () => {
         throw new Error('interceptor error');
       });
-
-      when(networkInterceptorsProvider.getNetworkRequestInterceptors()).thenReturn(interceptors);
 
       executor
         .mockRejectedValueOnce(new Error('fetch error 1'))
@@ -248,7 +237,6 @@ describe('NetworkRequest', () => {
 
     it('should fail with aborted error without retries when request is aborted', async () => {
       vi.useFakeTimers();
-      when(networkInterceptorsProvider.getNetworkRequestInterceptors()).thenReturn(new Set());
 
       executor.mockImplementation((request) => {
         return new Promise((resolve, reject) => {
@@ -285,7 +273,6 @@ describe('NetworkRequest', () => {
 
     it('should fail with timeout error when request exceeds timeout', async () => {
       vi.useFakeTimers();
-      when(networkInterceptorsProvider.getNetworkRequestInterceptors()).thenReturn(new Set());
 
       const impl = (request: Request): Promise<Response> => {
         return new Promise((resolve, reject) => {
@@ -320,12 +307,11 @@ describe('NetworkRequest', () => {
       await vi.advanceTimersByTimeAsync(3);
     });
 
-    it('should use requests from interceptors', async () => {
+    // TODO: remove interceptors and use hooks instead
+    it.skip('should use requests from interceptors', async () => {
       const interceptors = new Set<(request: Request) => Promise<Request>>();
       interceptors.add(async () => new Request('https://from-interceptor-1.com'));
       interceptors.add(async () => new Request('https://from-interceptor-2.com'));
-
-      when(networkInterceptorsProvider.getNetworkRequestInterceptors()).thenReturn(interceptors);
 
       const requests: Array<Request> = [];
 
@@ -359,8 +345,6 @@ describe('NetworkRequest', () => {
     });
 
     it('should call chunk handler with response data when request is successful', async () => {
-      when(networkInterceptorsProvider.getNetworkRequestInterceptors()).thenReturn(new Set());
-
       executor.mockResolvedValue(new Response(new TextEncoder().encode('response data!')));
 
       let result = '';

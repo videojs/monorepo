@@ -1,4 +1,3 @@
-export { Player } from './lib/player';
 export { ServiceLocator } from './lib/service-locator';
 
 // consts

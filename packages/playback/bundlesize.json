@@ -1,33 +1,63 @@
 {
   "files": [
     {
-      "path": "dist/es/index.debug.js",
-      "maxSize": 167,
+      "path": "dist/main/core/es/index.debug.js",
+      "maxSize": 210,
       "compression": "none"
     },
     {
-      "path": "dist/cjs/index.debug.js",
-      "maxSize": 167,
+      "path": "dist/main/core/cjs/index.debug.js",
+      "maxSize": 210,
       "compression": "none"
     },
     {
-      "path": "dist/iife/index.debug.js",
-      "maxSize": 171,
+      "path": "dist/main/core/iife/index.debug.js",
+      "maxSize": 216,
       "compression": "none"
     },
     {
-      "path": "dist/es/index.min.js",
-      "maxSize": 20,
+      "path": "dist/main/core/cjs/index.min.js",
+      "maxSize": 22,
       "compression": "none"
     },
     {
-      "path": "dist/cjs/index.min.js",
-      "maxSize": 20,
+      "path": "dist/main/core/es/index.min.js",
+      "maxSize": 22,
       "compression": "none"
     },
     {
-      "path": "dist/iife/index.min.js",
-      "maxSize": 20,
+      "path": "dist/main/core/iife/index.min.js",
+      "maxSize": 22,
+      "compression": "none"
+    },
+    {
+      "path": "dist/worker/core/es/index.debug.js",
+      "maxSize": 226,
+      "compression": "none"
+    },
+    {
+      "path": "dist/worker/core/cjs/index.debug.js",
+      "maxSize": 226,
+      "compression": "none"
+    },
+    {
+      "path": "dist/worker/core/iife/index.debug.js",
+      "maxSize": 233,
+      "compression": "none"
+    },
+    {
+      "path": "dist/worker/core/cjs/index.min.js",
+      "maxSize": 25,
+      "compression": "none"
+    },
+    {
+      "path": "dist/worker/core/es/index.min.js",
+      "maxSize": 24,
+      "compression": "none"
+    },
+    {
+      "path": "dist/worker/core/iife/index.min.js",
+      "maxSize": 25,
       "compression": "none"
     }
   ]

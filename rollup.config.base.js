@@ -278,6 +278,7 @@ export class Configuration {
 
   get plugins() {
     const bundleSize = this.bundleSize_;
+    const withBasePath = this.withBasePath_.bind(this);
 
     return [
       nodeResolve(),
@@ -308,7 +309,7 @@ export class Configuration {
           console.log(`Generate bundle ${options.file} → ~${maxSize} Kb.`);
         },
         closeBundle() {
-          writeFileSync('./dist/bundlesize.json', JSON.stringify(bundleSize, null, 2));
+          writeFileSync(withBasePath('bundlesize.json'), JSON.stringify(bundleSize, null, 2));
         },
       },
       // each sub package must place rollup.config.js at it's own root

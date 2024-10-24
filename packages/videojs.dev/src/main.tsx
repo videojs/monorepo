@@ -1,7 +1,7 @@
 /* eslint-disable no-console */
-import { FullPlaylistParser as HlsFullParser, ProgressiveParser as HlsProgressiveParser } from '@videojs/hls-parser';
+import { FullPlaylistParser as HlsFullParser, ChunkPlaylistParser as HlsProgressiveParser } from '@videojs/hls-parser';
 import { FullManifestParser as DashFullParser, ProgressiveParser as DashProgressiveParser } from '@videojs/dash-parser';
-import { Player } from '@videojs/playback';
+import { Player } from '@videojs/playback/main/core';
 
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';

@@ -7,7 +7,7 @@ import type { IStore } from './types/store.declarations';
 import type { IEventEmitter } from './types/event-emitter.declarations';
 import type { EventTypeToEventMap } from './types/mappers/event-type-to-event-map.declarations';
 import type { INetworkManager } from './types/network.declarations';
-import type { InterceptorTypeToInterceptorMap } from './types/mappers/interceptor-type-to-interceptor-map.declarations';
+import type { InterceptorTypeToInterceptorPayloadMap } from './types/mappers/interceptor-type-to-interceptor-map.declarations';
 import type { NetworkManagerDependencies } from './network/network-manager';
 
 // Implementations
@@ -16,11 +16,10 @@ import { InterceptorsStorage } from './utils/interceptors-storage';
 import { ConfigurationManager } from './configuration/configuration-manager';
 import { EventEmitter } from './utils/event-emitter';
 import { NetworkManager } from './network/network-manager';
-import { InterceptorType } from './consts/interceptor-type';
 
 export class ServiceLocator {
   public readonly logger: ILogger;
-  public readonly interceptorsStorage: IInterceptorsStorage;
+  public readonly interceptorsStorage: IInterceptorsStorage<InterceptorTypeToInterceptorPayloadMap>;
   public readonly configurationManager: IStore<PlayerConfiguration>;
   public readonly eventEmitter: IEventEmitter<EventTypeToEventMap>;
   public readonly networkManager: INetworkManager;
@@ -41,10 +40,6 @@ export class ServiceLocator {
       eventEmitter: this.eventEmitter,
       configuration: configuration.network,
       executor: (request) => fetch(request),
-      networkInterceptorsProvider: {
-        getNetworkRequestInterceptors: (): Set<InterceptorTypeToInterceptorMap[InterceptorType.NetworkRequest]> =>
-          this.interceptorsStorage.getInterceptorsSet(InterceptorType.NetworkRequest),
-      },
     });
   }
 
@@ -52,8 +47,8 @@ export class ServiceLocator {
     return new Logger(dependencies);
   }
 
-  protected createInterceptorsStorage_(): IInterceptorsStorage {
-    return new InterceptorsStorage();
+  protected createInterceptorsStorage_(): IInterceptorsStorage<InterceptorTypeToInterceptorPayloadMap> {
+    return new InterceptorsStorage<InterceptorTypeToInterceptorPayloadMap>();
   }
 
   protected createConfigurationManager_(): IStore<PlayerConfiguration> {

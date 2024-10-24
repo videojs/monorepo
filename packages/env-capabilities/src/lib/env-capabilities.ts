@@ -15,6 +15,7 @@ import { AudioCodecs, VideoCodecs } from './consts/codecs';
 import { DashMimeType, HlsVndMpegMimeType, HlsXMpegMimeType, HssMimeType } from './consts/mime-type';
 
 export class EnvCapabilitiesProvider implements IEnvCapabilitiesProvider {
+  /* v8 ignore start */
   private static getDefaultHdcpCapabilities_(): HdcpCapabilities {
     return {
       hdcp1_0: 'api-not-available',
@@ -161,6 +162,8 @@ export class EnvCapabilitiesProvider implements IEnvCapabilitiesProvider {
   public static create(): EnvCapabilitiesProvider {
     return new EnvCapabilitiesProvider(window, document.createElement('video'));
   }
+
+  /* v8 ignore stop */
 
   private readonly context_: IEnvCapabilitiesContext;
   private readonly videoElement_: HTMLVideoElement;

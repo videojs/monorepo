@@ -34,6 +34,10 @@ export class InterceptorsStorage<M> implements IInterceptorsStorage<M> {
     return result;
   }
 
+  public getInterceptorsSet<K extends keyof M>(interceptorType: K): Set<Interceptor<M[K]>> {
+    return (this.storage_.get(interceptorType) ?? new Set()) as Set<Interceptor<M[K]>>;
+  }
+
   public removeInterceptor<K extends keyof M>(interceptorType: K, interceptor: Interceptor<M[K]>): void {
     const interceptors = this.storage_.get(interceptorType) as Set<Interceptor<M[K]>>;
 

@@ -1,7 +1,5 @@
 import type { RequestType } from '../consts/request-type';
 import type { NetworkConfiguration, PlayerNetworkConfiguration } from './configuration.declarations';
-import type { InterceptorTypeToInterceptorMap } from './mappers/interceptor-type-to-interceptor-map.declarations';
-import type { InterceptorType } from '../consts/interceptor-type';
 import type { AttemptInfo } from './retry.declarations';
 
 export interface IRequestPayload {
@@ -25,10 +23,6 @@ export interface INetworkRequest<T> {
   done: Promise<T>;
   id: string;
   isAborted: boolean;
-}
-
-export interface INetworkInterceptorsProvider {
-  getNetworkRequestInterceptors(): Set<InterceptorTypeToInterceptorMap[InterceptorType.NetworkRequest]>;
 }
 
 export interface INetworkRequestInfo {
