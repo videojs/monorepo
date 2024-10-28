@@ -6,6 +6,8 @@ import type {
   MutedStatusChangedEvent,
   VolumeChangedEvent,
   PlayerErrorEvent,
+  RateChangedEvent,
+  CurrentTimeChangedEvent,
 } from '../../events/player-events';
 import type {
   NetworkRequestAttemptCompletedSuccessfullyEvent,
@@ -26,6 +28,8 @@ export interface PlayerEventMap {
   [PlayerEventType.All]: PlayerEvent;
   [PlayerEventType.LoggerLevelChanged]: LoggerLevelChangedEvent;
   [PlayerEventType.VolumeChanged]: VolumeChangedEvent;
+  [PlayerEventType.RateChanged]: RateChangedEvent;
+  [PlayerEventType.CurrentTimeChanged]: CurrentTimeChangedEvent;
   [PlayerEventType.ConfigurationChanged]: ConfigurationChangedEvent;
   [PlayerEventType.MutedStatusChanged]: MutedStatusChangedEvent;
   [PlayerEventType.Error]: PlayerErrorEvent;

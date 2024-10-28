@@ -13,9 +13,11 @@ import type { EventTypeToEventMap } from '../../types/mappers/event-type-to-even
 // events
 import {
   ConfigurationChangedEvent,
+  CurrentTimeChangedEvent,
   LoggerLevelChangedEvent,
   MutedStatusChangedEvent,
   PlayerErrorEvent,
+  RateChangedEvent,
   VolumeChangedEvent,
 } from '../../events/player-events';
 // models
@@ -292,6 +294,8 @@ export abstract class BasePlayer {
 
     // TODO: update list of all possible events + add EME events here as well
     this.activeVideoElement_.addEventListener('volumechange', this.handleVolumeChange_);
+    this.activeVideoElement_.addEventListener('ratechange', this.handleRateChange_);
+    this.activeVideoElement_.addEventListener('timeupdate', this.handleTimeUpdate_);
   }
 
   /**
@@ -314,6 +318,8 @@ export abstract class BasePlayer {
 
     // TODO: update list of all possible events + add EME events here as well
     this.activeVideoElement_.removeEventListener('volumechange', this.handleVolumeChange_);
+    this.activeVideoElement_.removeEventListener('ratechange', this.handleRateChange_);
+    this.activeVideoElement_.removeEventListener('timeupdate', this.handleTimeUpdate_);
 
     this.activeVideoElement_ = null;
   }
@@ -427,10 +433,22 @@ export abstract class BasePlayer {
    * internal volume change handler
    * @param event - volume changed event
    */
-  private readonly handleVolumeChange_ = (event: Event): void => {
+  protected readonly handleVolumeChange_ = (event: Event): void => {
     const target = event.target as HTMLVideoElement;
 
     this.eventEmitter_.emitEvent(new VolumeChangedEvent(target.volume));
+  };
+
+  protected readonly handleRateChange_ = (event: Event): void => {
+    const target = event.target as HTMLVideoElement;
+
+    this.eventEmitter_.emitEvent(new RateChangedEvent(target.playbackRate));
+  };
+
+  protected readonly handleTimeUpdate_ = (event: Event): void => {
+    const target = event.target as HTMLVideoElement;
+
+    this.eventEmitter_.emitEvent(new CurrentTimeChangedEvent(target.currentTime));
   };
 
   private transitionPlaybackState_(to: PlaybackState): void {

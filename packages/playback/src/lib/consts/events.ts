@@ -5,6 +5,8 @@ export enum PlayerEventType {
   LoggerLevelChanged = 'LoggerLevelChanged',
   ConfigurationChanged = 'ConfigurationChanged',
   VolumeChanged = 'VolumeChanged',
+  RateChanged = 'RateChanged',
+  CurrentTimeChanged = 'CurrentTimeChanged',
   MutedStatusChanged = 'MutedStatusChanged',
   Error = 'Error',
   NetworkRequestAttemptStarted = 'NetworkRequestAttemptStarted',
