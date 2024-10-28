@@ -36,6 +36,9 @@ import type { IPlayerAudioTrack } from '../../types/audio-track.declarations';
 import type { IPlayerThumbnailTrack, IRemoteVttThumbnailTrackOptions } from '../../types/thumbnail-track.declarations';
 import type { IQualityLevel } from '../../types/quality-level.declarations';
 import type { VersionInfo } from '../../types/version-info.declarations';
+import type { IPlayerTextTrack } from '../../types/text-track.declarations';
+import { NativePipeline } from '../../pipelines/native/native-pipeline';
+import type { IPipeline } from '../../types/pipeline.declarations';
 import type { INetworkManager, INetworkRequestInfo, INetworkResponseInfo } from '../../types/network.declarations';
 import {
   NetworkRequestAttemptCompletedSuccessfullyEvent,
@@ -106,6 +109,11 @@ export abstract class BasePlayer {
    * loaded source
    */
   protected activeSource_: IPlayerSource | null = null;
+
+  /**
+   * active pipeline
+   */
+  protected activePipeline_: IPipeline | null = null;
 
   /**
    * internal logger service
@@ -451,15 +459,15 @@ export abstract class BasePlayer {
 
     if (this.activeVideoElement_.canPlayType(this.activeSource_.mimeType)) {
       this.logger_.debug('Native Pipeline can play the provided mime type. Fallback to the Native Pipeline');
-      // TODO: implement NativePipeline flow
-      // this.activePipeline_ = NativePipeline.create({
-      //   logger: this.logger_,
-      //   videoElement: this.activeVideoElement_,
-      //   networkManager: this.networkManager_,
-      //   source: this.activeSource_,
-      // });
-      //
-      // this.activePipeline_.start();
+
+      this.activePipeline_ = NativePipeline.create({
+        logger: this.logger_,
+        videoElement: this.activeVideoElement_,
+        networkManager: this.networkManager_,
+        source: this.activeSource_,
+      });
+
+      this.activePipeline_.start();
       return;
     } else {
       this.logger_.debug('Native Pipeline can not play the provided mime type.');
@@ -707,6 +715,10 @@ export abstract class BasePlayer {
   }
 
   /**
+   * MARK: AUDIO TRACKS API
+   */
+
+  /**
    * current playback session audio tracks getter
    */
   public getAudioTracks(): Array<IPlayerAudioTrack> {
@@ -729,6 +741,56 @@ export abstract class BasePlayer {
     // TODO: select audio tracks
     return Boolean(id);
   }
+
+  /**
+   * MARK: METADATA API
+   */
+
+  // TODO: metadata track
+  // public getMetadataTrack(): IPlayerMetadataTrack {
+  //
+  // }
+
+  /**
+   * MARK: TEXT TRACKS API
+   */
+
+  public getTextTracks(): Array<IPlayerTextTrack> {
+    // TODO: text tracks
+    return [];
+  }
+
+  /**
+   * Multiple text tracks can be enabled at the same time
+   * @param id - text track id to enable
+   */
+  public enableTextTrack(id: string): boolean {
+    // TODO: text tracks
+    return Boolean(id);
+  }
+
+  public disableTextTrack(id: string): boolean {
+    // TODO: text tracks
+    return Boolean(id);
+  }
+
+  public disableAllTextTracks(): void {
+    // TODO: text tracks
+  }
+
+  // TODO: add remote vtt text track
+  // public addRemoteVttTextTrack(remoteTextTrackOptions: RemoteVttTextTrackOptions): void {
+  //
+  // }
+
+  public removeRemoteVttTextTrack(id: string): boolean {
+    // TODO: remove remote vtt text track
+    return Boolean(id);
+  }
+
+  /**
+   * MARK: THUMBNAILS API
+   */
 
   /**
    * current playback session thumbnail tracks getter
@@ -771,6 +833,10 @@ export abstract class BasePlayer {
     // TODO: remove remote vtt thumbnail track
     return Boolean(id);
   }
+
+  /**
+   * MARK: QUALITY LEVELS API
+   */
 
   /**
    * current playback session quality levels getter
