@@ -16,6 +16,7 @@ import { InterceptorsStorage } from './utils/interceptors-storage';
 import { ConfigurationManager } from './configuration/configuration-manager';
 import { EventEmitter } from './utils/event-emitter';
 import { NetworkManager } from './network/network-manager';
+import { PlayerEventType } from './consts/events';
 
 export class ServiceLocator {
   public readonly logger: ILogger;
@@ -56,7 +57,7 @@ export class ServiceLocator {
   }
 
   protected createEventEmitter_(): IEventEmitter<EventTypeToEventMap> {
-    return new EventEmitter<EventTypeToEventMap>();
+    return new EventEmitter<EventTypeToEventMap>(PlayerEventType.All);
   }
 
   protected createNetworkManager_(dependencies: NetworkManagerDependencies): INetworkManager {

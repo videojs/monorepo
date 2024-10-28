@@ -2,10 +2,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { EventEmitter } from '../../src/lib/utils/event-emitter';
 
 describe('EventEmitter', () => {
-  let emitter: EventEmitter<{ testEvent: string; anotherEvent: string }>;
+  let emitter: EventEmitter<{ testEvent: string; anotherEvent: string; all: string }>;
 
   beforeEach(() => {
-    emitter = new EventEmitter();
+    emitter = new EventEmitter('all');
   });
 
   it('should register an event listener when added', () => {
@@ -37,6 +37,22 @@ describe('EventEmitter', () => {
 
     expect(listener1).toHaveBeenCalledTimes(1);
     expect(listener2).toHaveBeenCalledTimes(1);
+  });
+
+  it('should trigger "all" event listener alongside with the specific event listeners', () => {
+    const listener1 = vi.fn();
+    const listener2 = vi.fn();
+    const listener3 = vi.fn();
+
+    emitter.addEventListener('testEvent', listener1);
+    emitter.addEventListener('testEvent', listener2);
+    emitter.addEventListener('all', listener3);
+
+    emitter.emitEvent({ type: 'testEvent' });
+
+    expect(listener1).toHaveBeenCalledTimes(1);
+    expect(listener2).toHaveBeenCalledTimes(1);
+    expect(listener3).toHaveBeenCalledTimes(1);
   });
 
   it('should register a listener that is triggered only once when using "once"', () => {

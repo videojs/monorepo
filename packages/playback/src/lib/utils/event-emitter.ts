@@ -3,6 +3,12 @@ import type { IEventEmitter, EventListener } from '../types/event-emitter.declar
 export class EventEmitter<M> implements IEventEmitter<M> {
   private events_ = new Map<keyof M, Set<EventListener<unknown>>>();
 
+  private readonly allType_: keyof M;
+
+  public constructor(allType: keyof M) {
+    this.allType_ = allType;
+  }
+
   public addEventListener<K extends keyof M>(event: K, eventListener: EventListener<M[K]>): void {
     if (!this.events_.has(event)) {
       this.events_.set(event, new Set());
@@ -24,11 +30,11 @@ export class EventEmitter<M> implements IEventEmitter<M> {
   }
 
   public emitEvent(event: { type: keyof M }): void {
-    const eventListeners = this.events_.get(event.type);
+    const eventListeners = this.events_.get(event.type) ?? new Set();
+    const all = this.events_.get(this.allType_) ?? new Set();
 
-    if (eventListeners) {
-      eventListeners.forEach((eventListener) => eventListener(event));
-    }
+    eventListeners.forEach((eventListener) => eventListener(event));
+    all.forEach((eventListener) => eventListener(event));
   }
 
   public once<K extends keyof M>(event: K, eventListener: EventListener<M[K]>): void {

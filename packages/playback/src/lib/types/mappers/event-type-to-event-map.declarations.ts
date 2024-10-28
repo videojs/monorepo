@@ -13,6 +13,7 @@ import type {
   NetworkRequestAttemptFailedEvent,
   NetworkRequestAttemptStartedEvent,
 } from '../../events/network-events';
+import type { PlayerEvent } from '../../events/base-player-event';
 
 export interface NetworkEventMap {
   [PlayerEventType.NetworkRequestAttemptStarted]: NetworkRequestAttemptStartedEvent;
@@ -22,6 +23,7 @@ export interface NetworkEventMap {
 }
 
 export interface PlayerEventMap {
+  [PlayerEventType.All]: PlayerEvent;
   [PlayerEventType.LoggerLevelChanged]: LoggerLevelChangedEvent;
   [PlayerEventType.VolumeChanged]: VolumeChangedEvent;
   [PlayerEventType.ConfigurationChanged]: ConfigurationChangedEvent;
