@@ -38,7 +38,6 @@ export class ServiceLocator {
     this.eventEmitter = this.createEventEmitter_();
     this.networkManager = this.createNetworkManager_({
       logger: this.logger.createSubLogger('NetworkManager'),
-      eventEmitter: this.eventEmitter,
       configuration: configuration.network,
       executor: (request) => fetch(request),
     });

@@ -5,28 +5,45 @@ import type {
   INetworkRequest,
   IRequestPayloadWithChunkHandler,
   IRequestPayload,
+  INetworkRequestInterceptor,
+  INetworkExecutor,
+  INetworkHooks,
 } from '../types/network.declarations';
 import { NetworkRequestWithChunkHandler, NetworkRequestWithMapper } from './network-request';
 import type { PlayerNetworkConfiguration } from '../types/configuration.declarations';
-import type { IEventEmitter } from '../types/event-emitter.declarations';
-import type { NetworkEventMap } from '../types/mappers/event-type-to-event-map.declarations';
+import { asyncEntity, noop } from '../utils/fn';
 
 export interface NetworkManagerDependencies {
   logger: ILogger;
-  eventEmitter: IEventEmitter<NetworkEventMap>;
   configuration: PlayerNetworkConfiguration;
-  executor: (request: Request) => Promise<Response>;
+  executor: INetworkExecutor;
+}
+
+class NetworkHooks implements INetworkHooks {
+  public onAttemptStarted = noop;
+  public onAttemptCompletedSuccessfully = noop;
+  public onAttemptCompletedUnsuccessfully = noop;
+  public onAttemptFailed = noop;
+
+  public reset(): void {
+    this.onAttemptFailed = noop;
+    this.onAttemptCompletedUnsuccessfully = noop;
+    this.onAttemptCompletedSuccessfully = noop;
+    this.onAttemptStarted = noop;
+  }
 }
 
 export class NetworkManager implements INetworkManager {
+  public readonly hooks: NetworkHooks = new NetworkHooks();
+
+  public requestInterceptor: INetworkRequestInterceptor = asyncEntity;
+
   private readonly logger_: ILogger;
-  private readonly eventEmitter_: IEventEmitter<NetworkEventMap>;
   private readonly executor_: (request: Request) => Promise<Response>;
   private configuration_: PlayerNetworkConfiguration;
 
   public constructor(dependencies: NetworkManagerDependencies) {
     this.logger_ = dependencies.logger;
-    this.eventEmitter_ = dependencies.eventEmitter;
     this.configuration_ = dependencies.configuration;
     this.executor_ = dependencies.executor;
   }
@@ -55,21 +72,28 @@ export class NetworkManager implements INetworkManager {
     return this.createNetworkRequestWithChunkHandler_(payload);
   }
 
+  public reset(): void {
+    this.hooks.reset();
+    this.requestInterceptor = asyncEntity;
+  }
+
   private createNetworkRequestWithMapper_<T>(payload: IRequestPayloadWithMapper<T>): INetworkRequest<T> {
     return NetworkRequestWithMapper.create(payload, {
       logger: this.logger_,
-      eventEmitter: this.eventEmitter_,
       configuration: { ...this.configuration_[payload.requestType] },
       executor: (request) => this.sendRequest_(request),
+      requestInterceptor: this.requestInterceptor,
+      hooks: this.hooks,
     });
   }
 
   private createNetworkRequestWithChunkHandler_(payload: IRequestPayloadWithChunkHandler): INetworkRequest<void> {
     return NetworkRequestWithChunkHandler.create(payload, {
       logger: this.logger_,
-      eventEmitter: this.eventEmitter_,
       configuration: { ...this.configuration_[payload.requestType] },
       executor: (request) => this.sendRequest_(request),
+      requestInterceptor: this.requestInterceptor,
+      hooks: this.hooks,
     });
   }
 

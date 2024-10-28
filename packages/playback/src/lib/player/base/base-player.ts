@@ -26,7 +26,7 @@ import { PlayerSource } from '../../models/player-source';
 import { NoSupportedPipelineError } from '../../errors/pipeline-errors';
 // pipelines
 import { PipelineLoaderFactoryStorage } from './pipeline-loader-factory-storage';
-import type { InterceptorType } from '../../consts/interceptor-type';
+import { InterceptorType } from '../../consts/interceptor-type';
 import type { InterceptorTypeToInterceptorPayloadMap } from '../../types/mappers/interceptor-type-to-interceptor-map.declarations';
 import { PlaybackState } from '../../consts/playback-state';
 import { PlayerTimeRange } from '../../models/player-time-range';
@@ -36,6 +36,13 @@ import type { IPlayerAudioTrack } from '../../types/audio-track.declarations';
 import type { IPlayerThumbnailTrack, IRemoteVttThumbnailTrackOptions } from '../../types/thumbnail-track.declarations';
 import type { IQualityLevel } from '../../types/quality-level.declarations';
 import type { VersionInfo } from '../../types/version-info.declarations';
+import type { INetworkManager, INetworkRequestInfo, INetworkResponseInfo } from '../../types/network.declarations';
+import {
+  NetworkRequestAttemptCompletedSuccessfullyEvent,
+  NetworkRequestAttemptCompletedUnsuccessfullyEvent,
+  NetworkRequestAttemptFailedEvent,
+  NetworkRequestAttemptStartedEvent,
+} from '../../events/network-events';
 
 declare const __COMMIT_HASH: string;
 declare const __VERSION: string;
@@ -46,6 +53,8 @@ export interface PlayerDependencies {
   readonly interceptorsStorage: IInterceptorsStorage<InterceptorTypeToInterceptorPayloadMap>;
   readonly configurationManager: IStore<PlayerConfiguration>;
   readonly eventEmitter: IEventEmitter<EventTypeToEventMap>;
+  // we have to duplicate network manager in both main and worker threads since we may have eme controller on main thread, which requires network manager
+  readonly networkManager: INetworkManager;
 }
 
 /**
@@ -114,6 +123,11 @@ export abstract class BasePlayer {
   protected readonly interceptorsStorage_: IInterceptorsStorage<InterceptorTypeToInterceptorPayloadMap>;
 
   /**
+   * internal network manager instance
+   */
+  protected readonly networkManager_: INetworkManager;
+
+  /**
    * MARK: PRIVATE INSTANCE MEMBERS
    */
 
@@ -131,7 +145,40 @@ export abstract class BasePlayer {
     this.eventEmitter_ = dependencies.eventEmitter;
     this.interceptorsStorage_ = dependencies.interceptorsStorage;
     this.configurationManager_ = dependencies.configurationManager;
+    this.networkManager_ = dependencies.networkManager;
+    // setup network manager:
+    this.networkManager_.hooks.onAttemptStarted = this.onNetworkRequestAttemptStarted_;
+    this.networkManager_.hooks.onAttemptCompletedSuccessfully = this.onNetworkRequestAttemptCompletedSuccessfully_;
+    this.networkManager_.hooks.onAttemptCompletedUnsuccessfully = this.onNetworkRequestAttemptCompletedUnsuccessfully_;
+    this.networkManager_.hooks.onAttemptFailed = this.onNetworkRequestAttemptFailed_;
+    this.networkManager_.requestInterceptor = this.networkRequestInterceptor_;
   }
+
+  protected readonly networkRequestInterceptor_ = (requestInfo: INetworkRequestInfo): Promise<INetworkRequestInfo> => {
+    return this.interceptorsStorage_.executeInterceptors(InterceptorType.NetworkRequest, requestInfo);
+  };
+
+  protected readonly onNetworkRequestAttemptStarted_ = (requestInfo: INetworkRequestInfo): void => {
+    this.eventEmitter_.emitEvent(new NetworkRequestAttemptStartedEvent(requestInfo));
+  };
+
+  protected readonly onNetworkRequestAttemptCompletedSuccessfully_ = (
+    requestInfo: INetworkRequestInfo,
+    responseInfo: INetworkResponseInfo
+  ): void => {
+    this.eventEmitter_.emitEvent(new NetworkRequestAttemptCompletedSuccessfullyEvent(requestInfo, responseInfo));
+  };
+
+  protected readonly onNetworkRequestAttemptCompletedUnsuccessfully_ = (
+    requestInfo: INetworkRequestInfo,
+    responseInfo: INetworkResponseInfo
+  ): void => {
+    this.eventEmitter_.emitEvent(new NetworkRequestAttemptCompletedUnsuccessfullyEvent(requestInfo, responseInfo));
+  };
+
+  protected readonly onNetworkRequestAttemptFailed_ = (requestInfo: INetworkRequestInfo, error: Error): void => {
+    this.eventEmitter_.emitEvent(new NetworkRequestAttemptFailedEvent(requestInfo, error));
+  };
 
   /**
    * MARK: INTERCEPTORS API
