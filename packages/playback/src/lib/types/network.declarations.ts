@@ -26,21 +26,41 @@ export interface INetworkRequest<T> {
 }
 
 export interface INetworkRequestInfo {
-  request: Request;
-  requestType: RequestType;
-  configuration: NetworkConfiguration;
-  attemptInfo: AttemptInfo;
-  id: string;
+  url: string;
+  requestInit: RequestInit;
+  readonly requestType: RequestType;
+  readonly configuration: Readonly<NetworkConfiguration>;
+  readonly attemptInfo: Readonly<AttemptInfo>;
+  readonly id: string;
 }
 
 export interface INetworkResponseInfo {
-  response: Response;
+  readonly url: string;
+  readonly headers: Record<string, string>;
+  readonly redirected: boolean;
+  readonly status: number;
+  readonly statusText: string;
+  readonly body: ArrayBuffer;
+}
+
+export type INetworkExecutor = (request: Request) => Promise<Response>;
+
+export type INetworkRequestInterceptor = (requestInfo: INetworkRequestInfo) => Promise<INetworkRequestInfo>;
+
+export interface INetworkHooks {
+  onAttemptStarted(requestInfo: INetworkRequestInfo): void;
+  onAttemptCompletedSuccessfully(requestInfo: INetworkRequestInfo, responseInfo: INetworkResponseInfo): void;
+  onAttemptCompletedUnsuccessfully(requestInfo: INetworkRequestInfo, responseInfo: INetworkResponseInfo): void;
+  onAttemptFailed(requestInfo: INetworkRequestInfo, error: Error): void;
 }
 
 export interface INetworkManager {
+  readonly hooks: INetworkHooks;
+  requestInterceptor: INetworkRequestInterceptor;
   updateConfiguration(configuration: PlayerNetworkConfiguration): void;
   get<T>(payload: IRequestPayloadWithMapper<T>): INetworkRequest<T>;
   getProgressive(payload: IRequestPayloadWithChunkHandler): INetworkRequest<void>;
   post<T>(payload: IRequestPayloadWithMapper<T>): INetworkRequest<T>;
   postProgressive(payload: IRequestPayloadWithChunkHandler): INetworkRequest<void>;
+  reset(): void;
 }

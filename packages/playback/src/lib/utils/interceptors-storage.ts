@@ -25,7 +25,7 @@ export class InterceptorsStorage<M> implements IInterceptorsStorage<M> {
     for (const i of set) {
       const interceptor = i as Interceptor<M[K]>;
       try {
-        result = await interceptor(payload);
+        result = await interceptor(result);
       } catch (e) {
         //ignore
       }

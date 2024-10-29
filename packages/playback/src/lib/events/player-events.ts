@@ -34,6 +34,26 @@ export class VolumeChangedEvent extends PlayerEvent {
   }
 }
 
+export class RateChangedEvent extends PlayerEvent {
+  public readonly type = PlayerEventType.RateChanged;
+  public readonly rate: number;
+
+  public constructor(rate: number) {
+    super();
+    this.rate = rate;
+  }
+}
+
+export class CurrentTimeChangedEvent extends PlayerEvent {
+  public readonly type = PlayerEventType.CurrentTimeChanged;
+  public readonly currentTime: number;
+
+  public constructor(currentTime: number) {
+    super();
+    this.currentTime = currentTime;
+  }
+}
+
 export class MutedStatusChangedEvent extends PlayerEvent {
   public readonly type = PlayerEventType.MutedStatusChanged;
   public readonly isMuted: boolean;

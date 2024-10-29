@@ -13,9 +13,11 @@ import type { EventTypeToEventMap } from '../../types/mappers/event-type-to-even
 // events
 import {
   ConfigurationChangedEvent,
+  CurrentTimeChangedEvent,
   LoggerLevelChangedEvent,
   MutedStatusChangedEvent,
   PlayerErrorEvent,
+  RateChangedEvent,
   VolumeChangedEvent,
 } from '../../events/player-events';
 // models
@@ -24,7 +26,7 @@ import { PlayerSource } from '../../models/player-source';
 import { NoSupportedPipelineError } from '../../errors/pipeline-errors';
 // pipelines
 import { PipelineLoaderFactoryStorage } from './pipeline-loader-factory-storage';
-import type { InterceptorType } from '../../consts/interceptor-type';
+import { InterceptorType } from '../../consts/interceptor-type';
 import type { InterceptorTypeToInterceptorPayloadMap } from '../../types/mappers/interceptor-type-to-interceptor-map.declarations';
 import { PlaybackState } from '../../consts/playback-state';
 import { PlayerTimeRange } from '../../models/player-time-range';
@@ -34,6 +36,16 @@ import type { IPlayerAudioTrack } from '../../types/audio-track.declarations';
 import type { IPlayerThumbnailTrack, IRemoteVttThumbnailTrackOptions } from '../../types/thumbnail-track.declarations';
 import type { IQualityLevel } from '../../types/quality-level.declarations';
 import type { VersionInfo } from '../../types/version-info.declarations';
+import type { IPlayerTextTrack } from '../../types/text-track.declarations';
+import { NativePipeline } from '../../pipelines/native/native-pipeline';
+import type { IPipeline } from '../../types/pipeline.declarations';
+import type { INetworkManager, INetworkRequestInfo, INetworkResponseInfo } from '../../types/network.declarations';
+import {
+  NetworkRequestAttemptCompletedSuccessfullyEvent,
+  NetworkRequestAttemptCompletedUnsuccessfullyEvent,
+  NetworkRequestAttemptFailedEvent,
+  NetworkRequestAttemptStartedEvent,
+} from '../../events/network-events';
 
 declare const __COMMIT_HASH: string;
 declare const __VERSION: string;
@@ -44,6 +56,8 @@ export interface PlayerDependencies {
   readonly interceptorsStorage: IInterceptorsStorage<InterceptorTypeToInterceptorPayloadMap>;
   readonly configurationManager: IStore<PlayerConfiguration>;
   readonly eventEmitter: IEventEmitter<EventTypeToEventMap>;
+  // we have to duplicate network manager in both main and worker threads since we may have eme controller on main thread, which requires network manager
+  readonly networkManager: INetworkManager;
 }
 
 /**
@@ -97,6 +111,11 @@ export abstract class BasePlayer {
   protected activeSource_: IPlayerSource | null = null;
 
   /**
+   * active pipeline
+   */
+  protected activePipeline_: IPipeline | null = null;
+
+  /**
    * internal logger service
    */
   protected readonly logger_: ILogger;
@@ -110,6 +129,11 @@ export abstract class BasePlayer {
    * internal interceptor's storage service
    */
   protected readonly interceptorsStorage_: IInterceptorsStorage<InterceptorTypeToInterceptorPayloadMap>;
+
+  /**
+   * internal network manager instance
+   */
+  protected readonly networkManager_: INetworkManager;
 
   /**
    * MARK: PRIVATE INSTANCE MEMBERS
@@ -129,7 +153,40 @@ export abstract class BasePlayer {
     this.eventEmitter_ = dependencies.eventEmitter;
     this.interceptorsStorage_ = dependencies.interceptorsStorage;
     this.configurationManager_ = dependencies.configurationManager;
+    this.networkManager_ = dependencies.networkManager;
+    // setup network manager:
+    this.networkManager_.hooks.onAttemptStarted = this.onNetworkRequestAttemptStarted_;
+    this.networkManager_.hooks.onAttemptCompletedSuccessfully = this.onNetworkRequestAttemptCompletedSuccessfully_;
+    this.networkManager_.hooks.onAttemptCompletedUnsuccessfully = this.onNetworkRequestAttemptCompletedUnsuccessfully_;
+    this.networkManager_.hooks.onAttemptFailed = this.onNetworkRequestAttemptFailed_;
+    this.networkManager_.requestInterceptor = this.networkRequestInterceptor_;
   }
+
+  protected readonly networkRequestInterceptor_ = (requestInfo: INetworkRequestInfo): Promise<INetworkRequestInfo> => {
+    return this.interceptorsStorage_.executeInterceptors(InterceptorType.NetworkRequest, requestInfo);
+  };
+
+  protected readonly onNetworkRequestAttemptStarted_ = (requestInfo: INetworkRequestInfo): void => {
+    this.eventEmitter_.emitEvent(new NetworkRequestAttemptStartedEvent(requestInfo));
+  };
+
+  protected readonly onNetworkRequestAttemptCompletedSuccessfully_ = (
+    requestInfo: INetworkRequestInfo,
+    responseInfo: INetworkResponseInfo
+  ): void => {
+    this.eventEmitter_.emitEvent(new NetworkRequestAttemptCompletedSuccessfullyEvent(requestInfo, responseInfo));
+  };
+
+  protected readonly onNetworkRequestAttemptCompletedUnsuccessfully_ = (
+    requestInfo: INetworkRequestInfo,
+    responseInfo: INetworkResponseInfo
+  ): void => {
+    this.eventEmitter_.emitEvent(new NetworkRequestAttemptCompletedUnsuccessfullyEvent(requestInfo, responseInfo));
+  };
+
+  protected readonly onNetworkRequestAttemptFailed_ = (requestInfo: INetworkRequestInfo, error: Error): void => {
+    this.eventEmitter_.emitEvent(new NetworkRequestAttemptFailedEvent(requestInfo, error));
+  };
 
   /**
    * MARK: INTERCEPTORS API
@@ -292,6 +349,8 @@ export abstract class BasePlayer {
 
     // TODO: update list of all possible events + add EME events here as well
     this.activeVideoElement_.addEventListener('volumechange', this.handleVolumeChange_);
+    this.activeVideoElement_.addEventListener('ratechange', this.handleRateChange_);
+    this.activeVideoElement_.addEventListener('timeupdate', this.handleTimeUpdate_);
   }
 
   /**
@@ -314,6 +373,8 @@ export abstract class BasePlayer {
 
     // TODO: update list of all possible events + add EME events here as well
     this.activeVideoElement_.removeEventListener('volumechange', this.handleVolumeChange_);
+    this.activeVideoElement_.removeEventListener('ratechange', this.handleRateChange_);
+    this.activeVideoElement_.removeEventListener('timeupdate', this.handleTimeUpdate_);
 
     this.activeVideoElement_ = null;
   }
@@ -398,15 +459,15 @@ export abstract class BasePlayer {
 
     if (this.activeVideoElement_.canPlayType(this.activeSource_.mimeType)) {
       this.logger_.debug('Native Pipeline can play the provided mime type. Fallback to the Native Pipeline');
-      // TODO: implement NativePipeline flow
-      // this.activePipeline_ = NativePipeline.create({
-      //   logger: this.logger_,
-      //   videoElement: this.activeVideoElement_,
-      //   networkManager: this.networkManager_,
-      //   source: this.activeSource_,
-      // });
-      //
-      // this.activePipeline_.start();
+
+      this.activePipeline_ = NativePipeline.create({
+        logger: this.logger_,
+        videoElement: this.activeVideoElement_,
+        networkManager: this.networkManager_,
+        source: this.activeSource_,
+      });
+
+      this.activePipeline_.start();
       return;
     } else {
       this.logger_.debug('Native Pipeline can not play the provided mime type.');
@@ -427,10 +488,22 @@ export abstract class BasePlayer {
    * internal volume change handler
    * @param event - volume changed event
    */
-  private readonly handleVolumeChange_ = (event: Event): void => {
+  protected readonly handleVolumeChange_ = (event: Event): void => {
     const target = event.target as HTMLVideoElement;
 
     this.eventEmitter_.emitEvent(new VolumeChangedEvent(target.volume));
+  };
+
+  protected readonly handleRateChange_ = (event: Event): void => {
+    const target = event.target as HTMLVideoElement;
+
+    this.eventEmitter_.emitEvent(new RateChangedEvent(target.playbackRate));
+  };
+
+  protected readonly handleTimeUpdate_ = (event: Event): void => {
+    const target = event.target as HTMLVideoElement;
+
+    this.eventEmitter_.emitEvent(new CurrentTimeChangedEvent(target.currentTime));
   };
 
   private transitionPlaybackState_(to: PlaybackState): void {
@@ -642,6 +715,10 @@ export abstract class BasePlayer {
   }
 
   /**
+   * MARK: AUDIO TRACKS API
+   */
+
+  /**
    * current playback session audio tracks getter
    */
   public getAudioTracks(): Array<IPlayerAudioTrack> {
@@ -664,6 +741,56 @@ export abstract class BasePlayer {
     // TODO: select audio tracks
     return Boolean(id);
   }
+
+  /**
+   * MARK: METADATA API
+   */
+
+  // TODO: metadata track
+  // public getMetadataTrack(): IPlayerMetadataTrack {
+  //
+  // }
+
+  /**
+   * MARK: TEXT TRACKS API
+   */
+
+  public getTextTracks(): Array<IPlayerTextTrack> {
+    // TODO: text tracks
+    return [];
+  }
+
+  /**
+   * Multiple text tracks can be enabled at the same time
+   * @param id - text track id to enable
+   */
+  public enableTextTrack(id: string): boolean {
+    // TODO: text tracks
+    return Boolean(id);
+  }
+
+  public disableTextTrack(id: string): boolean {
+    // TODO: text tracks
+    return Boolean(id);
+  }
+
+  public disableAllTextTracks(): void {
+    // TODO: text tracks
+  }
+
+  // TODO: add remote vtt text track
+  // public addRemoteVttTextTrack(remoteTextTrackOptions: RemoteVttTextTrackOptions): void {
+  //
+  // }
+
+  public removeRemoteVttTextTrack(id: string): boolean {
+    // TODO: remove remote vtt text track
+    return Boolean(id);
+  }
+
+  /**
+   * MARK: THUMBNAILS API
+   */
 
   /**
    * current playback session thumbnail tracks getter
@@ -706,6 +833,10 @@ export abstract class BasePlayer {
     // TODO: remove remote vtt thumbnail track
     return Boolean(id);
   }
+
+  /**
+   * MARK: QUALITY LEVELS API
+   */
 
   /**
    * current playback session quality levels getter

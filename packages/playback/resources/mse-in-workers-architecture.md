@@ -34,30 +34,6 @@
 
 ## API overview
 
-### Version API
-
-```ts
-interface Player {
-  //...
-  getVersionInfo(): VersionInfo;
-  //...
-}
-
-interface VersionInfo {
-  version: string;
-  hash: string;
-  isExperimental: boolean;
-}
-```
-
-#### Notes
-> `Version API` should operate on **the main thread only** and does not require communications with the worker thread.
->
-> This API simpy returns data that is injected during bundling.
->
-> Should be static. (Done)
-
-
 ### Debug API
 
 ```ts
@@ -80,7 +56,7 @@ enum LoggerLevel {
 #### Notes
 > `Debug API` should operate **both main thread and worker thread** and does require communication with the worker thread.
 >
-> This introduces a `bundle-size trade-off` where we duplicate logger class and include it in both (main and worker) bundles.
+> This introduces a minor (~40lines of code) `bundle-size trade-off` where we duplicate logger class and include it in both (main and worker) bundles.
 >
 > Additional communication requires during `setLoggerLevel`:
 >
@@ -115,6 +91,8 @@ interface PlayerConfiguration {
 
 #### Notes
 > `Configuration API` should operate on **the main thread only** and does require communication with the worker thread.
+>
+> Initial configuration should be created in worker thread (minor `bundle-size trade-off`).
 >
 > `getConfigurationSnapshot` should return a snapshot of the current state of the configuration's manager on the main thread.
 >
@@ -180,25 +158,6 @@ interface Player {
 > This introduces a `performance-trade-off` since **the worker thread has to wait for the client's code to be executed** (which we do not control) from the main thread to execute interceptors and send a message back to the worker thread.
 >
 > We should emphasize this limitation in the documentation.
-
-
-### EnvCapabilities API
-
-```ts
-interface Player {
-  //...
-  probeEnvCapabilities(): Promise<ICapabilitiesProbeResult>;
-  //...
-}
-```
-
-#### Notes
-> `EnvCapabilities API` should operate on **the main thread only** and does not require communication with the worker thread.
->
-> This api is optional/complimentary for the player and probably should be moved to a separate bundle or even a separate package.
->
-> Add support for SDR/HDR detection, use navigator.mediaCapabilities.decodingInfo instead of mse support. add HDCP support. add robustness level for DRM detection.
-
 
 ### LifeCycle API
 
@@ -361,3 +320,93 @@ for example:
 
 import { HlsLoader } from '@videojs/playback/hls/loader';
 import { HlsVodPipeline } from '@videojs/playback/hls/vod/pipeline';
+
+
+### Customizations Strategies
+
+#### Default Bundles
+
+##### Use Case
+
+`@videojs/playback` is shipped with default bundles with popular combinations, like
+- HLS CMAF + VOD
+- HLS CMAF + LIVE
+- HLS CMAF + VOD + LIVE
+- HLS TS + VOD
+- HLS TS + LIVE
+- HLS TS + VOD + LIVE
+- HLS CMAF + TS + VOD
+- HLS CMAF + TS + LIVE
+- HLS CMAF + TS + VOD + LIVE
+- etc...
+This is the easiest and straightforward way for users to start building their app around this lib.
+- They simply import the default bundle (NPM usage) or include script (CDN usage).
+
+##### Pros
+
+It is simple and straightforward and does not require any additional setup.
+
+##### Cons
+
+It is not very flexible in terms of feature-set and users may end up using bundle with features they do not need.
+
+
+#### CLI tool
+
+##### Use Case
+
+`@videojs/playback` includes CLI tool that allows users to create custom bundles with only features they need.
+
+For example there might questions like:
+- Select the protocol you want to use:
+  - HLS
+  - DASH
+  - both
+- Select the type of content you want to play for HLS:
+  - vod
+  - live
+  - both
+- Select the type of content you want to play for DASH:
+  - vod
+  - live
+  - both
+- Select segment container format for HLS:
+  - TS
+  - CMAF
+  - both
+
+##### Pros
+
+If users know ahead of time exact requirement for playback engine, they can create custom bundles and use it, which will result in smaller bundle size possible.
+
+##### Cons
+
+if users want to migrate to a new version (patch, minor, major) they will have to re-run the CLI tool to create a new bundle and update their code base.
+
+
+#### Runtime Customizations
+
+##### Use Case
+
+`@videojs/playback` allows users to customize the playback engine at runtime.
+
+If users don't know ahead of time what type of the content they will play and they don't want to include all possible features in the bundle they can use dynamic imports and include stuff in run-time.
+
+if they use main thread player they can simply import() with es mules for dynamic imports.
+
+if they use worker thread player they can pass IIFE bundle path via player api, player will send post message with the path and the worker will use importScripts() to load it.
+
+Rare case:
+Since runtime customizations are in user's control, it allows custom implementations.
+
+For example if users want to use its own HLS Loader implementation (or any other service) they can pass it to the player via player's api.
+
+##### Pros
+
+It is very flexible and allows users to include only features they need at runtime.
+
+##### Cons
+
+Same tradeoff as use dynamic imports or not (eg: critical performance during playback start...)
+Since it requires separate bundles, users require to upload this bundles to the user's servers and managing them.
+

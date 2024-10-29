@@ -4,6 +4,10 @@ import type {
   IRequestPayloadWithChunkHandler,
   IRequestPayloadWithMapper,
   INetworkRequestInfo,
+  INetworkResponseInfo,
+  INetworkRequestInterceptor,
+  INetworkHooks,
+  INetworkExecutor,
 } from '../types/network.declarations';
 import type { RequestType } from '../consts/request-type';
 import RetryWrapper from '../utils/retry-wrapper';
@@ -14,33 +18,25 @@ import {
   TimeoutNetworkError,
 } from './network-manager-errors';
 import type { ILogger } from '../types/logger.declarations';
-import type { IEventEmitter } from '../types/event-emitter.declarations';
-import type { NetworkEventMap } from '../types/mappers/event-type-to-event-map.declarations';
-import {
-  NetworkRequestAttemptStartedEvent,
-  NetworkRequestAttemptFailedEvent,
-  NetworkRequestAttemptCompletedSuccessfullyEvent,
-  NetworkRequestAttemptCompletedUnsuccessfullyEvent,
-} from '../events/network-events';
 import type { NetworkConfiguration } from '../types/configuration.declarations';
 
 export interface NetworkRequestDependencies {
   logger: ILogger;
-  eventEmitter: IEventEmitter<NetworkEventMap>;
   configuration: NetworkConfiguration;
-  executor: (request: Request) => Promise<Response>;
+  requestInterceptor: INetworkRequestInterceptor;
+  hooks: INetworkHooks;
+  executor: INetworkExecutor;
 }
 
 abstract class NetworkRequest<T> implements INetworkRequest<T> {
-  protected static counter_ = 0;
-
   private isAborted_ = false;
   private abortController_: AbortController;
 
   protected readonly logger_: ILogger;
-  protected readonly eventEmitter_: IEventEmitter<NetworkEventMap>;
   protected readonly retryWrapper_: RetryWrapper<Response>;
-  protected readonly executor_: (request: Request) => Promise<Response>;
+  protected readonly executor_: INetworkExecutor;
+  protected readonly requestInterceptor_: INetworkRequestInterceptor;
+  protected readonly hooks_: INetworkHooks;
 
   public abstract readonly done: Promise<T>;
 
@@ -53,16 +49,18 @@ abstract class NetworkRequest<T> implements INetworkRequest<T> {
   }
 
   protected constructor(id: string, payload: IRequestPayload, dependencies: NetworkRequestDependencies) {
-    const { logger, configuration, eventEmitter } = dependencies;
+    const { logger, configuration, hooks, requestInterceptor, executor } = dependencies;
     const { requestType, requestInit, url } = payload;
 
     this.id = id;
-    this.logger_ = logger;
-    this.eventEmitter_ = eventEmitter;
-    this.abortController_ = new AbortController();
-    this.executor_ = dependencies.executor;
-    this.requestType = requestType;
     this.configuration = configuration;
+    this.requestType = requestType;
+
+    this.logger_ = logger;
+    this.hooks_ = hooks;
+    this.requestInterceptor_ = requestInterceptor;
+    this.executor_ = executor;
+    this.abortController_ = new AbortController();
 
     this.retryWrapper_ = new RetryWrapper({
       ...configuration,
@@ -80,13 +78,20 @@ abstract class NetworkRequest<T> implements INetworkRequest<T> {
    * @param requestInit - request init
    */
   private async sendRequest_(url: URL, requestInit: RequestInit): Promise<Response> {
-    const request = new Request(url, { ...requestInit, signal: this.abortController_.signal });
-    const finalRequest = await this.applyRequestInterceptors_(request);
+    let requestInfo = this.generateRequestInfo_(url.toString(), requestInit);
 
-    return await this.wrapNetworkRequestExecutor_(finalRequest);
+    try {
+      requestInfo = await this.requestInterceptor_(requestInfo);
+    } catch (e) {
+      // ignore
+    }
+
+    const request = new Request(requestInfo.url, { ...requestInfo.requestInit, signal: this.abortController_.signal });
+
+    return await this.wrapNetworkRequestExecutor_(request, requestInfo.requestInit);
   }
 
-  private wrapNetworkRequestExecutor_(request: Request): Promise<Response> {
+  private wrapNetworkRequestExecutor_(request: Request, requestInit: RequestInit): Promise<Response> {
     return new Promise((resolve, reject) => {
       let hitTimeout = false;
 
@@ -98,20 +103,24 @@ abstract class NetworkRequest<T> implements INetworkRequest<T> {
       const onCompleted = (response: Response): void => {
         clearTimeout(timeoutId);
 
-        const responseInfo = {
-          response: response.clone(),
-        };
-
         if (response.ok) {
-          this.eventEmitter_.emitEvent(
-            new NetworkRequestAttemptCompletedSuccessfullyEvent(this.generateRequestInfo_(request), responseInfo)
-          );
+          this.generateResponseInfo_(response).then((responseInfo) => {
+            this.hooks_.onAttemptCompletedSuccessfully(
+              this.generateRequestInfo_(request.url, requestInit),
+              responseInfo
+            );
+          });
+
           resolve(response);
         } else {
-          this.logger_.warn('Attempt Completed Unsuccessfully: ', responseInfo);
-          this.eventEmitter_.emitEvent(
-            new NetworkRequestAttemptCompletedUnsuccessfullyEvent(this.generateRequestInfo_(request), responseInfo)
-          );
+          this.generateResponseInfo_(response).then((responseInfo) => {
+            this.hooks_.onAttemptCompletedUnsuccessfully(
+              this.generateRequestInfo_(request.url, requestInit),
+              responseInfo
+            );
+          });
+
+          this.logger_.warn('Attempt Completed Unsuccessfully: ', response);
           reject(new BadStatusNetworkError(response));
         }
       };
@@ -139,39 +148,44 @@ abstract class NetworkRequest<T> implements INetworkRequest<T> {
         }
 
         this.logger_.warn('Attempt Failed: ', error);
-        this.eventEmitter_.emitEvent(new NetworkRequestAttemptFailedEvent(this.generateRequestInfo_(request), error));
+        this.hooks_.onAttemptFailed(this.generateRequestInfo_(request.url, requestInit), error);
         reject(error);
       };
 
-      this.eventEmitter_.emitEvent(new NetworkRequestAttemptStartedEvent(this.generateRequestInfo_(request)));
+      this.hooks_.onAttemptStarted(this.generateRequestInfo_(request.url, requestInit));
       return this.executor_(request).then(onCompleted, onFailed);
     });
   }
 
-  private generateRequestInfo_(request: Request): INetworkRequestInfo {
+  private generateRequestInfo_(url: string, requestInit: RequestInit): INetworkRequestInfo {
     return {
+      url,
+      requestInit,
       id: this.id,
       configuration: { ...this.configuration },
       requestType: this.requestType,
-      request: request.clone(),
       attemptInfo: this.retryWrapper_.getAttemptInfo(),
     };
   }
 
-  private async applyRequestInterceptors_(request: Request): Promise<Request> {
-    // TODO: use hooks instead of interceptors
-    // const requestInterceptors = this.networkInterceptorsProvider_.getNetworkRequestInterceptors();
-    //
-    // for (const requestInterceptor of requestInterceptors) {
-    //   try {
-    //     request = await requestInterceptor(request);
-    //   } catch (e) {
-    //     this.logger_.warn('Got an error during request interceptor execution: ', e);
-    //     // ignore interceptors errors
-    //   }
-    // }
+  private async generateResponseInfo_(response: Response): Promise<INetworkResponseInfo> {
+    const clone = response.clone();
+    let body: ArrayBuffer;
+    try {
+      body = await clone.arrayBuffer();
+    } catch (e) {
+      body = new ArrayBuffer(0);
+    }
 
-    return request;
+    return {
+      url: response.url,
+      // @ts-expect-error response.headers is iterable and it has entries method
+      headers: Object.fromEntries(response.headers.entries()),
+      redirected: response.redirected,
+      status: response.status,
+      statusText: response.statusText,
+      body,
+    };
   }
 
   public abort(reason: string): void {
@@ -187,9 +201,7 @@ export class NetworkRequestWithMapper<T> extends NetworkRequest<T> {
     payload: IRequestPayloadWithMapper<T>,
     dependencies: NetworkRequestDependencies
   ): NetworkRequestWithMapper<T> {
-    NetworkRequest.counter_++;
-
-    const id = `mapper-${payload.requestType}-${NetworkRequest.counter_}`;
+    const id = `mapper-${payload.requestType}-${Date.now()}-${(Math.random() * 1000).toFixed()}`;
     dependencies.logger = dependencies.logger.createSubLogger(`NetworkRequestWithMapper (${id})`);
 
     return new NetworkRequestWithMapper(id, payload, dependencies);
@@ -214,9 +226,7 @@ export class NetworkRequestWithChunkHandler extends NetworkRequest<void> {
     payload: IRequestPayloadWithChunkHandler,
     dependencies: NetworkRequestDependencies
   ): NetworkRequestWithChunkHandler {
-    NetworkRequest.counter_++;
-
-    const id = `chunk-${payload.requestType}-${NetworkRequest.counter_}`;
+    const id = `chunk-${payload.requestType}-${Date.now()}-${(Math.random() * 1000).toFixed()}`;
     dependencies.logger = dependencies.logger.createSubLogger(`NetworkRequestWithChunkHandler (${id})`);
 
     return new NetworkRequestWithChunkHandler(id, payload, dependencies);

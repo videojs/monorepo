@@ -22,6 +22,8 @@ interface PlayerWorkerDependencies extends PlayerDependencies {
   readonly workerScriptBlobUrl: string;
 }
 
+// TODO: create activePipeline which posts messages to the worker to align with native pipeline
+
 export class Player extends BasePlayer {
   public static create(): Player {
     const serviceLocator = new ServiceLocator();

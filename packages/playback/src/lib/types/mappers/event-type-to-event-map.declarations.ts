@@ -6,6 +6,8 @@ import type {
   MutedStatusChangedEvent,
   VolumeChangedEvent,
   PlayerErrorEvent,
+  RateChangedEvent,
+  CurrentTimeChangedEvent,
 } from '../../events/player-events';
 import type {
   NetworkRequestAttemptCompletedSuccessfullyEvent,
@@ -13,6 +15,7 @@ import type {
   NetworkRequestAttemptFailedEvent,
   NetworkRequestAttemptStartedEvent,
 } from '../../events/network-events';
+import type { PlayerEvent } from '../../events/base-player-event';
 
 export interface NetworkEventMap {
   [PlayerEventType.NetworkRequestAttemptStarted]: NetworkRequestAttemptStartedEvent;
@@ -22,8 +25,11 @@ export interface NetworkEventMap {
 }
 
 export interface PlayerEventMap {
+  [PlayerEventType.All]: PlayerEvent;
   [PlayerEventType.LoggerLevelChanged]: LoggerLevelChangedEvent;
   [PlayerEventType.VolumeChanged]: VolumeChangedEvent;
+  [PlayerEventType.RateChanged]: RateChangedEvent;
+  [PlayerEventType.CurrentTimeChanged]: CurrentTimeChangedEvent;
   [PlayerEventType.ConfigurationChanged]: ConfigurationChangedEvent;
   [PlayerEventType.MutedStatusChanged]: MutedStatusChangedEvent;
   [PlayerEventType.Error]: PlayerErrorEvent;

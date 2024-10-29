@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { InterceptorsStorage } from '../../src/lib/utils/interceptors-storage';
 import { InterceptorType } from '../../src/lib/consts/interceptor-type';
-import type { InterceptorTypeToInterceptorPayloadMap } from '../../src';
+import type { INetworkRequestInfo, InterceptorTypeToInterceptorPayloadMap } from '../../src';
 
 describe('InterceptorsStorage', () => {
   let storage: InterceptorsStorage<InterceptorTypeToInterceptorPayloadMap>;
@@ -11,21 +11,21 @@ describe('InterceptorsStorage', () => {
   });
 
   it('should store the interceptor in the storage when added', () => {
-    const interceptor = async (request: Request): Promise<Request> => request;
+    const interceptor = async (request: INetworkRequestInfo): Promise<INetworkRequestInfo> => request;
     storage.addInterceptor(InterceptorType.NetworkRequest, interceptor);
     expect(storage.getInterceptorsSet(InterceptorType.NetworkRequest).has(interceptor)).toBe(true);
   });
 
   it('should not store duplicate interceptors for a type', () => {
-    const interceptor = async (request: Request): Promise<Request> => request;
+    const interceptor = async (request: INetworkRequestInfo): Promise<INetworkRequestInfo> => request;
     storage.addInterceptor(InterceptorType.NetworkRequest, interceptor);
     storage.addInterceptor(InterceptorType.NetworkRequest, interceptor);
     expect(storage.getInterceptorsSet(InterceptorType.NetworkRequest).size).toBe(1);
   });
 
   it('should return the correct set of interceptors for a given type when retrieved', () => {
-    const interceptor1 = async (request: Request): Promise<Request> => request;
-    const interceptor2 = async (request: Request): Promise<Request> => request;
+    const interceptor1 = async (request: INetworkRequestInfo): Promise<INetworkRequestInfo> => request;
+    const interceptor2 = async (request: INetworkRequestInfo): Promise<INetworkRequestInfo> => request;
     storage.addInterceptor(InterceptorType.NetworkRequest, interceptor1);
     storage.addInterceptor(InterceptorType.NetworkRequest, interceptor2);
 
@@ -33,8 +33,8 @@ describe('InterceptorsStorage', () => {
   });
 
   it('should remove the interceptor from the storage when deleted', () => {
-    const interceptor1 = async (request: Request): Promise<Request> => request;
-    const interceptor2 = async (request: Request): Promise<Request> => request;
+    const interceptor1 = async (request: INetworkRequestInfo): Promise<INetworkRequestInfo> => request;
+    const interceptor2 = async (request: INetworkRequestInfo): Promise<INetworkRequestInfo> => request;
 
     storage.addInterceptor(InterceptorType.NetworkRequest, interceptor1);
     storage.addInterceptor(InterceptorType.NetworkRequest, interceptor2);
@@ -53,8 +53,8 @@ describe('InterceptorsStorage', () => {
     expect(storage.getInterceptorsSet(InterceptorType.NetworkRequest).size).toBe(0);
     expect(storage.getInterceptorsSet(InterceptorType.HlsPlaylistParse).size).toBe(0);
 
-    const interceptor1 = async (request: Request): Promise<Request> => request;
-    const interceptor2 = async (request: Request): Promise<Request> => request;
+    const interceptor1 = async (request: INetworkRequestInfo): Promise<INetworkRequestInfo> => request;
+    const interceptor2 = async (request: INetworkRequestInfo): Promise<INetworkRequestInfo> => request;
     const interceptor3 = async (playlist: Uint8Array): Promise<Uint8Array> => playlist;
 
     storage.addInterceptor(InterceptorType.NetworkRequest, interceptor1);
@@ -74,8 +74,8 @@ describe('InterceptorsStorage', () => {
     expect(storage.getInterceptorsSet(InterceptorType.NetworkRequest).size).toBe(0);
     expect(storage.getInterceptorsSet(InterceptorType.HlsPlaylistParse).size).toBe(0);
 
-    const interceptor1 = async (request: Request): Promise<Request> => request;
-    const interceptor2 = async (request: Request): Promise<Request> => request;
+    const interceptor1 = async (request: INetworkRequestInfo): Promise<INetworkRequestInfo> => request;
+    const interceptor2 = async (request: INetworkRequestInfo): Promise<INetworkRequestInfo> => request;
     const interceptor3 = async (playlist: Uint8Array): Promise<Uint8Array> => playlist;
 
     storage.addInterceptor(InterceptorType.NetworkRequest, interceptor1);
