@@ -120,6 +120,7 @@ abstract class NetworkRequest<T> implements INetworkRequest<T> {
             );
           });
 
+          this.logger_.warn('Attempt Completed Unsuccessfully: ', response);
           reject(new BadStatusNetworkError(response));
         }
       };
