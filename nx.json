@@ -22,7 +22,7 @@
           "semverBump": "patch",
           "changelog": {
             "hidden": false,
-            "title": "Chores \uD83E\uDDF9"
+            "title": "Chores 🧹"
           }
         }
       }
@@ -51,5 +51,6 @@
   "affected": {
     "defaultBase": "main"
   },
-  "$schema": "./node_modules/nx/schemas/nx-schema.json"
+  "$schema": "./node_modules/nx/schemas/nx-schema.json",
+  "useLegacyCache": true
 }
