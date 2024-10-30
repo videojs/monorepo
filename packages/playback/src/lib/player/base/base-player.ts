@@ -16,9 +16,10 @@ import {
   CurrentTimeChangedEvent,
   LoggerLevelChangedEvent,
   MutedStatusChangedEvent,
-  PlayerErrorEvent,
+  ErrorEvent,
   RateChangedEvent,
   VolumeChangedEvent,
+  PlaybackStateChangedEvent,
 } from '../../events/player-events';
 // models
 import { PlayerSource } from '../../models/player-source';
@@ -46,6 +47,8 @@ import {
   NetworkRequestAttemptFailedEvent,
   NetworkRequestAttemptStartedEvent,
 } from '../../events/network-events';
+import type { IEmeManager, IEmeManagerDependencies } from '../../types/eme-manager.declarations';
+import { EncryptedEvent, WaitingForKeyEvent } from '../../events/eme-events';
 
 declare const __COMMIT_HASH: string;
 declare const __VERSION: string;
@@ -92,6 +95,7 @@ export abstract class BasePlayer {
   /**
    * static pipeline loader factory storage getter
    */
+  // TODO: move to player instance, should be different for main and worker threads
   public static readonly pipelineLoaderFactoryStorage = new PipelineLoaderFactoryStorage();
 
   /**
@@ -136,6 +140,11 @@ export abstract class BasePlayer {
   protected readonly networkManager_: INetworkManager;
 
   /**
+   * internal EME manager instance (opt-in feature, so it's nullable)
+   */
+  protected emeManager_: IEmeManager | null = null;
+
+  /**
    * MARK: PRIVATE INSTANCE MEMBERS
    */
 
@@ -160,6 +169,26 @@ export abstract class BasePlayer {
     this.networkManager_.hooks.onAttemptCompletedUnsuccessfully = this.onNetworkRequestAttemptCompletedUnsuccessfully_;
     this.networkManager_.hooks.onAttemptFailed = this.onNetworkRequestAttemptFailed_;
     this.networkManager_.requestInterceptor = this.networkRequestInterceptor_;
+  }
+
+  public setEmeManagerFactory(factory: (deps: IEmeManagerDependencies) => IEmeManager): void {
+    this.emeManager_ = factory({
+      logger: this.logger_.createSubLogger('EmeManager'),
+      networkManager: this.networkManager_,
+    });
+
+    if (this.activeVideoElement_) {
+      this.emeManager_.attach(this.activeVideoElement_);
+    }
+
+    if (this.activeSource_) {
+      this.emeManager_.setSource(this.activeSource_);
+    }
+  }
+
+  public resetEmeManager(): void {
+    this.emeManager_?.dispose();
+    this.emeManager_ = null;
   }
 
   protected readonly networkRequestInterceptor_ = (requestInfo: INetworkRequestInfo): Promise<INetworkRequestInfo> => {
@@ -347,10 +376,16 @@ export abstract class BasePlayer {
 
     this.activeVideoElement_ = videoElement;
 
+    this.emeManager_?.attach(this.activeVideoElement_);
+
     // TODO: update list of all possible events + add EME events here as well
+    // Playback
     this.activeVideoElement_.addEventListener('volumechange', this.handleVolumeChange_);
     this.activeVideoElement_.addEventListener('ratechange', this.handleRateChange_);
     this.activeVideoElement_.addEventListener('timeupdate', this.handleTimeUpdate_);
+    // EME
+    this.activeVideoElement_.addEventListener('encrypted', this.handleEncryptedEvent_);
+    this.activeVideoElement_.addEventListener('waitingforkey', this.handleWaitingForKeyEvent_);
   }
 
   /**
@@ -372,10 +407,15 @@ export abstract class BasePlayer {
     this.stop('detach');
 
     // TODO: update list of all possible events + add EME events here as well
+    // Playback
     this.activeVideoElement_.removeEventListener('volumechange', this.handleVolumeChange_);
     this.activeVideoElement_.removeEventListener('ratechange', this.handleRateChange_);
     this.activeVideoElement_.removeEventListener('timeupdate', this.handleTimeUpdate_);
+    // EME
+    this.activeVideoElement_.removeEventListener('encrypted', this.handleEncryptedEvent_);
+    this.activeVideoElement_.removeEventListener('waitingforkey', this.handleWaitingForKeyEvent_);
 
+    this.emeManager_?.detach();
     this.activeVideoElement_ = null;
   }
 
@@ -385,6 +425,8 @@ export abstract class BasePlayer {
    */
   public stop(reason: string): void {
     this.logger_.debug('stop is called. reason: ', reason);
+
+    this.emeManager_?.stop();
 
     this.activeSource_?.dispose();
     this.activeSource_ = null;
@@ -403,6 +445,7 @@ export abstract class BasePlayer {
     this.detach();
     this.eventEmitter_.removeAllEventListeners();
     this.interceptorsStorage_.removeAllInterceptors();
+    this.emeManager_?.dispose();
   }
 
   /**
@@ -427,6 +470,8 @@ export abstract class BasePlayer {
 
     this.logger_.debug('received a load request: ', this.activeSource_);
 
+    this.emeManager_?.setSource(this.activeSource_);
+
     // TODO: implement pipeline loader flow
     // if (this.hasPipelineFactoryConfiguration(this.activeSource_.mimeType.toLowerCase())) {
     //   const { loader, vod, live } = this.getPipelineFactoryConfiguration(this.activeSource_.mimeType.toLowerCase())!;
@@ -445,7 +490,7 @@ export abstract class BasePlayer {
     //     },
     //     (error) => {
     //       this.eventEmitter_.emitEvent(
-    //         new PlayerErrorEvent(new PipelineLoaderFailedToDeterminePipelineError(true, error))
+    //         new ErrorEvent(new PipelineLoaderFailedToDeterminePipelineError(true, error))
     //       );
     //     }
     //   );
@@ -474,7 +519,7 @@ export abstract class BasePlayer {
     }
 
     this.logger_.warn('No supported pipelines found for ', source.mimeType);
-    this.eventEmitter_.emitEvent(new PlayerErrorEvent(new NoSupportedPipelineError(true)));
+    this.eventEmitter_.emitEvent(new ErrorEvent(new NoSupportedPipelineError(true)));
   }
 
   /**
@@ -506,11 +551,41 @@ export abstract class BasePlayer {
     this.eventEmitter_.emitEvent(new CurrentTimeChangedEvent(target.currentTime));
   };
 
-  private transitionPlaybackState_(to: PlaybackState): void {
-    if (this.currentPlaybackState_ !== to) {
-      this.currentPlaybackState_ = to;
-      // TODO: emit event
+  protected readonly handleEncryptedEvent_ = (event: MediaEncryptedEvent): void => {
+    this.logger_.debug('received encrypted event', event);
+
+    if (!this.emeManager_) {
+      // TODO: stop and emit error
+      return;
     }
+
+    if (event.initData === null) {
+      return;
+    }
+
+    this.eventEmitter_.emitEvent(new EncryptedEvent(event.initData, event.initDataType));
+    this.emeManager_.setInitData(event.initDataType, event.initData);
+  };
+
+  protected readonly handleWaitingForKeyEvent_ = (): void => {
+    this.logger_.debug('received "waitingforkey" event');
+
+    if (!this.emeManager_) {
+      // TODO: stop and emit error
+      return;
+    }
+
+    this.eventEmitter_.emitEvent(new WaitingForKeyEvent());
+    this.emeManager_.handleWaitingForKey();
+  };
+
+  private transitionPlaybackState_(to: PlaybackState): void {
+    if (this.currentPlaybackState_ === to) {
+      return;
+    }
+
+    this.currentPlaybackState_ = to;
+    this.eventEmitter_.emitEvent(new PlaybackStateChangedEvent(this.currentPlaybackState_));
   }
 
   /**

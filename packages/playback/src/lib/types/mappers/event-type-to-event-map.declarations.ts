@@ -5,9 +5,10 @@ import type {
   LoggerLevelChangedEvent,
   MutedStatusChangedEvent,
   VolumeChangedEvent,
-  PlayerErrorEvent,
+  ErrorEvent,
   RateChangedEvent,
   CurrentTimeChangedEvent,
+  PlaybackStateChangedEvent,
 } from '../../events/player-events';
 import type {
   NetworkRequestAttemptCompletedSuccessfullyEvent,
@@ -16,6 +17,7 @@ import type {
   NetworkRequestAttemptStartedEvent,
 } from '../../events/network-events';
 import type { PlayerEvent } from '../../events/base-player-event';
+import type { EncryptedEvent, WaitingForKeyEvent } from '../../events/eme-events';
 
 export interface NetworkEventMap {
   [PlayerEventType.NetworkRequestAttemptStarted]: NetworkRequestAttemptStartedEvent;
@@ -32,7 +34,10 @@ export interface PlayerEventMap {
   [PlayerEventType.CurrentTimeChanged]: CurrentTimeChangedEvent;
   [PlayerEventType.ConfigurationChanged]: ConfigurationChangedEvent;
   [PlayerEventType.MutedStatusChanged]: MutedStatusChangedEvent;
-  [PlayerEventType.Error]: PlayerErrorEvent;
+  [PlayerEventType.PlaybackStateChanged]: PlaybackStateChangedEvent;
+  [PlayerEventType.Encrypted]: EncryptedEvent;
+  [PlayerEventType.WaitingForKey]: WaitingForKeyEvent;
+  [PlayerEventType.Error]: ErrorEvent;
 }
 
 export type EventTypeToEventMap = NetworkEventMap & PlayerEventMap;

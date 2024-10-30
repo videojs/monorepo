@@ -3,6 +3,7 @@ import { PlayerEventType } from '../consts/events';
 import { PlayerEvent } from './base-player-event';
 import type { PlayerConfiguration } from '../types/configuration.declarations';
 import type { PlayerError } from '../errors/base-player-errors';
+import type { PlaybackState } from '../consts/playback-state';
 
 export class LoggerLevelChangedEvent extends PlayerEvent {
   public readonly type = PlayerEventType.LoggerLevelChanged;
@@ -64,12 +65,22 @@ export class MutedStatusChangedEvent extends PlayerEvent {
   }
 }
 
-export class PlayerErrorEvent extends PlayerEvent {
+export class ErrorEvent extends PlayerEvent {
   public readonly type = PlayerEventType.Error;
   public readonly error: PlayerError;
 
   public constructor(error: PlayerError) {
     super();
     this.error = error;
+  }
+}
+
+export class PlaybackStateChangedEvent extends PlayerEvent {
+  public readonly type = PlayerEventType.PlaybackStateChanged;
+  public readonly state: PlaybackState;
+
+  public constructor(state: PlaybackState) {
+    super();
+    this.state = state;
   }
 }
