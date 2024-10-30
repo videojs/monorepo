@@ -95,6 +95,7 @@ export abstract class BasePlayer {
   /**
    * static pipeline loader factory storage getter
    */
+  // TODO: move to player instance, should be different for main and worker threads
   public static readonly pipelineLoaderFactoryStorage = new PipelineLoaderFactoryStorage();
 
   /**
