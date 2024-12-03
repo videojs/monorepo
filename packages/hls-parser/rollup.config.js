@@ -1,16 +1,9 @@
 import packageJson from './package.json' with { type: 'json' };
+import { ConfigurationsBuilder } from '../../rollup.config.base.js';
 
-import { Configuration, DtsConfiguration } from '../../rollup.config.base.js';
-
-const deps = {
+const builder = new ConfigurationsBuilder({
   version: packageJson.version,
   packageName: packageJson.name,
-  name: 'HlsParserNamespace',
-  input: './src/index.ts',
-};
+});
 
-export default [
-  // or new Configuration(deps, { includeDiagnostics: true }).rawRollupConfig
-  new Configuration(deps).rawRollupConfig,
-  new DtsConfiguration(deps).rawRollupConfig,
-];
+export default [...builder.copy().setName('HlsParserNamespace').setInput('./src/index.ts').build()];

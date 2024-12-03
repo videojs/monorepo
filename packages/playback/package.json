@@ -7,6 +7,8 @@
     "clean": "rimraf ./dist ./dist-api-reference ./dist-demo ./*.tgz ./coverage ./node_modules",
     "prebuild": "npm run clean",
     "build": "run-p build:js build:api-reference build:demo",
+    "build:worker-bridge": "rollup -c rollup.config.worker-bridge.js",
+    "prebuild:js": "npm run build:worker-bridge",
     "build:js": "rollup -c rollup.config.js",
     "build:api-reference": "npx typedoc --options typedoc.json",
     "build:demo": "vite build",
@@ -61,6 +63,16 @@
       "types": "./dist/worker/core/types/index.d.ts",
       "require": "./dist/worker/core/cjs/index.debug.js",
       "import": "./dist/worker/core/es/index.debug.js"
+    },
+    "./worker/bridge": {
+      "types": "./dist/worker/bridge/types/index.d.ts",
+      "require": "./dist/worker/bridge/cjs/index.min.js",
+      "import": "./dist/worker/bridge/es/index.min.js"
+    },
+    "./worker/bridge/debug": {
+      "types": "./dist/worker/bridge/types/index.d.ts",
+      "require": "./dist/worker/bridge/cjs/index.debug.js",
+      "import": "./dist/worker/bridge/es/index.debug.js"
     }
   }
 }
