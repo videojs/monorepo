@@ -6,4 +6,12 @@ const builder = new ConfigurationsBuilder({
   packageName: packageJson.name,
 });
 
-export default [...builder.copy().setName('EnvCapabilitiesNamespace').setInput('./src/index.ts').build()];
+export default [
+  // WORKER-BRIDGE PRODUCTION | DEBUG | DTS
+  ...builder
+    .copy()
+    .setName('PlaybackWorkerBridgeNamespace')
+    .setInput('./src/entry-points/core-worker-bridge.ts')
+    .setFolder('worker/bridge')
+    .build(),
+];

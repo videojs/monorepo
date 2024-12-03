@@ -1,7 +1,7 @@
 /* eslint-disable no-console,jsdoc/no-types */
 import { execSync } from 'node:child_process';
-import { basename } from 'node:path';
-import { writeFileSync } from 'node:fs';
+import { basename, resolve } from 'node:path';
+import { writeFileSync, readFileSync } from 'node:fs';
 import { nodeResolve } from '@rollup/plugin-node-resolve';
 import { dts } from 'rollup-plugin-dts';
 import { visualizer } from 'rollup-plugin-visualizer';
@@ -21,6 +21,10 @@ const commitHash = (() => {
 })();
 
 export class Configuration {
+  static Type = {
+    Production: 'production',
+    Debug: 'debug',
+  };
   static Format_ = { Es: 'es', Cjs: 'cjs', Iife: 'iife' };
   static FileName_ = {
     Min: 'index.min.js',
@@ -31,13 +35,30 @@ export class Configuration {
 
   /**
    *
-   * @param {{ name: string, input: string, version: string, packageName: string }} deps - required deps
-   * @param {{ folder?: string, experimental?: boolean, includeDiagnostics?: boolean }} [options] - optional options
+   * @param {{
+   * name: string,
+   * input: string,
+   * version: string,
+   * packageName: string,
+   * worker: null | string,
+   * type: 'production' | 'debug',
+   * folder: string,
+   * experimental: boolean,
+   * includeDiagnostics: boolean
+   * }} deps - required deps
    */
-  constructor(deps, options = {}) {
-    const { name, packageName, input, version } = deps;
-    const { folder = '', experimental = false, includeDiagnostics = false } = options;
+  constructor(deps) {
+    const { name, packageName, input, version, worker, type, folder, experimental, includeDiagnostics } = deps;
 
+    /**
+     * configuration type ("production" | "debug")
+     */
+    this.type_ = type;
+
+    /**
+     * worker path to replace __WORKER_CODE
+     */
+    this.worker_ = worker;
     /**
      * package version is injected as global __VERSION property in the bundle
      * package version is included in the license banner
@@ -55,7 +76,6 @@ export class Configuration {
      * package name for license banner
      */
     this.packageName_ = packageName;
-
     /**
      * optional
      * experimental build will have __EXPERIMENTAL property as true in the bundle
@@ -78,6 +98,14 @@ export class Configuration {
     this.bundleSize_ = {
       files: [],
     };
+  }
+
+  get isProduction() {
+    return this.type_ === Configuration.Type.Production;
+  }
+
+  get isDebug() {
+    return this.type_ === Configuration.Type.Debug;
   }
 
   get input() {
@@ -104,8 +132,8 @@ export class Configuration {
        * es/index.diagnostics-stats.html (optional)
        * es/index.min.js
        */
-      this.createEsMinBundle_(),
-      this.createEsDebugBundle_(),
+      this.isProduction ? this.createEsMinBundle_() : null,
+      this.isDebug ? this.createEsDebugBundle_() : null,
       this.includeDiagnostics_ ? this.createEsDiagnosticsBundle_() : null,
       /**
        * cjs/index.debug.js
@@ -113,8 +141,8 @@ export class Configuration {
        * cjs/index.diagnostics-stats.html (optional)
        * cjs/index.min.js
        */
-      this.createCjsMinBundle_(),
-      this.createCjsDebugBundle_(),
+      this.isProduction ? this.createCjsMinBundle_() : null,
+      this.isDebug ? this.createCjsDebugBundle_() : null,
       this.includeDiagnostics_ ? this.createCjsDiagnosticsBundle_() : null,
       /**
        * iife/index.debug.js
@@ -122,8 +150,8 @@ export class Configuration {
        * iife/index.diagnostics-stats.html (optional)
        * iife/index.min.js
        */
-      this.createIifeMinBundle_(),
-      this.createIifeDebugBundle_(),
+      this.isProduction ? this.createIifeMinBundle_() : null,
+      this.isDebug ? this.createIifeDebugBundle_() : null,
       this.includeDiagnostics_ ? this.createIifeDiagnosticsBundle_() : null,
     ]
       .filter((output) => output !== null)
@@ -276,6 +304,39 @@ export class Configuration {
     return `dist/${filename}`;
   }
 
+  createReplaceConfig_() {
+    const replaceConfig = {
+      preventAssignment: true,
+      values: {
+        __COMMIT_HASH: JSON.stringify(commitHash),
+        __VERSION: JSON.stringify(this.version_),
+        __EXPERIMENTAL: this.experimental_,
+      },
+    };
+
+    if (this.worker_) {
+      let workerPath;
+
+      if (this.isDebug) {
+        workerPath = resolve(process.cwd(), `${this.worker_}/index.debug.js`);
+      } else {
+        workerPath = resolve(process.cwd(), `${this.worker_}/index.min.js`);
+      }
+
+      let workerString;
+
+      try {
+        workerString = readFileSync(workerPath, { encoding: 'utf-8' });
+      } catch (e) {
+        workerString = 'console.log("FAILED TO PRE_BUNDLE WORKER SCRIPT")';
+      }
+
+      replaceConfig.values.__WORKER_CODE = JSON.stringify(workerString);
+    }
+
+    return replaceConfig;
+  }
+
   get plugins() {
     const bundleSize = this.bundleSize_;
     const withBasePath = this.withBasePath_.bind(this);
@@ -283,14 +344,7 @@ export class Configuration {
     return [
       nodeResolve(),
       commonjs(),
-      replace({
-        preventAssignment: true,
-        values: {
-          __COMMIT_HASH: JSON.stringify(commitHash),
-          __VERSION: JSON.stringify(this.version_),
-          __EXPERIMENTAL: this.experimental_,
-        },
-      }),
+      replace(this.createReplaceConfig_()),
       typescript(),
       // custom plugin to generate bundlesize config
       {
@@ -337,5 +391,74 @@ export class DtsConfiguration extends Configuration {
   get plugins() {
     // each sub-package must have its own ts config:
     return [dts({ tsconfig: './tsconfig.json' })];
+  }
+}
+
+export class ConfigurationsBuilder {
+  constructor(options) {
+    this.version = options.version;
+    this.packageName = options.packageName;
+    this.type = options.type;
+    this.name = options.name;
+    this.input = options.input;
+
+    this.worker = options.worker ?? null;
+    this.folder = options.folder ?? '';
+    this.experimental = options.experimental ?? false;
+    this.includeDiagnostics = options.includeDiagnostics ?? false;
+  }
+
+  copy() {
+    return new ConfigurationsBuilder(this);
+  }
+
+  copyProduction() {
+    const copy = this.copy();
+    copy.type = Configuration.Type.Production;
+    return copy;
+  }
+
+  copyDebug() {
+    const copy = this.copy();
+    copy.type = Configuration.Type.Debug;
+    return copy;
+  }
+
+  setVersion(v) {
+    this.version = v;
+    return this;
+  }
+
+  setPackageName(n) {
+    this.packageName = n;
+    return this;
+  }
+
+  setWorker(w) {
+    this.worker = w;
+    return this;
+  }
+
+  setName(n) {
+    this.name = n;
+    return this;
+  }
+
+  setInput(i) {
+    this.input = i;
+    return this;
+  }
+
+  setFolder(f) {
+    this.folder = f;
+    return this;
+  }
+
+  build() {
+    return [
+      new Configuration(this.copyProduction()).rawRollupConfig,
+      new Configuration(this.copyDebug()).rawRollupConfig,
+      new DtsConfiguration(this.copy()).rawRollupConfig,
+    ];
   }
 }
