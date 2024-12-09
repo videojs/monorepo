@@ -3,6 +3,7 @@ import type { PlayerConfiguration } from '../../../types/configuration.declarati
 import { MainToWorkerMessageType } from '../consts/main-to-worker-message-type';
 import type { InterceptorTypeToInterceptorPayloadMap } from '../../../types/mappers/interceptor-type-to-interceptor-map.declarations';
 import type { InterceptorType } from '../../../consts/interceptor-type';
+import type { IMainToWorkerThreadMessageChannel } from '../../../types/message-channels/main-to-worker-thread-message-channel';
 
 export abstract class MainToWorkerMessage {
   public abstract readonly type: MainToWorkerMessageType;
@@ -42,4 +43,35 @@ export class InterceptorsExecutionResultMessage extends MainToWorkerMessage {
 
 export class StopMessage extends MainToWorkerMessage {
   public readonly type = MainToWorkerMessageType.Stop;
+}
+
+export class MainToWorkerThreadMessageChannel implements IMainToWorkerThreadMessageChannel {
+  private readonly worker_: Worker;
+
+  public constructor(worker: Worker) {
+    this.worker_ = worker;
+  }
+
+  public sendSetLoggerLevelMessage(level: LoggerLevel): void {
+    this.sendMessageToWorkerThread_(new SetLoggerLevelMessage(level));
+  }
+
+  public sendUpdateConfigurationMessage(configuration: PlayerConfiguration): void {
+    this.sendMessageToWorkerThread_(new UpdateConfigurationMessage(configuration));
+  }
+
+  public sendInterceptorsExecutionResultMessage(
+    executionId: string,
+    result: InterceptorTypeToInterceptorPayloadMap[InterceptorType]
+  ): void {
+    this.sendMessageToWorkerThread_(new InterceptorsExecutionResultMessage(executionId, result));
+  }
+
+  public sendStopMessage(): void {
+    this.sendMessageToWorkerThread_(new StopMessage());
+  }
+
+  private sendMessageToWorkerThread_(message: MainToWorkerMessage): void {
+    this.worker_.postMessage(message);
+  }
 }

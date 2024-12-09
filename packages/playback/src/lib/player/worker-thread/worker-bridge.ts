@@ -1,11 +1,8 @@
 /**
  * This file should be entry point for worker bundle
  */
-import type { WorkerToMainMessage } from './messages/worker-to-main-messages';
-import { RunInterceptorsMessage } from './messages/worker-to-main-messages';
-import { EmitEventMessage } from './messages/worker-to-main-messages';
+import { WorkerToMainThreadMessageChannel } from './messages/worker-to-main-messages';
 import type {
-  InterceptorsExecutionResultMessage,
   MainToWorkerMessage,
   SetLoggerLevelMessage,
   UpdateConfigurationMessage,
@@ -25,13 +22,14 @@ import {
   NetworkRequestAttemptFailedEvent,
   NetworkRequestAttemptStartedEvent,
 } from '../../events/network-events';
-import type { InterceptorTypeToInterceptorPayloadMap } from '../../types/mappers/interceptor-type-to-interceptor-map.declarations';
+import type { IWorkerToMainThreadMessageChannel } from '../../types/message-channels/worker-to-main-thread-message-channel';
 
 interface WorkerBridgeDependencies {
   readonly globalScope: Window & typeof globalThis;
   readonly logger: ILogger;
   readonly configuration: PlayerConfiguration;
   readonly networkManager: INetworkManager;
+  readonly messageChannel: IWorkerToMainThreadMessageChannel;
 }
 
 class WorkerBridge {
@@ -44,6 +42,7 @@ class WorkerBridge {
       globalScope,
       logger,
       configuration,
+      messageChannel: new WorkerToMainThreadMessageChannel(globalScope),
       networkManager: new NetworkManager({
         logger: logger.createSubLogger('NetworkManager'),
         configuration: configuration.network,
@@ -55,6 +54,7 @@ class WorkerBridge {
   private readonly logger_: ILogger;
   private readonly globalScope_: Window & typeof globalThis;
   private readonly networkManager_: INetworkManager;
+  private readonly messageChannel_: IWorkerToMainThreadMessageChannel;
 
   private configuration_: PlayerConfiguration;
 
@@ -63,6 +63,7 @@ class WorkerBridge {
     this.logger_ = dependencies.logger;
     this.configuration_ = dependencies.configuration;
     this.networkManager_ = dependencies.networkManager;
+    this.messageChannel_ = dependencies.messageChannel;
 
     // We don't care about clean-up, since terminate() call on main thread should fully destroy worker
     this.globalScope_.addEventListener('message', this.onMessageFromMainThread_);
@@ -76,12 +77,12 @@ class WorkerBridge {
   }
 
   private readonly networkRequestInterceptor_ = (requestInfo: INetworkRequestInfo): Promise<INetworkRequestInfo> => {
-    return this.sendRunInterceptorsMessage_(InterceptorType.NetworkRequest, requestInfo);
+    return this.messageChannel_.sendRunInterceptorsMessage(InterceptorType.NetworkRequest, requestInfo);
   };
 
   private readonly onNetworkRequestAttemptStarted_ = (requestInfo: INetworkRequestInfo): void => {
     const event = new NetworkRequestAttemptStartedEvent(requestInfo);
-    this.sendMessageToMainThread_(new EmitEventMessage(event));
+    this.messageChannel_.sendEmitEventMessage(event);
   };
 
   private readonly onNetworkRequestAttemptCompletedSuccessfully_ = (
@@ -89,7 +90,7 @@ class WorkerBridge {
     responseInfo: INetworkResponseInfo
   ): void => {
     const event = new NetworkRequestAttemptCompletedSuccessfullyEvent(requestInfo, responseInfo);
-    this.sendMessageToMainThread_(new EmitEventMessage(event));
+    this.messageChannel_.sendEmitEventMessage(event);
   };
 
   private readonly onNetworkRequestAttemptCompletedUnsuccessfully_ = (
@@ -97,12 +98,12 @@ class WorkerBridge {
     responseInfo: INetworkResponseInfo
   ): void => {
     const event = new NetworkRequestAttemptCompletedUnsuccessfullyEvent(requestInfo, responseInfo);
-    this.sendMessageToMainThread_(new EmitEventMessage(event));
+    this.messageChannel_.sendEmitEventMessage(event);
   };
 
   private readonly onNetworkRequestAttemptFailed_ = (requestInfo: INetworkRequestInfo, error: Error): void => {
     const event = new NetworkRequestAttemptFailedEvent(requestInfo, error);
-    this.sendMessageToMainThread_(new EmitEventMessage(event));
+    this.messageChannel_.sendEmitEventMessage(event);
   };
 
   private readonly onMessageFromMainThread_ = (event: MessageEvent<MainToWorkerMessage>): void => {
@@ -123,34 +124,6 @@ class WorkerBridge {
 
   private handleUpdateConfigurationMessage_(message: UpdateConfigurationMessage): void {
     this.configuration_ = message.configuration;
-  }
-
-  private sendMessageToMainThread_(message: WorkerToMainMessage): void {
-    this.globalScope_.postMessage(message);
-  }
-
-  private sendRunInterceptorsMessage_<K extends InterceptorType>(
-    interceptorType: K,
-    payload: InterceptorTypeToInterceptorPayloadMap[K]
-  ): Promise<InterceptorTypeToInterceptorPayloadMap[K]> {
-    return new Promise((resolve) => {
-      const message = new RunInterceptorsMessage(interceptorType, payload);
-
-      const onMessage = (event: MessageEvent<MainToWorkerMessage>): void => {
-        if (event.data.type === MainToWorkerMessageType.InterceptorsExecutionResult) {
-          const receivedMessage = event.data as InterceptorsExecutionResultMessage;
-          const isExpectedExecutionResult = receivedMessage.executionId === message.executionId;
-
-          if (isExpectedExecutionResult) {
-            this.globalScope_.removeEventListener('message', onMessage);
-            resolve(receivedMessage.result as InterceptorTypeToInterceptorPayloadMap[K]);
-          }
-        }
-      };
-
-      this.globalScope_.addEventListener('message', onMessage);
-      this.sendMessageToMainThread_(message);
-    });
   }
 }
 
