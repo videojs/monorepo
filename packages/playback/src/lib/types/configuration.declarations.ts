@@ -42,6 +42,14 @@ export interface PlayerNetworkConfiguration {
   [RequestType.InitSegment]: NetworkConfiguration;
 }
 
+export interface PlayerMseConfiguration {
+  /**
+   * Defaults to `true`
+   */
+  useManagedMediaSourceIfAvailable: boolean;
+}
+
 export interface PlayerConfiguration {
   network: PlayerNetworkConfiguration;
+  mse: PlayerMseConfiguration;
 }
