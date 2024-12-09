@@ -124,6 +124,7 @@ class WorkerBridge {
 
   private handleUpdateConfigurationMessage_(message: UpdateConfigurationMessage): void {
     this.configuration_ = message.configuration;
+    this.networkManager_.updateConfiguration(this.configuration_.network);
   }
 }
 

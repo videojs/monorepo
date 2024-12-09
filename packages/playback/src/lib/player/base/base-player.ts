@@ -297,7 +297,7 @@ export abstract class BasePlayer {
    */
   public updateConfiguration(configurationChunk: DeepPartial<PlayerConfiguration>): void {
     this.configurationManager_.update(configurationChunk);
-    // this.networkManager_.updateConfiguration(this.configurationManager_.getSnapshot().network);
+    this.networkManager_.updateConfiguration(this.configurationManager_.getSnapshot().network);
     this.eventEmitter_.emitEvent(new ConfigurationChangedEvent(this.getConfigurationSnapshot()));
   }
 
@@ -306,7 +306,7 @@ export abstract class BasePlayer {
    */
   public resetConfiguration(): void {
     this.configurationManager_.reset();
-    // this.networkManager_.updateConfiguration(this.configurationManager_.getSnapshot().network);
+    this.networkManager_.updateConfiguration(this.configurationManager_.getSnapshot().network);
     this.eventEmitter_.emitEvent(new ConfigurationChangedEvent(this.getConfigurationSnapshot()));
   }
 
