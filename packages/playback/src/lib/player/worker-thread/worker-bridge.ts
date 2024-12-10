@@ -34,7 +34,7 @@ interface WorkerBridgeDependencies {
 
 class WorkerBridge {
   public static create(): WorkerBridge {
-    const globalScope = self;
+    const globalScope = self as DedicatedWorkerGlobalScope;
     const logger = new Logger({ console: console, delimiter: '>', label: 'Player' }).createSubLogger('WorkerBridge');
     const configuration = getPlayerConfigurationDefaults();
 

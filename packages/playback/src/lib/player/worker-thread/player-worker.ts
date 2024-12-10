@@ -10,7 +10,6 @@ import { ServiceLocator } from '../../service-locator';
 import { MainToWorkerThreadMessageChannel } from './messages/main-to-worker-messages';
 import type { EmitEventMessage, RunInterceptorsMessage, WorkerToMainMessage } from './messages/worker-to-main-messages';
 import { WorkerToMainMessageType } from './consts/worker-to-main-message-type';
-import { MseController } from '../../pipelines/mse/mse-controller';
 import type { IMainToWorkerThreadMessageChannel } from '../../types/message-channels/main-to-worker-thread-message-channel';
 
 declare const __WORKER_CODE: string;
@@ -19,9 +18,8 @@ interface PlayerWorkerDependencies extends PlayerDependencies {
   readonly worker: Worker;
   readonly workerScriptBlobUrl: string;
   readonly messageChannel: IMainToWorkerThreadMessageChannel;
-  // We want to create a fallback mse controller on the main thread,
+  // TODO: We want to create a fallback mse controller on the main thread,
   // Since during build-time, we don't know whether it will be possible to create mediaSource in the worker
-  readonly mseController: IMseController;
 }
 
 // TODO: create activePipeline which posts messages to the worker to align with native pipeline
@@ -39,7 +37,6 @@ export class Player extends BasePlayer {
       worker,
       workerScriptBlobUrl: workerScriptBlobUrl,
       messageChannel: new MainToWorkerThreadMessageChannel(worker),
-      mseController: MseController.create(serviceLocator.configurationManager.read((config) => config.mse)),
     });
   }
 
