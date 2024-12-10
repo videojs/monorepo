@@ -42,6 +42,20 @@ export interface PlayerNetworkConfiguration {
   [RequestType.InitSegment]: NetworkConfiguration;
 }
 
+export interface PlayerMseConfiguration {
+  /**
+   * Defaults to `true`
+   */
+  useManagedMediaSourceIfAvailable: boolean;
+
+  /**
+   * In Seconds
+   * Defaults to 30
+   */
+  requiredBufferDuration: number;
+}
+
 export interface PlayerConfiguration {
   network: PlayerNetworkConfiguration;
+  mse: PlayerMseConfiguration;
 }

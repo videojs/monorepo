@@ -1,6 +1,7 @@
 import type {
   NetworkConfiguration,
   PlayerConfiguration,
+  PlayerMseConfiguration,
   PlayerNetworkConfiguration,
 } from '../types/configuration.declarations';
 import { RequestType } from '../consts/request-type';
@@ -22,6 +23,12 @@ export const getPlayerNetworkConfigurationDefaults = (): PlayerNetworkConfigurat
   [RequestType.MediaSegment]: getNetworkConfigurationDefaults(),
 });
 
+export const getPlayerMseConfigurationDefaults = (): PlayerMseConfiguration => ({
+  useManagedMediaSourceIfAvailable: true,
+  requiredBufferDuration: 30,
+});
+
 export const getPlayerConfigurationDefaults = (): PlayerConfiguration => ({
   network: getPlayerNetworkConfigurationDefaults(),
+  mse: getPlayerMseConfigurationDefaults(),
 });
