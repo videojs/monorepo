@@ -25,6 +25,7 @@ export const getPlayerNetworkConfigurationDefaults = (): PlayerNetworkConfigurat
 
 export const getPlayerMseConfigurationDefaults = (): PlayerMseConfiguration => ({
   useManagedMediaSourceIfAvailable: true,
+  requiredBufferDuration: 30,
 });
 
 export const getPlayerConfigurationDefaults = (): PlayerConfiguration => ({
