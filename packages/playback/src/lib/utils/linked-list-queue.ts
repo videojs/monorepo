@@ -1,19 +1,12 @@
-class LinkedListQueueNode<T> {
-  public value: T;
-  public next: LinkedListQueueNode<T> | null = null;
-
-  public constructor(value: T) {
-    this.value = value;
-  }
-}
+import { LinkedListNode } from './linked-list';
 
 export class LinkedListQueue<T> {
-  private head_: LinkedListQueueNode<T> | null = null;
-  private tail_: LinkedListQueueNode<T> | null = null;
+  private head_: LinkedListNode<T> | null = null;
+  private tail_: LinkedListNode<T> | null = null;
   private length_: number = 0;
 
   public enqueue(value: T): void {
-    const newNode = new LinkedListQueueNode(value);
+    const newNode = new LinkedListNode(value);
 
     if (this.tail_) {
       this.tail_.next = newNode;

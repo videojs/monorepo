@@ -17,6 +17,10 @@ export class PlayerTimeRange implements IPlayerTimeRange {
     return this.rangeEnd_;
   }
 
+  public get duration(): number {
+    return this.rangeEnd_ - this.rangeStart_;
+  }
+
   public isInRangeInclusive(time: number): boolean {
     return time >= this.rangeStart_ && time <= this.rangeEnd_;
   }

@@ -9,4 +9,6 @@ export interface IWorkerToMainThreadMessageChannel {
   ): Promise<InterceptorTypeToInterceptorPayloadMap[K]>;
 
   sendEmitEventMessage(event: PlayerEvent): void;
+  sendAttachMseHandleMessage(handle: MediaSourceHandle, isManagedMediaSource: boolean): void;
+  sendAttachMseFallbackMessage(): Promise<boolean>;
 }

@@ -25,7 +25,7 @@ import {
 import type { IWorkerToMainThreadMessageChannel } from '../../types/message-channels/worker-to-main-thread-message-channel';
 
 interface WorkerBridgeDependencies {
-  readonly globalScope: Window & typeof globalThis;
+  readonly globalScope: DedicatedWorkerGlobalScope;
   readonly logger: ILogger;
   readonly configuration: PlayerConfiguration;
   readonly networkManager: INetworkManager;
@@ -52,7 +52,7 @@ class WorkerBridge {
   }
 
   private readonly logger_: ILogger;
-  private readonly globalScope_: Window & typeof globalThis;
+  private readonly globalScope_: DedicatedWorkerGlobalScope;
   private readonly networkManager_: INetworkManager;
   private readonly messageChannel_: IWorkerToMainThreadMessageChannel;
 

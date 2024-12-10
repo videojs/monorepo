@@ -45,6 +45,18 @@ export class StopMessage extends MainToWorkerMessage {
   public readonly type = MainToWorkerMessageType.Stop;
 }
 
+export class AttachMseFallbackExecutionResultMessage extends MainToWorkerMessage {
+  public readonly type = MainToWorkerMessageType.AttachMseFallbackExecutionResult;
+  public readonly executionId: string;
+  public readonly result: boolean;
+
+  public constructor(executionId: string, result: boolean) {
+    super();
+    this.executionId = executionId;
+    this.result = result;
+  }
+}
+
 export class MainToWorkerThreadMessageChannel implements IMainToWorkerThreadMessageChannel {
   private readonly worker_: Worker;
 

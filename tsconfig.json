@@ -1,7 +1,7 @@
 {
   "exclude": ["**/dist"],
   "compilerOptions": {
-    "lib": ["ESNext", "dom"],
+    "lib": ["ESNext", "dom", "webworker"],
     "target": "ES2015",
     "skipLibCheck": true,
     "esModuleInterop": true,
