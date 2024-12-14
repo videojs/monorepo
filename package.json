@@ -7,6 +7,7 @@
   "scripts": {
     "clean": "npx rimraf deploy && npx nx run-many -t clean",
     "clean:install": "npm run clean && npx rimraf node_modules .nx package-lock.json && npm i",
+    "size": "size-limit",
     "test": "npx nx run-many -t test",
     "test:coverage": "npx nx run-many -t test:coverage",
     "test:browser": "npx nx run-many -t test:browser",
