@@ -1,0 +1,10 @@
+[
+  {
+    "path": "packages/playback/dist/main/core/cjs/index.min.js",
+    "limit": "5 ms"
+  },
+  {
+    "path": "packages/playback/dist/main/core/cjs/index.debug.js",
+    "limit": "5 ms"
+  }
+]
