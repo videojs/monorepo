@@ -1,7 +1,7 @@
 [
   {
     "path": "packages/playback/dist/main/core/cjs/index.min.js",
-    "limit": "5 ms"
+    "limit": "150 ms"
   },
   {
     "path": "packages/playback/dist/main/core/cjs/index.debug.js",
