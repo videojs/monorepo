@@ -7,7 +7,20 @@ jobs:
   size:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v1
-      - uses: andresz1/size-limit-action@v1
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # install node version from .nvmrc
+      - name: Install Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+
+      # install deps
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Size Limit
+        uses: andresz1/size-limit-action@v1
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
