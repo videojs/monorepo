@@ -24,7 +24,11 @@ jobs:
       - name: Build All Packages
         run: npm run build
 
-      - name: Size Limit
+      # run size-limit verify (TODO: remove, temporary for CI testing)
+      - name: Size Limit Verif
+        run: npm run size-limit:verify
+
+      - name: Size Limit Json
         uses: andresz1/size-limit-action@v1.8.0
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
