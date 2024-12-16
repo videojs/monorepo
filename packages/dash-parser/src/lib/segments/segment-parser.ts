@@ -20,6 +20,7 @@ export const identifierReplacement =
       return match;
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-base-to-string
     const value = '' + values[id];
 
     if (id === 'RepresentationID') {

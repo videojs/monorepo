@@ -4,7 +4,7 @@
   "description": "videojs playback engine",
   "type": "module",
   "scripts": {
-    "clean": "rimraf ./dist ./dist-api-reference ./dist-demo ./*.tgz ./coverage ./node_modules",
+    "clean": "rimraf ./dist ./dist-api-reference ./dist-demo ./*.tgz ./coverage ./node_modules .size-limit-output.json",
     "prebuild": "npm run clean",
     "build": "run-p build:js build:api-reference build:demo",
     "build:worker-bridge": "rollup -c rollup.config.worker-bridge.js",
@@ -13,7 +13,8 @@
     "build:api-reference": "npx typedoc --options typedoc.json",
     "build:demo": "vite build",
     "dev": "vite",
-    "verify:bundle-size": "npx bundlesize --config bundlesize.json",
+    "size-limit:verify": "npx size-limit",
+    "size-limit:json": "output=$(size-limit --json) && echo \"$output\" > .size-limit-output.json",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "test:vitest-ui": "vitest --ui",
