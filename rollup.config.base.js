@@ -10,7 +10,6 @@ import replace from '@rollup/plugin-replace';
 import typescript from '@rollup/plugin-typescript';
 import terser from '@rollup/plugin-terser';
 import copy from 'rollup-plugin-copy';
-import { codecovRollupPlugin } from '@codecov/rollup-plugin';
 
 const commitHash = (() => {
   try {
@@ -370,11 +369,6 @@ export class Configuration {
       // each sub package must place rollup.config.js at it's own root
       copy({
         targets: [{ src: '../../LICENSE', dest: 'dist' }],
-      }),
-      codecovRollupPlugin({
-        enableBundleAnalysis: process.env.CODECOV_TOKEN !== undefined,
-        bundleName: `${this.packageName_}-${this.type_}`,
-        uploadToken: process.env.CODECOV_TOKEN,
       }),
     ];
   }
