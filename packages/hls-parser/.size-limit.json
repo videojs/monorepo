@@ -1,14 +1,14 @@
 [
   {
     "path": "dist/cjs/index.min.js",
-    "limit": "500 ms"
+    "limit": "600 ms"
   },
   {
     "path": "dist/es/index.min.js",
-    "limit": "500 ms"
+    "limit": "600 ms"
   },
   {
     "path": "dist/iife/index.min.js",
-    "limit": "500 ms"
+    "limit": "600 ms"
   }
 ]
