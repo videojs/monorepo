@@ -28,10 +28,6 @@ jobs:
       - name: Build All Packages
         run: npm run build
 
-      # verify generated bundle sizes for all packages
-      - name: Verify Bundle Sizes
-        run: npm run verify:bundle-size
-
       # run unit tests and generate test coverage for all packages
       - name: Test All Packages
         run: npm run test:coverage

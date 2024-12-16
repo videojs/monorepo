@@ -183,3 +183,5 @@ dist-demo
 .nx
 
 .nx/cache
+
+.size-limit-output.json
