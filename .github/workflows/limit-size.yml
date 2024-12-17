@@ -4,7 +4,7 @@ on:
     branches:
       - main
 jobs:
-  size:
+  verify-bundle-sizes:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -24,9 +24,13 @@ jobs:
       - name: Build All Packages
         run: npm run build
 
+      # generate size-limit jsons for each package
+      - name: Generate Size Limit Jsons For All Packages
+        run: npm run size-limit:json
+
       - name: Size Limit Json
         uses: andresz1/size-limit-action@v1.8.0
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           skip_step: build
-          script: npm run size-limit:json
+          script: npm run size-limit:output-json
