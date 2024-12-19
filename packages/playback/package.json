@@ -55,25 +55,25 @@
       "require": "./dist/main/core/cjs/index.debug.js",
       "import": "./dist/main/core/es/index.debug.js"
     },
-    "./worker/core": {
-      "types": "./dist/worker/core/types/index.d.ts",
-      "require": "./dist/worker/core/cjs/index.min.js",
-      "import": "./dist/worker/core/es/index.min.js"
+    "./main-with-worker/core": {
+      "types": "./dist/main-with-worker/core/types/index.d.ts",
+      "require": "./dist/main-with-worker/core/cjs/index.min.js",
+      "import": "./dist/main-with-worker/core/es/index.min.js"
     },
-    "./worker/core/debug": {
-      "types": "./dist/worker/core/types/index.d.ts",
-      "require": "./dist/worker/core/cjs/index.debug.js",
-      "import": "./dist/worker/core/es/index.debug.js"
+    "./main-with-worker/core/debug": {
+      "types": "./dist/main-with-worker/core/types/index.d.ts",
+      "require": "./dist/main-with-worker/core/cjs/index.debug.js",
+      "import": "./dist/main-with-worker/core/es/index.debug.js"
     },
-    "./worker/bridge": {
-      "types": "./dist/worker/bridge/types/index.d.ts",
-      "require": "./dist/worker/bridge/cjs/index.min.js",
-      "import": "./dist/worker/bridge/es/index.min.js"
+    "./worker-script": {
+      "types": "./dist/worker/types/index.d.ts",
+      "require": "./dist/worker/cjs/index.min.js",
+      "import": "./dist/worker/es/index.min.js"
     },
-    "./worker/bridge/debug": {
-      "types": "./dist/worker/bridge/types/index.d.ts",
-      "require": "./dist/worker/bridge/cjs/index.debug.js",
-      "import": "./dist/worker/bridge/es/index.debug.js"
+    "./worker-script/debug": {
+      "types": "./dist/worker/types/index.d.ts",
+      "require": "./dist/worker/cjs/index.debug.js",
+      "import": "./dist/worker/es/index.debug.js"
     }
   }
 }

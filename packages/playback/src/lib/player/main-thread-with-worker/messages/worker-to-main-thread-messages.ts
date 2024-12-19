@@ -1,4 +1,4 @@
-import { WorkerToMainMessageType } from '../consts/worker-to-main-message-type';
+import { WorkerToMainMessageType } from '../message-types/worker-to-main-message-type';
 import type { PlayerEvent } from '../../../events/base-player-event';
 import type { InterceptorType } from '../../../consts/interceptor-type';
 import type { InterceptorTypeToInterceptorPayloadMap } from '../../../types/mappers/interceptor-type-to-interceptor-map.declarations';
@@ -6,8 +6,8 @@ import type {
   AttachMseFallbackExecutionResultMessage,
   InterceptorsExecutionResultMessage,
   MainToWorkerMessage,
-} from './main-to-worker-messages';
-import { MainToWorkerMessageType } from '../consts/main-to-worker-message-type';
+} from './main-to-worker-thread-messages';
+import { MainToWorkerMessageType } from '../message-types/main-to-worker-message-type';
 import type { IWorkerToMainThreadMessageChannel } from '../../../types/message-channels/worker-to-main-thread-message-channel';
 
 export abstract class WorkerToMainMessage {

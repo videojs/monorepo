@@ -1,28 +1,28 @@
 /**
  * This file should be entry point for worker bundle
  */
-import { WorkerToMainThreadMessageChannel } from './messages/worker-to-main-messages';
+import { WorkerToMainThreadMessageChannel } from '../messages/worker-to-main-thread-messages';
 import type {
   MainToWorkerMessage,
   SetLoggerLevelMessage,
   UpdateConfigurationMessage,
-} from './messages/main-to-worker-messages';
-import { MainToWorkerMessageType } from './consts/main-to-worker-message-type';
-import type { ILogger } from '../../types/logger.declarations';
-import type { PlayerConfiguration } from '../../types/configuration.declarations';
+} from '../messages/main-to-worker-thread-messages';
+import { MainToWorkerMessageType } from '../message-types/main-to-worker-message-type';
+import type { ILogger } from '../../../types/logger.declarations';
+import type { PlayerConfiguration } from '../../../types/configuration.declarations';
 // services:
-import { Logger } from '../../utils/logger';
-import { getPlayerConfigurationDefaults } from '../../configuration/configuration-defaults';
-import { NetworkManager } from '../../network/network-manager';
-import type { INetworkManager, INetworkRequestInfo, INetworkResponseInfo } from '../../types/network.declarations';
-import { InterceptorType } from '../../consts/interceptor-type';
+import { Logger } from '../../../utils/logger';
+import { getPlayerConfigurationDefaults } from '../../../configuration/configuration-defaults';
+import { NetworkManager } from '../../../network/network-manager';
+import type { INetworkManager, INetworkRequestInfo, INetworkResponseInfo } from '../../../types/network.declarations';
+import { InterceptorType } from '../../../consts/interceptor-type';
 import {
   NetworkRequestAttemptCompletedSuccessfullyEvent,
   NetworkRequestAttemptCompletedUnsuccessfullyEvent,
   NetworkRequestAttemptFailedEvent,
   NetworkRequestAttemptStartedEvent,
-} from '../../events/network-events';
-import type { IWorkerToMainThreadMessageChannel } from '../../types/message-channels/worker-to-main-thread-message-channel';
+} from '../../../events/network-events';
+import type { IWorkerToMainThreadMessageChannel } from '../../../types/message-channels/worker-to-main-thread-message-channel';
 
 interface WorkerBridgeDependencies {
   readonly globalScope: DedicatedWorkerGlobalScope;
@@ -32,13 +32,13 @@ interface WorkerBridgeDependencies {
   readonly messageChannel: IWorkerToMainThreadMessageChannel;
 }
 
-class WorkerBridge {
-  public static create(): WorkerBridge {
+class WorkerScript {
+  public static create(): WorkerScript {
     const globalScope = self as DedicatedWorkerGlobalScope;
     const logger = new Logger({ console: console, delimiter: '>', label: 'Player' }).createSubLogger('WorkerBridge');
     const configuration = getPlayerConfigurationDefaults();
 
-    return new WorkerBridge({
+    return new WorkerScript({
       globalScope,
       logger,
       configuration,
@@ -128,4 +128,4 @@ class WorkerBridge {
   }
 }
 
-WorkerBridge.create();
+WorkerScript.create();

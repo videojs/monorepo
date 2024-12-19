@@ -1,6 +1,6 @@
 import type { LoggerLevel } from '../../../consts/logger-level';
 import type { PlayerConfiguration } from '../../../types/configuration.declarations';
-import { MainToWorkerMessageType } from '../consts/main-to-worker-message-type';
+import { MainToWorkerMessageType } from '../message-types/main-to-worker-message-type';
 import type { InterceptorTypeToInterceptorPayloadMap } from '../../../types/mappers/interceptor-type-to-interceptor-map.declarations';
 import type { InterceptorType } from '../../../consts/interceptor-type';
 import type { IMainToWorkerThreadMessageChannel } from '../../../types/message-channels/main-to-worker-thread-message-channel';

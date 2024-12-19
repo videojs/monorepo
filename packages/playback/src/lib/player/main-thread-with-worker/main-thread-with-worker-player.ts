@@ -7,10 +7,14 @@ import type { LoggerLevel } from '../../consts/logger-level';
 import type { DeepPartial } from '../../types/utility.declarations';
 import type { PlayerConfiguration } from '../../types/configuration.declarations';
 import { ServiceLocator } from '../../service-locator';
-import { MainToWorkerThreadMessageChannel } from './messages/main-to-worker-messages';
-import type { EmitEventMessage, RunInterceptorsMessage, WorkerToMainMessage } from './messages/worker-to-main-messages';
-import { WorkerToMainMessageType } from './consts/worker-to-main-message-type';
+import type {
+  EmitEventMessage,
+  RunInterceptorsMessage,
+  WorkerToMainMessage,
+} from './messages/worker-to-main-thread-messages';
+import { WorkerToMainMessageType } from './message-types/worker-to-main-message-type';
 import type { IMainToWorkerThreadMessageChannel } from '../../types/message-channels/main-to-worker-thread-message-channel';
+import { MainToWorkerThreadMessageChannel } from './messages/main-to-worker-thread-messages';
 
 declare const __WORKER_CODE: string;
 

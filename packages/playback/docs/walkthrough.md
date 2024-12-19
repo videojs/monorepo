@@ -6,6 +6,8 @@
     * [`src/entry-points`](#srcentry-points)
     * [`src/lib`](#srclib)
   * [Player](#player)
+  * [Worker-Main Thread Communication](#worker-main-thread-communication)
+      * [Pipelines](#pipelines)
 <!-- TOC -->
 
 ## Folder Structure
@@ -16,7 +18,7 @@ There are 2 main folders in the `playback` package:
 
 > [!Note]
 >
-> Do not include implementations in this folder. Only re-export public API from `lib` folder.
+> Do not include implementations in this folder. Only re-export public APIs from `lib` folder.
 
   - We re-export only public API here
   - We use files from this folder to produce final bundles:
@@ -48,7 +50,7 @@ Both subclasses are intended to be used on the main thread.
 
 > [!Note]
 >
-> `MainThreadOnlyPlayer` is a public API and should be re-exported in the `src/entry-points/main-thread-only-player.ts`.
+> `MainThreadOnlyPlayer` is a public API and should be re-exported in the `src/entry-points/main-core.ts`.
 
 
 `MainThreadWithWorkerPlayer`: `src/lib/player/main-thread-with-worker/main-thread-with-worker-player.ts` creates WebWorker and delegates most of the work to the worker thread, except work that is required to be executed on main thread (eg: EME, MSE is not available on worker thread, etc...).
@@ -60,11 +62,11 @@ flowchart LR
 
 > [!Note]
 >
-> `MainThreadWithWorkerPlayer` is a public API and should be re-exported in the `src/entry-points/main-thread-with-worker-player.ts`.
+> `MainThreadWithWorkerPlayer` is a public API and should be re-exported in the `src/entry-points/main-with-worker-core.ts`.
 >
 > This bundle is also listed as a main entry-point for the package in the `package.json` file.
 
-The WebWorker script is available at `src/lib/worker/worker-script.ts` and this is the main entry point for all worker thread processes.
+The WebWorker script is available at `src/lib/player/main-thread-with-worker/worker/worker-script.ts` and this is the main entry point for all worker thread processes.
 
 Worker Script is injected into `MainThreadWithWorkerPlayer` bundle during the build process in the following manner:
 
@@ -85,8 +87,8 @@ Worker Script is injected into `MainThreadWithWorkerPlayer` bundle during the bu
 
 There are 2 classes that abstract the communication between the worker and the main thread:
 
-- `MainToWorkerThreadMessageChannel`: `src/lib/player/main-thread-with-worker/main-to-worker-thread-message-channel.ts`
-- `WorkerToMainThreadMessageChannel`: `src/lib/worker/worker-to-main-thread-message-channel.ts`
+- `MainToWorkerThreadMessageChannel`: `src/lib/player/main-thread-with-worker/messages/main-to-worker-thread-messages.ts`
+- `WorkerToMainThreadMessageChannel`: `src/lib/player/main-thread-with-worker/messages/worker-to-main-thread-messages.ts`
 
 
 #### Pipelines
