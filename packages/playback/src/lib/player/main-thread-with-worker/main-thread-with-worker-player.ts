@@ -13,15 +13,21 @@ import type {
   WorkerToMainMessage,
 } from './messages/worker-to-main-thread-messages';
 import { WorkerToMainMessageType } from './message-types/worker-to-main-message-type';
-import type { IMainToWorkerThreadMessageChannel } from '../../types/message-channels/main-to-worker-thread-message-channel';
+import type {
+  IMainToWorkerThreadMessageChannel,
+  LoadPipelineLoaderPayload,
+} from '../../types/message-channels/main-to-worker-thread-message-channel';
 import { MainToWorkerThreadMessageChannel } from './messages/main-to-worker-thread-messages';
+import type { ILoadLocalSource, ILoadRemoteSource } from '../../types/source.declarations';
 
 declare const __WORKER_CODE: string;
+declare const __BUNDLED_WORKER_PIPELINE_LOADERS: Record<string, Array<string>>;
 
 interface PlayerWorkerDependencies extends PlayerDependencies {
   readonly worker: Worker;
   readonly workerScriptBlobUrl: string;
   readonly messageChannel: IMainToWorkerThreadMessageChannel;
+  readonly workerPipelineLoaders: Record<string, Array<string>>;
   // TODO: We want to create a fallback mse controller on the main thread,
   // Since during build-time, we don't know whether it will be possible to create mediaSource in the worker
 }
@@ -31,7 +37,7 @@ interface PlayerWorkerDependencies extends PlayerDependencies {
 export class Player extends BasePlayer {
   public static create(): Player {
     const serviceLocator = new ServiceLocator();
-
+    const workerPipelineLoaders = __BUNDLED_WORKER_PIPELINE_LOADERS;
     const workerScriptBlob = new Blob([__WORKER_CODE], { type: 'application/javascript' });
     const workerScriptBlobUrl = URL.createObjectURL(workerScriptBlob);
     const worker = new Worker(workerScriptBlobUrl);
@@ -39,6 +45,7 @@ export class Player extends BasePlayer {
     return new Player({
       ...serviceLocator,
       worker,
+      workerPipelineLoaders,
       workerScriptBlobUrl: workerScriptBlobUrl,
       messageChannel: new MainToWorkerThreadMessageChannel(worker),
     });
@@ -47,6 +54,7 @@ export class Player extends BasePlayer {
   private readonly worker_: Worker;
   private readonly workerScriptBlobUrl_: string;
   private readonly messageChannel_: IMainToWorkerThreadMessageChannel;
+  private readonly workerPipelineLoaders_ = new Map<string, Set<string>>();
 
   public constructor(dependencies: PlayerWorkerDependencies) {
     super(dependencies);
@@ -55,6 +63,10 @@ export class Player extends BasePlayer {
     this.workerScriptBlobUrl_ = dependencies.workerScriptBlobUrl;
     this.messageChannel_ = dependencies.messageChannel;
     this.worker_.addEventListener('message', this.onWorkerMessage_);
+
+    for (const [mimeType, aliases] of Object.entries(dependencies.workerPipelineLoaders)) {
+      this.workerPipelineLoaders_.set(mimeType, new Set(aliases));
+    }
   }
 
   private readonly onWorkerMessage_ = (event: MessageEvent<WorkerToMainMessage>): void => {
@@ -82,6 +94,29 @@ export class Player extends BasePlayer {
     this.logger_.warn('Unknown message received from worker: ', message);
   }
 
+  public hasWorkerPipelineLoaderFor(mimeType: string, alias?: string): boolean {
+    if (!alias) {
+      return this.workerPipelineLoaders_.has(mimeType);
+    }
+
+    const aliases = this.workerPipelineLoaders_.get(mimeType);
+    return aliases ? aliases.has(alias) : false;
+  }
+
+  public loadPipelineLoaderScript(payload: LoadPipelineLoaderPayload): Promise<void> {
+    const promise = this.messageChannel_.sendLoadPipelineLoaderMessage(payload);
+
+    promise.then(() => {
+      if (this.workerPipelineLoaders_.has(payload.mimeType)) {
+        this.workerPipelineLoaders_.get(payload.mimeType)?.add(payload.alias);
+      } else {
+        this.workerPipelineLoaders_.set(payload.mimeType, new Set([payload.alias]));
+      }
+    });
+
+    return promise;
+  }
+
   public setLoggerLevel(loggerLevel: LoggerLevel): void {
     super.setLoggerLevel(loggerLevel);
     this.messageChannel_.sendSetLoggerLevelMessage(loggerLevel);
@@ -106,5 +141,14 @@ export class Player extends BasePlayer {
     super.dispose();
     this.worker_.terminate();
     URL.revokeObjectURL(this.workerScriptBlobUrl_);
+  }
+
+  public load(source: ILoadRemoteSource | ILoadLocalSource): void {
+    if (this.hasWorkerPipelineLoaderFor(source.mimeType, source.loaderAlias)) {
+      // TODO: send load request to worker
+      return;
+    }
+
+    super.load(source);
   }
 }

@@ -25,9 +25,11 @@ export interface IPipelineLoader {
   abort(): void;
 }
 
-export interface IPipelineLoaderDependencies extends IPipelineDependencies {
-  vodFactory?: IPipelineFactory;
-  liveFactory?: IPipelineFactory;
+export interface IPipelineLoaderDependencies {
+  videoElement: HTMLVideoElement;
+  networkManager: INetworkManager;
+  logger: ILogger;
+  source: IPlayerSource;
 }
 
 export interface IPipelineLoaderFactory {

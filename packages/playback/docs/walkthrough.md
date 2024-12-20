@@ -92,3 +92,5 @@ There are 2 classes that abstract the communication between the worker and the m
 
 
 #### Pipelines
+
+// TODO: add pipelines section

@@ -16,6 +16,7 @@ export default [
     .build(),
 
   // CORE-WORKER PRODUCTION | DEBUG | DTS
+  // TODO: inject __BUNDLED_WORKER_PIPELINE_LOADERS to the main thread script
   ...builder
     .copy()
     .setName('PlaybackNamespace')
