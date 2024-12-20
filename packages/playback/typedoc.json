@@ -1,4 +1,4 @@
 {
-  "entryPoints": ["src/index.ts"],
+  "entryPoints": ["src/entry-points/api-reference.ts"],
   "out": "./dist-api-reference"
 }

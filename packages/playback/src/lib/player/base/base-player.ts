@@ -24,9 +24,8 @@ import {
 // models
 import { PlayerSource } from '../../models/player-source';
 // errors
-import { NoSupportedPipelineError } from '../../errors/pipeline-errors';
+import { NoSupportedPipelineError, PipelineLoaderFailedToDeterminePipelineError } from '../../errors/pipeline-errors';
 // pipelines
-import { PipelineLoaderFactoryStorage } from './pipeline-loader-factory-storage';
 import { InterceptorType } from '../../consts/interceptor-type';
 import type { InterceptorTypeToInterceptorPayloadMap } from '../../types/mappers/interceptor-type-to-interceptor-map.declarations';
 import { PlaybackState } from '../../consts/playback-state';
@@ -39,7 +38,7 @@ import type { IQualityLevel } from '../../types/quality-level.declarations';
 import type { VersionInfo } from '../../types/version-info.declarations';
 import type { IPlayerTextTrack } from '../../types/text-track.declarations';
 import { NativePipeline } from '../../pipelines/native/native-pipeline';
-import type { IPipeline } from '../../types/pipeline.declarations';
+import type { IPipeline, IPipelineLoader, IPipelineLoaderFactory } from '../../types/pipeline.declarations';
 import type { INetworkManager, INetworkRequestInfo, INetworkResponseInfo } from '../../types/network.declarations';
 import {
   NetworkRequestAttemptCompletedSuccessfullyEvent,
@@ -49,6 +48,7 @@ import {
 } from '../../events/network-events';
 import type { IEmeManager, IEmeManagerDependencies } from '../../types/eme-manager.declarations';
 import { EncryptedEvent, WaitingForKeyEvent } from '../../events/eme-events';
+import type { PipelineLoaderFactoryStorage } from './pipeline-loader-factory-storage';
 
 declare const __COMMIT_HASH: string;
 declare const __VERSION: string;
@@ -59,6 +59,7 @@ export interface PlayerDependencies {
   readonly interceptorsStorage: IInterceptorsStorage<InterceptorTypeToInterceptorPayloadMap>;
   readonly configurationManager: IStore<PlayerConfiguration>;
   readonly eventEmitter: IEventEmitter<EventTypeToEventMap>;
+  readonly pipelineLoaderFactoryStorage: PipelineLoaderFactoryStorage;
   // we have to duplicate network manager in both main and worker threads since we may have eme controller on main thread, which requires network manager
   readonly networkManager: INetworkManager;
 }
@@ -93,15 +94,17 @@ export abstract class BasePlayer {
   }
 
   /**
-   * static pipeline loader factory storage getter
-   */
-  // TODO: move to player instance, should be different for main and worker threads
-  public static readonly pipelineLoaderFactoryStorage = new PipelineLoaderFactoryStorage();
-
-  /**
    * MARK: PROTECTED INSTANCE MEMBERS
    */
 
+  /**
+   * pipeline loader factory storage
+   */
+  protected pipelineLoaderFactoryStorage_: PipelineLoaderFactoryStorage;
+
+  /**
+   * current player's playback state
+   */
   protected currentPlaybackState_: PlaybackState = PlaybackState.Idle;
 
   /**
@@ -113,6 +116,11 @@ export abstract class BasePlayer {
    * loaded source
    */
   protected activeSource_: IPlayerSource | null = null;
+
+  /**
+   * active pipeline loader
+   */
+  protected activePipelineLoader_: IPipelineLoader | null = null;
 
   /**
    * active pipeline
@@ -163,12 +171,17 @@ export abstract class BasePlayer {
     this.interceptorsStorage_ = dependencies.interceptorsStorage;
     this.configurationManager_ = dependencies.configurationManager;
     this.networkManager_ = dependencies.networkManager;
+    this.pipelineLoaderFactoryStorage_ = dependencies.pipelineLoaderFactoryStorage;
     // setup network manager:
     this.networkManager_.hooks.onAttemptStarted = this.onNetworkRequestAttemptStarted_;
     this.networkManager_.hooks.onAttemptCompletedSuccessfully = this.onNetworkRequestAttemptCompletedSuccessfully_;
     this.networkManager_.hooks.onAttemptCompletedUnsuccessfully = this.onNetworkRequestAttemptCompletedUnsuccessfully_;
     this.networkManager_.hooks.onAttemptFailed = this.onNetworkRequestAttemptFailed_;
     this.networkManager_.requestInterceptor = this.networkRequestInterceptor_;
+  }
+
+  public getPipelineLoaderFactoryStorage(): PipelineLoaderFactoryStorage {
+    return this.pipelineLoaderFactoryStorage_;
   }
 
   public setEmeManagerFactory(factory: (deps: IEmeManagerDependencies) => IEmeManager): void {
@@ -432,10 +445,10 @@ export abstract class BasePlayer {
     this.activeSource_ = null;
     this.transitionPlaybackState_(PlaybackState.Idle);
 
-    // this.activePipelineLoader_?.abort();
-    // this.activePipelineLoader_ = null;
-    // this.activePipeline_?.dispose();
-    // this.activePipeline_ = null;
+    this.activePipelineLoader_?.abort();
+    this.activePipelineLoader_ = null;
+    this.activePipeline_?.dispose();
+    this.activePipeline_ = null;
   }
 
   /**
@@ -472,31 +485,36 @@ export abstract class BasePlayer {
 
     this.emeManager_?.setSource(this.activeSource_);
 
-    // TODO: implement pipeline loader flow
-    // if (this.hasPipelineFactoryConfiguration(this.activeSource_.mimeType.toLowerCase())) {
-    //   const { loader, vod, live } = this.getPipelineFactoryConfiguration(this.activeSource_.mimeType.toLowerCase())!;
-    //   this.activePipelineLoader_ = loader.create({
-    //     logger: this.logger_,
-    //     videoElement: this.activeVideoElement_,
-    //     networkManager: this.networkManager_,
-    //     source: this.activeSource_,
-    //     vodFactory: vod,
-    //     liveFactory: live,
-    //   });
-    //
-    //   this.activePipelineLoader_.load().then(
-    //     (pipeline) => {
-    //       this.activePipeline_ = pipeline;
-    //     },
-    //     (error) => {
-    //       this.eventEmitter_.emitEvent(
-    //         new ErrorEvent(new PipelineLoaderFailedToDeterminePipelineError(true, error))
-    //       );
-    //     }
-    //   );
-    //
-    //   return;
-    // }
+    let pipelineLoaderFactory: IPipelineLoaderFactory | null = null;
+
+    if (this.activeSource_.loaderAlias) {
+      pipelineLoaderFactory = this.pipelineLoaderFactoryStorage_.get(
+        this.activeSource_.mimeType,
+        this.activeSource_.loaderAlias
+      );
+    } else {
+      pipelineLoaderFactory = this.pipelineLoaderFactoryStorage_.getFirstAvailable(this.activeSource_.mimeType);
+    }
+
+    if (pipelineLoaderFactory) {
+      this.activePipelineLoader_ = pipelineLoaderFactory.create({
+        videoElement: this.activeVideoElement_,
+        networkManager: this.networkManager_,
+        logger: this.logger_,
+        source: this.activeSource_,
+      });
+
+      this.activePipelineLoader_.load().then(
+        (pipeline) => {
+          this.activePipeline_ = pipeline;
+        },
+        (error) => {
+          this.eventEmitter_.emitEvent(new ErrorEvent(new PipelineLoaderFailedToDeterminePipelineError(true, error)));
+        }
+      );
+
+      return;
+    }
 
     this.logger_.debug(
       `No registered pipeline's configuration found for the provided mime type (${this.activeSource_.mimeType}).`

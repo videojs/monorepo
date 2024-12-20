@@ -1,4 +1,4 @@
-import { WorkerToMainMessageType } from '../consts/worker-to-main-message-type';
+import { WorkerToMainMessageType } from '../message-types/worker-to-main-message-type';
 import type { PlayerEvent } from '../../../events/base-player-event';
 import type { InterceptorType } from '../../../consts/interceptor-type';
 import type { InterceptorTypeToInterceptorPayloadMap } from '../../../types/mappers/interceptor-type-to-interceptor-map.declarations';
@@ -6,8 +6,8 @@ import type {
   AttachMseFallbackExecutionResultMessage,
   InterceptorsExecutionResultMessage,
   MainToWorkerMessage,
-} from './main-to-worker-messages';
-import { MainToWorkerMessageType } from '../consts/main-to-worker-message-type';
+} from './main-to-worker-thread-messages';
+import { MainToWorkerMessageType } from '../message-types/main-to-worker-message-type';
 import type { IWorkerToMainThreadMessageChannel } from '../../../types/message-channels/worker-to-main-thread-message-channel';
 
 export abstract class WorkerToMainMessage {
@@ -57,6 +57,18 @@ export class AttachMseFallbackMessage extends WorkerToMainMessage {
   public readonly executionId: string = String(Date.now() + Math.random());
 }
 
+export class LoadPipelineLoaderExecutionResultMessage extends WorkerToMainMessage {
+  public readonly type = WorkerToMainMessageType.LoadPipelineLoaderExecutionResult;
+  public isLoaded: boolean;
+  public executionId: string;
+
+  public constructor(isLoaded: boolean, executionId: string) {
+    super();
+    this.isLoaded = isLoaded;
+    this.executionId = executionId;
+  }
+}
+
 export class WorkerToMainThreadMessageChannel implements IWorkerToMainThreadMessageChannel {
   private readonly globalScope_: DedicatedWorkerGlobalScope;
 
@@ -76,15 +88,18 @@ export class WorkerToMainThreadMessageChannel implements IWorkerToMainThreadMess
       const message = new RunInterceptorsMessage(interceptorType, payload);
 
       const onMessage = (event: MessageEvent<MainToWorkerMessage>): void => {
-        if (event.data.type === MainToWorkerMessageType.InterceptorsExecutionResult) {
-          const receivedMessage = event.data as InterceptorsExecutionResultMessage;
-          const isExpectedExecutionResult = receivedMessage.executionId === message.executionId;
-
-          if (isExpectedExecutionResult) {
-            this.globalScope_.removeEventListener('message', onMessage);
-            resolve(receivedMessage.result as InterceptorTypeToInterceptorPayloadMap[K]);
-          }
+        if (event.data.type !== MainToWorkerMessageType.InterceptorsExecutionResult) {
+          return;
         }
+
+        const receivedMessage = event.data as InterceptorsExecutionResultMessage;
+
+        if (receivedMessage.executionId !== message.executionId) {
+          return;
+        }
+
+        this.globalScope_.removeEventListener('message', onMessage);
+        resolve(receivedMessage.result as InterceptorTypeToInterceptorPayloadMap[K]);
       };
 
       this.globalScope_.addEventListener('message', onMessage);
@@ -119,5 +134,9 @@ export class WorkerToMainThreadMessageChannel implements IWorkerToMainThreadMess
       this.globalScope_.addEventListener('message', onMessage);
       this.sendMessageToMainThread_(message);
     });
+  }
+
+  public sendLoadPipelineLoaderExecutionResultMessage(isLoaded: boolean, executionId: string): void {
+    this.sendMessageToMainThread_(new LoadPipelineLoaderExecutionResultMessage(isLoaded, executionId));
   }
 }

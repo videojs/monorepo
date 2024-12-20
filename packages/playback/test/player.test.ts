@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { Player } from '../src/lib/player/main-thread/player-main';
+import { Player } from '../src/lib/player/main-thread-only/main-thread-only-player';
 import {
   ConfigurationChangedEvent,
   LoggerLevelChangedEvent,

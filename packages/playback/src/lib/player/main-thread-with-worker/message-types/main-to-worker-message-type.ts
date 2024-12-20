@@ -4,4 +4,5 @@ export enum MainToWorkerMessageType {
   InterceptorsExecutionResult = 'InterceptorsExecutionResult',
   AttachMseFallbackExecutionResult = 'AttachMseFallbackExecutionResult',
   Stop = 'Stop',
+  LoadPipelineLoader = 'LoadPipelineLoader',
 }

@@ -17,6 +17,7 @@ import { ConfigurationManager } from './configuration/configuration-manager';
 import { EventEmitter } from './utils/event-emitter';
 import { NetworkManager } from './network/network-manager';
 import { PlayerEventType } from './consts/events';
+import { PipelineLoaderFactoryStorage } from './player/base/pipeline-loader-factory-storage';
 
 export class ServiceLocator {
   public readonly logger: ILogger;
@@ -24,9 +25,12 @@ export class ServiceLocator {
   public readonly configurationManager: IStore<PlayerConfiguration>;
   public readonly eventEmitter: IEventEmitter<EventTypeToEventMap>;
   public readonly networkManager: INetworkManager;
+  public readonly pipelineLoaderFactoryStorage: PipelineLoaderFactoryStorage;
 
   public constructor() {
     const { console, fetch } = window;
+
+    this.pipelineLoaderFactoryStorage = new PipelineLoaderFactoryStorage();
 
     this.configurationManager = this.createConfigurationManager_();
 

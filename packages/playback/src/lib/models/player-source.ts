@@ -10,7 +10,7 @@ export class PlayerSource implements IPlayerSource {
 
   public readonly id: number;
   public readonly mimeType: string;
-  public readonly loaderAlias: string;
+  public readonly loaderAlias: string | null;
   public readonly keySystems: Record<string, IKeySystemConfig>;
   public readonly url: URL;
   public readonly baseUrl: URL | null = null;
@@ -21,8 +21,8 @@ export class PlayerSource implements IPlayerSource {
 
   public constructor(rawSource: ILoadRemoteSource | ILoadLocalSource) {
     this.id = ++PlayerSource.counter_;
-    this.mimeType = rawSource.mimeType;
-    this.loaderAlias = rawSource.loaderAlias ?? '';
+    this.mimeType = rawSource.mimeType.toLowerCase();
+    this.loaderAlias = rawSource.loaderAlias ?? null;
     this.baseUrl = rawSource.baseUrl ?? null;
     this.keySystems = rawSource.keySystems ?? {};
 

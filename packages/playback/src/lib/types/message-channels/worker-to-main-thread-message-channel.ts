@@ -11,4 +11,5 @@ export interface IWorkerToMainThreadMessageChannel {
   sendEmitEventMessage(event: PlayerEvent): void;
   sendAttachMseHandleMessage(handle: MediaSourceHandle, isManagedMediaSource: boolean): void;
   sendAttachMseFallbackMessage(): Promise<boolean>;
+  sendLoadPipelineLoaderExecutionResultMessage(isLoaded: boolean, executionId: string): void;
 }

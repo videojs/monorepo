@@ -11,7 +11,7 @@ export default [
   ...builder
     .copy()
     .setName('PlaybackWorkerBridgeNamespace')
-    .setInput('./src/entry-points/core-worker-bridge.ts')
-    .setFolder('worker/bridge')
+    .setInput('./src/entry-points/worker-script.ts')
+    .setFolder('worker')
     .build(),
 ];

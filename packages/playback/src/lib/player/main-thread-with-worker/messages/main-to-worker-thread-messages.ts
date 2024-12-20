@@ -1,9 +1,14 @@
 import type { LoggerLevel } from '../../../consts/logger-level';
 import type { PlayerConfiguration } from '../../../types/configuration.declarations';
-import { MainToWorkerMessageType } from '../consts/main-to-worker-message-type';
+import { MainToWorkerMessageType } from '../message-types/main-to-worker-message-type';
 import type { InterceptorTypeToInterceptorPayloadMap } from '../../../types/mappers/interceptor-type-to-interceptor-map.declarations';
 import type { InterceptorType } from '../../../consts/interceptor-type';
-import type { IMainToWorkerThreadMessageChannel } from '../../../types/message-channels/main-to-worker-thread-message-channel';
+import type {
+  IMainToWorkerThreadMessageChannel,
+  LoadPipelineLoaderPayload,
+} from '../../../types/message-channels/main-to-worker-thread-message-channel';
+import type { LoadPipelineLoaderExecutionResultMessage, WorkerToMainMessage } from './worker-to-main-thread-messages';
+import { WorkerToMainMessageType } from '../message-types/worker-to-main-message-type';
 
 export abstract class MainToWorkerMessage {
   public abstract readonly type: MainToWorkerMessageType;
@@ -57,6 +62,23 @@ export class AttachMseFallbackExecutionResultMessage extends MainToWorkerMessage
   }
 }
 
+export class LoadPipelineLoaderMessage extends MainToWorkerMessage {
+  public readonly type = MainToWorkerMessageType.LoadPipelineLoader;
+  public readonly mimeType: string;
+  public readonly alias: string;
+  public readonly url: string;
+  public readonly namespace: string;
+  public readonly executionId: string = String(Date.now() + Math.random());
+
+  public constructor(payload: LoadPipelineLoaderPayload) {
+    super();
+    this.mimeType = payload.mimeType;
+    this.alias = payload.alias;
+    this.url = payload.url;
+    this.namespace = payload.namespace;
+  }
+}
+
 export class MainToWorkerThreadMessageChannel implements IMainToWorkerThreadMessageChannel {
   private readonly worker_: Worker;
 
@@ -81,6 +103,30 @@ export class MainToWorkerThreadMessageChannel implements IMainToWorkerThreadMess
 
   public sendStopMessage(): void {
     this.sendMessageToWorkerThread_(new StopMessage());
+  }
+
+  public sendLoadPipelineLoaderMessage(payload: LoadPipelineLoaderPayload): Promise<void> {
+    return new Promise((resolve, reject) => {
+      const message = new LoadPipelineLoaderMessage(payload);
+
+      const onMessage = (event: MessageEvent<WorkerToMainMessage>): void => {
+        if (event.data.type !== WorkerToMainMessageType.LoadPipelineLoaderExecutionResult) {
+          return;
+        }
+
+        const receivedMessage = event.data as LoadPipelineLoaderExecutionResultMessage;
+
+        if (receivedMessage.executionId !== message.executionId) {
+          return;
+        }
+
+        this.worker_.removeEventListener('message', onMessage);
+        receivedMessage.isLoaded ? resolve() : reject();
+      };
+
+      this.worker_.addEventListener('message', onMessage);
+      this.sendMessageToWorkerThread_(message);
+    });
   }
 
   private sendMessageToWorkerThread_(message: MainToWorkerMessage): void {

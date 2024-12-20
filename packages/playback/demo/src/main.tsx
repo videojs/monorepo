@@ -1,5 +1,5 @@
 /* eslint-disable no-console */
-import { Player } from '../../src/entry-points/core-main';
+import { Player } from '../../src/entry-points/main-core';
 
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';

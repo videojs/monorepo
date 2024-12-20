@@ -1,7 +1,8 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { InterceptorsStorage } from '../../src/lib/utils/interceptors-storage';
 import { InterceptorType } from '../../src/lib/consts/interceptor-type';
-import type { INetworkRequestInfo, InterceptorTypeToInterceptorPayloadMap } from '../../src';
+import type { INetworkRequestInfo } from '../../src/lib/types/network.declarations';
+import type { InterceptorTypeToInterceptorPayloadMap } from '../../src/lib/types/mappers/interceptor-type-to-interceptor-map.declarations';
 
 describe('InterceptorsStorage', () => {
   let storage: InterceptorsStorage<InterceptorTypeToInterceptorPayloadMap>;

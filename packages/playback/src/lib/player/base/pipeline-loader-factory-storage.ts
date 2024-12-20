@@ -48,21 +48,6 @@ export class PipelineLoaderFactoryStorage {
   }
 
   /**
-   * Remove pipeline loader factory for a specific mime type
-   * @param mimeType - mime type
-   * @param alias - loader alias
-   */
-  public remove(mimeType: string, alias: string): boolean {
-    const internal = this.map_.get(normalizeMimeType(mimeType));
-
-    if (!internal) {
-      return false;
-    }
-
-    return internal.delete(alias);
-  }
-
-  /**
    * Check if player already has pipeline loader factory for a specific mime type
    * @param mimeType - mime type
    * @param alias - loader alis

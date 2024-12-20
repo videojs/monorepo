@@ -43,6 +43,7 @@ export interface ILoadLocalSource extends ILoadSource {
 export interface IPlayerSource {
   readonly isDisposed: boolean;
   readonly id: number;
+  readonly loaderAlias: string | null;
   readonly mimeType: string;
   readonly keySystems: Record<string, IKeySystemConfig>;
   readonly url: URL;
