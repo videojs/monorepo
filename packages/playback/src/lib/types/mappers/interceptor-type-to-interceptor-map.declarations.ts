@@ -1,7 +1,8 @@
 import type { InterceptorType } from '../../consts/interceptor-type';
 import type { INetworkRequestInfo } from '../network.declarations';
+import type { ParsedPlaylist } from '@videojs/hls-parser';
 
 export interface InterceptorTypeToInterceptorPayloadMap {
   [InterceptorType.NetworkRequest]: INetworkRequestInfo;
-  [InterceptorType.HlsPlaylistParse]: Uint8Array;
+  [InterceptorType.HlsPlaylistParsed]: ParsedPlaylist;
 }

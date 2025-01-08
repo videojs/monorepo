@@ -20,12 +20,12 @@ import type {
 import { MainToWorkerThreadMessageChannel } from './messages/main-to-worker-thread-messages';
 import type { ILoadLocalSource, ILoadRemoteSource } from '../../types/source.declarations';
 
-declare const __WORKER_CODE: string;
+import WorkerScript from './worker/worker-script?worker&inline';
+
 declare const __BUNDLED_WORKER_PIPELINE_LOADERS: Record<string, Array<string>>;
 
 interface PlayerWorkerDependencies extends PlayerDependencies {
   readonly worker: Worker;
-  readonly workerScriptBlobUrl: string;
   readonly messageChannel: IMainToWorkerThreadMessageChannel;
   readonly workerPipelineLoaders: Record<string, Array<string>>;
   // TODO: We want to create a fallback mse controller on the main thread,
@@ -37,22 +37,25 @@ interface PlayerWorkerDependencies extends PlayerDependencies {
 export class Player extends BasePlayer {
   public static create(): Player {
     const serviceLocator = new ServiceLocator();
-    const workerPipelineLoaders = __BUNDLED_WORKER_PIPELINE_LOADERS;
-    const workerScriptBlob = new Blob([__WORKER_CODE], { type: 'application/javascript' });
-    const workerScriptBlobUrl = URL.createObjectURL(workerScriptBlob);
-    const worker = new Worker(workerScriptBlobUrl);
+    let workerPipelineLoaders;
+
+    try {
+      workerPipelineLoaders = __BUNDLED_WORKER_PIPELINE_LOADERS;
+    } catch (e) {
+      workerPipelineLoaders = {};
+    }
+
+    const worker = new WorkerScript();
 
     return new Player({
       ...serviceLocator,
       worker,
       workerPipelineLoaders,
-      workerScriptBlobUrl: workerScriptBlobUrl,
       messageChannel: new MainToWorkerThreadMessageChannel(worker),
     });
   }
 
   private readonly worker_: Worker;
-  private readonly workerScriptBlobUrl_: string;
   private readonly messageChannel_: IMainToWorkerThreadMessageChannel;
   private readonly workerPipelineLoaders_ = new Map<string, Set<string>>();
 
@@ -60,7 +63,6 @@ export class Player extends BasePlayer {
     super(dependencies);
 
     this.worker_ = dependencies.worker;
-    this.workerScriptBlobUrl_ = dependencies.workerScriptBlobUrl;
     this.messageChannel_ = dependencies.messageChannel;
     this.worker_.addEventListener('message', this.onWorkerMessage_);
 
@@ -140,7 +142,6 @@ export class Player extends BasePlayer {
   public dispose(): void {
     super.dispose();
     this.worker_.terminate();
-    URL.revokeObjectURL(this.workerScriptBlobUrl_);
   }
 
   public load(source: ILoadRemoteSource | ILoadLocalSource): void {

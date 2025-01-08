@@ -67,7 +67,6 @@ export default [
     ignores: [
       'node_modules/**',
       '**/node_modules/**',
-      '**/rollup.config.js',
       '**/dist/**',
       '**/dist-api-reference/**',
       '**/dist-demo/**',

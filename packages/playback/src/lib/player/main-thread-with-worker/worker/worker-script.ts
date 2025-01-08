@@ -24,7 +24,7 @@ import {
   NetworkRequestAttemptStartedEvent,
 } from '../../../events/network-events';
 import type { IWorkerToMainThreadMessageChannel } from '../../../types/message-channels/worker-to-main-thread-message-channel';
-import type { PipelineLoaderFactoryStorage } from '../../base/pipeline-loader-factory-storage';
+import { PipelineLoaderFactoryStorage } from '../../base/pipeline-loader-factory-storage';
 import type { IPipelineLoaderFactory } from '../../../types/pipeline.declarations';
 
 interface WorkerBridgeDependencies {
@@ -36,7 +36,7 @@ interface WorkerBridgeDependencies {
   readonly pipelineLoaderFactoryStorage: PipelineLoaderFactoryStorage;
 }
 
-export class WorkerScript {
+class WorkerScript {
   /**
    * we pass pipeline loader factory storage instance,
    * so we can create alternative bundles with pre-bundled set of features
@@ -169,3 +169,5 @@ export class WorkerScript {
     this.networkManager_.updateConfiguration(this.configuration_.network);
   }
 }
+
+WorkerScript.create(new PipelineLoaderFactoryStorage());
