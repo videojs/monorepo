@@ -3,6 +3,7 @@ import { InterceptorsStorage } from '../../src/lib/utils/interceptors-storage';
 import { InterceptorType } from '../../src/lib/consts/interceptor-type';
 import type { INetworkRequestInfo } from '../../src/lib/types/network.declarations';
 import type { InterceptorTypeToInterceptorPayloadMap } from '../../src/lib/types/mappers/interceptor-type-to-interceptor-map.declarations';
+import type { ParsedPlaylist } from '@videojs/hls-parser';
 
 describe('InterceptorsStorage', () => {
   let storage: InterceptorsStorage<InterceptorTypeToInterceptorPayloadMap>;
@@ -52,42 +53,42 @@ describe('InterceptorsStorage', () => {
   // Removing all interceptors for a type clears the set for that type
   it('should clear the set when removing all interceptors for a type', () => {
     expect(storage.getInterceptorsSet(InterceptorType.NetworkRequest).size).toBe(0);
-    expect(storage.getInterceptorsSet(InterceptorType.HlsPlaylistParse).size).toBe(0);
+    expect(storage.getInterceptorsSet(InterceptorType.HlsPlaylistParsed).size).toBe(0);
 
     const interceptor1 = async (request: INetworkRequestInfo): Promise<INetworkRequestInfo> => request;
     const interceptor2 = async (request: INetworkRequestInfo): Promise<INetworkRequestInfo> => request;
-    const interceptor3 = async (playlist: Uint8Array): Promise<Uint8Array> => playlist;
+    const interceptor3 = async (playlist: ParsedPlaylist): Promise<ParsedPlaylist> => playlist;
 
     storage.addInterceptor(InterceptorType.NetworkRequest, interceptor1);
     storage.addInterceptor(InterceptorType.NetworkRequest, interceptor2);
-    storage.addInterceptor(InterceptorType.HlsPlaylistParse, interceptor3);
+    storage.addInterceptor(InterceptorType.HlsPlaylistParsed, interceptor3);
     expect(storage.getInterceptorsSet(InterceptorType.NetworkRequest).size).toBe(2);
-    expect(storage.getInterceptorsSet(InterceptorType.HlsPlaylistParse).size).toBe(1);
+    expect(storage.getInterceptorsSet(InterceptorType.HlsPlaylistParsed).size).toBe(1);
 
     storage.removeAllInterceptorsForType(InterceptorType.NetworkRequest);
 
     expect(storage.getInterceptorsSet(InterceptorType.NetworkRequest).size).toBe(0);
-    expect(storage.getInterceptorsSet(InterceptorType.HlsPlaylistParse).size).toBe(1);
+    expect(storage.getInterceptorsSet(InterceptorType.HlsPlaylistParsed).size).toBe(1);
   });
 
   // Removing all interceptors clears the entire storage
   it('should clear the entire storage when all interceptors are removed', () => {
     expect(storage.getInterceptorsSet(InterceptorType.NetworkRequest).size).toBe(0);
-    expect(storage.getInterceptorsSet(InterceptorType.HlsPlaylistParse).size).toBe(0);
+    expect(storage.getInterceptorsSet(InterceptorType.HlsPlaylistParsed).size).toBe(0);
 
     const interceptor1 = async (request: INetworkRequestInfo): Promise<INetworkRequestInfo> => request;
     const interceptor2 = async (request: INetworkRequestInfo): Promise<INetworkRequestInfo> => request;
-    const interceptor3 = async (playlist: Uint8Array): Promise<Uint8Array> => playlist;
+    const interceptor3 = async (playlist: ParsedPlaylist): Promise<ParsedPlaylist> => playlist;
 
     storage.addInterceptor(InterceptorType.NetworkRequest, interceptor1);
     storage.addInterceptor(InterceptorType.NetworkRequest, interceptor2);
-    storage.addInterceptor(InterceptorType.HlsPlaylistParse, interceptor3);
+    storage.addInterceptor(InterceptorType.HlsPlaylistParsed, interceptor3);
     expect(storage.getInterceptorsSet(InterceptorType.NetworkRequest).size).toBe(2);
-    expect(storage.getInterceptorsSet(InterceptorType.HlsPlaylistParse).size).toBe(1);
+    expect(storage.getInterceptorsSet(InterceptorType.HlsPlaylistParsed).size).toBe(1);
 
     storage.removeAllInterceptors();
 
     expect(storage.getInterceptorsSet(InterceptorType.NetworkRequest).size).toBe(0);
-    expect(storage.getInterceptorsSet(InterceptorType.HlsPlaylistParse).size).toBe(0);
+    expect(storage.getInterceptorsSet(InterceptorType.HlsPlaylistParsed).size).toBe(0);
   });
 });

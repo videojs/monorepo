@@ -185,3 +185,4 @@ dist-demo
 .nx/cache
 
 .size-limit-output.json
+.qodo

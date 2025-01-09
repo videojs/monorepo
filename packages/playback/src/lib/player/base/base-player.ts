@@ -509,6 +509,7 @@ export abstract class BasePlayer {
           this.activePipeline_ = pipeline;
         },
         (error) => {
+          // TODO: ignore aborts if received from stop('load')
           this.eventEmitter_.emitEvent(new ErrorEvent(new PipelineLoaderFailedToDeterminePipelineError(true, error)));
         }
       );

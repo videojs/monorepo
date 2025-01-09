@@ -7,12 +7,10 @@
     "clean": "rimraf ./dist ./dist-api-reference ./dist-demo ./*.tgz ./coverage ./node_modules .size-limit-output.json",
     "prebuild": "npm run clean",
     "build": "run-p build:js build:api-reference build:demo",
-    "build:worker-bridge": "rollup -c rollup.config.worker-bridge.js",
-    "prebuild:js": "npm run build:worker-bridge",
-    "build:js": "rollup -c rollup.config.js",
+    "build:js": "node vite.lib.config.js",
     "build:api-reference": "npx typedoc --options typedoc.json",
-    "build:demo": "vite build",
-    "dev": "vite",
+    "build:demo": "vite build -c vite.demo.config.ts",
+    "dev": "vite -c vite.demo.config.ts",
     "size-limit:verify": "npx size-limit",
     "size-limit:json": "output=$(size-limit --json) && echo \"$output\" > .size-limit-output.json",
     "test": "vitest run",
@@ -40,40 +38,33 @@
     "./dist/",
     "CHANGELOG.md"
   ],
-  "main": "./dist/cjs/index.min.js",
-  "module": "./dist/es/index.min.js",
-  "es2015": "./dist/es/index.min.js",
-  "types": "./dist/types/index.d.ts",
+  "dependencies": {
+    "@videojs/hls-parser": "*"
+  },
+  "main": "./dist/main-with-worker/core/cjs/index.min.js",
+  "module": "./dist/main-with-worker/core/es/index.min.js",
+  "es2015": "./dist/main-with-worker/core/es/index.min.js",
+  "types": "./dist/main-with-worker/core/types/index.min.d.ts",
   "exports": {
-    "./main/core": {
-      "types": "./dist/main/core/types/index.d.ts",
-      "require": "./dist/main/core/cjs/index.min.js",
-      "import": "./dist/main/core/es/index.min.js"
+    "./main-only/core": {
+      "types": "./dist/main-only/core/types/index.min.d.ts",
+      "require": "./dist/main-only/core/cjs/index.min.js",
+      "import": "./dist/main-only/core/es/index.min.js"
     },
-    "./main/core/debug": {
-      "types": "./dist/main/core/types/index.d.ts",
-      "require": "./dist/main/core/cjs/index.debug.js",
-      "import": "./dist/main/core/es/index.debug.js"
+    "./main-only/core/debug": {
+      "types": "./dist/main-only/core/types/index.min.d.ts",
+      "require": "./dist/main-only/core/cjs/index.debug.js",
+      "import": "./dist/main-only/core/es/index.debug.js"
     },
     "./main-with-worker/core": {
-      "types": "./dist/main-with-worker/core/types/index.d.ts",
+      "types": "./dist/main-with-worker/core/types/index.min.d.ts",
       "require": "./dist/main-with-worker/core/cjs/index.min.js",
       "import": "./dist/main-with-worker/core/es/index.min.js"
     },
     "./main-with-worker/core/debug": {
-      "types": "./dist/main-with-worker/core/types/index.d.ts",
+      "types": "./dist/main-with-worker/core/types/index.min.d.ts",
       "require": "./dist/main-with-worker/core/cjs/index.debug.js",
       "import": "./dist/main-with-worker/core/es/index.debug.js"
-    },
-    "./worker-script": {
-      "types": "./dist/worker/types/index.d.ts",
-      "require": "./dist/worker/cjs/index.min.js",
-      "import": "./dist/worker/es/index.min.js"
-    },
-    "./worker-script/debug": {
-      "types": "./dist/worker/types/index.d.ts",
-      "require": "./dist/worker/cjs/index.debug.js",
-      "import": "./dist/worker/es/index.debug.js"
     }
   }
 }
