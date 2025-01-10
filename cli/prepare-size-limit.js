@@ -28,4 +28,4 @@ const result = ['dash-parser', 'hls-parser', 'playback', 'env-capabilities']
   .reduce((acc, val) => acc.concat(val), []);
 
 // eslint-disable-next-line no-console
-console.log(result);
+console.log(JSON.stringify(result));
