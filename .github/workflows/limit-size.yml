@@ -16,21 +16,14 @@ jobs:
         with:
           node-version-file: '.nvmrc'
 
-      # install deps
+      # install dependencies
       - name: Install Dependencies
         run: npm ci
-
-      # build all packages
-      - name: Build All Packages
-        run: npm run build
-
-      # generate size-limit jsons for each package
-      - name: Generate Size Limit Jsons For All Packages
-        run: npm run size-limit:json
 
       - name: Size Limit Json
         uses: andresz1/size-limit-action@v1.8.0
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          skip_step: build
+          skip_step: install
+          build_script: npm run build && npm run size-limit:json
           script: node cli/prepare-size-limit.js
