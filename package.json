@@ -14,6 +14,7 @@
     "build": "npx nx run-many -t build",
     "pack": "npx nx run-many -t pack",
     "size-limit:verify": "npx nx run-many -t size-limit:verify",
+    "presize-limit:json": "npm run build",
     "size-limit:json": "npx nx run-many -t size-limit:json",
     "size-limit:output-json": "node cli/prepare-size-limit.js",
     "prepare": "husky",

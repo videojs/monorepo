@@ -25,6 +25,6 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           skip_step: install
-          build_script: build && npm run size-limit:json
+          build_script: size-limit:json
           package_manager: npm
           script: node cli/prepare-size-limit.js
