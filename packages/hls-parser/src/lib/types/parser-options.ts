@@ -4,7 +4,7 @@ import type { Define } from './parsed-playlist';
 export type WarnCallback = (warn: string) => void;
 export type DebugCallback = (...debug: Array<unknown>) => void;
 
-export type CustomTagMap = Record<
+export type CustomTagMap = Map<
   string,
   (
     tagKey: string,

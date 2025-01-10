@@ -8,6 +8,7 @@ import type { IPlayerAudioTrack } from './audio-track.declarations';
 import type { IPlayerTextTrack } from './text-track.declarations';
 import type { IPlayerThumbnailTrack, IRemoteVttThumbnailTrackOptions } from './thumbnail-track.declarations';
 import type { IPlayerSource } from './source.declarations';
+import type { PlayerConfiguration } from './configuration.declarations';
 
 export interface IPipelineDependencies {
   videoElement: HTMLVideoElement;
@@ -23,6 +24,7 @@ export interface IPipelineFactory {
 export interface IPipelineLoader {
   load(): Promise<IPipeline>;
   abort(): void;
+  updateConfiguration(configuration: PlayerConfiguration): void;
 }
 
 export interface IPipelineLoaderDependencies {
@@ -30,6 +32,7 @@ export interface IPipelineLoaderDependencies {
   networkManager: INetworkManager;
   logger: ILogger;
   source: IPlayerSource;
+  configuration: PlayerConfiguration;
 }
 
 export interface IPipelineLoaderFactory {

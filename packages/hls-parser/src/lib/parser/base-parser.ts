@@ -102,12 +102,13 @@ import { resolveUri, substituteVariables } from '../utils/parse';
 import type { StateMachineTransition } from '../state-machine';
 
 export class Parser {
-  private readonly warnCallback_: WarnCallback;
-  private readonly debugCallback_: DebugCallback;
-  private readonly customTagMap_: CustomTagMap;
-  private readonly ignoreTags_: Set<string>;
-  private readonly transformTagValue_: TransformTagValue;
-  private readonly transformTagAttributes_: TransformTagAttributes;
+  private warnCallback_: WarnCallback;
+  private debugCallback_: DebugCallback;
+  private customTagMap_: CustomTagMap;
+  private ignoreTags_: Set<string>;
+  private transformTagValue_: TransformTagValue;
+  private transformTagAttributes_: TransformTagAttributes;
+
   private readonly emptyTagMap_: Record<string, EmptyTagProcessor>;
   private readonly tagValueMap_: Record<string, TagWithValueProcessor>;
   private readonly tagAttributesMap_: Record<string, TagWithAttributesProcessor>;
@@ -118,7 +119,7 @@ export class Parser {
   public constructor(options: ParserOptions) {
     this.warnCallback_ = options.warnCallback || ((): void => {});
     this.debugCallback_ = options.debugCallback || ((): void => {});
-    this.customTagMap_ = options.customTagMap || {};
+    this.customTagMap_ = options.customTagMap || new Map();
     this.ignoreTags_ = options.ignoreTags || new Set();
     this.transformTagValue_ = options.transformTagValue || ((tagKey, tagValue): string | null => tagValue);
     this.transformTagAttributes_ =
@@ -169,6 +170,15 @@ export class Parser {
     };
   }
 
+  public updateOptions(options: ParserOptions): void {
+    this.warnCallback_ = options.warnCallback ?? this.warnCallback_;
+    this.debugCallback_ = options.debugCallback ?? this.debugCallback_;
+    this.customTagMap_ = options.customTagMap ?? this.customTagMap_;
+    this.ignoreTags_ = options.ignoreTags ?? this.ignoreTags_;
+    this.transformTagValue_ = options.transformTagValue ?? this.transformTagValue_;
+    this.transformTagAttributes_ = options.transformTagAttributes ?? this.transformTagAttributes_;
+  }
+
   protected readonly tagInfoCallback_ = (
     tagKey: string,
     tagValue: string | null,
@@ -207,8 +217,8 @@ export class Parser {
     }
 
     //4. Process custom tags:
-    if (tagKey in this.customTagMap_) {
-      const customTagProcessor = this.customTagMap_[tagKey];
+    if (this.customTagMap_.has(tagKey)) {
+      const customTagProcessor = this.customTagMap_.get(tagKey)!;
 
       return customTagProcessor(tagKey, tagValue, tagAttributes, this.parsedPlaylist_.custom, this.sharedState_);
     }

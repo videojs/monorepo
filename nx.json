@@ -51,6 +51,5 @@
   "affected": {
     "defaultBase": "main"
   },
-  "$schema": "./node_modules/nx/schemas/nx-schema.json",
-  "useLegacyCache": true
+  "$schema": "./node_modules/nx/schemas/nx-schema.json"
 }

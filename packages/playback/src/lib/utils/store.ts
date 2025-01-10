@@ -20,7 +20,7 @@ export class StoreNode<A> {
         if (this.storage_[key as keyof A] instanceof StoreNode) {
           (this.storage_[key as keyof A] as StoreNode<A>).update(value as DeepPartial<A>);
         } else {
-          this.storage_[key as keyof A] = value as A[keyof A];
+          this.storage_[key as keyof A] = this.cloneValue_(value);
         }
       }
     });
@@ -30,15 +30,34 @@ export class StoreNode<A> {
 
     Object.entries(this.storage_).forEach((pair) => {
       const [key, value] = pair;
-
-      if (value instanceof StoreNode) {
-        result[key as keyof A] = value.getSnapshot();
-      } else {
-        result[key as keyof A] = value as A[keyof A];
-      }
+      result[key as keyof A] = this.cloneValue_(value);
     });
 
     return result;
+  }
+
+  private cloneValue_<T>(val: unknown): T {
+    // we expect every object in the store to be wrapped with StoreNode
+    if (val instanceof StoreNode) {
+      return val.getSnapshot() as T;
+    }
+
+    // we do only shallow copy of a set, update if you need deep copy
+    if (val instanceof Set) {
+      return new Set(val) as T;
+    }
+
+    // we do only shallow copy of a map, update if you need deep copy
+    if (val instanceof Map) {
+      return new Map(val) as T;
+    }
+
+    // we do deep copy of the array, since we might expect nested objects
+    if (Array.isArray(val)) {
+      return val.map((v) => this.cloneValue_(v)) as T;
+    }
+
+    return val as T;
   }
 }
 
