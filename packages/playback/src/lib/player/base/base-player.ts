@@ -310,7 +310,11 @@ export abstract class BasePlayer {
    */
   public updateConfiguration(configurationChunk: DeepPartial<PlayerConfiguration>): void {
     this.configurationManager_.update(configurationChunk);
-    this.networkManager_.updateConfiguration(this.configurationManager_.getSnapshot().network);
+    const snapshot = this.configurationManager_.getSnapshot();
+
+    this.networkManager_.updateConfiguration(snapshot.network);
+    this.activePipelineLoader_?.updateConfiguration(snapshot);
+    // this.emeManager_?.updateConfiguration(snapshot.eme);
     this.eventEmitter_.emitEvent(new ConfigurationChangedEvent(this.getConfigurationSnapshot()));
   }
 
@@ -502,6 +506,7 @@ export abstract class BasePlayer {
         networkManager: this.networkManager_,
         logger: this.logger_,
         source: this.activeSource_,
+        configuration: this.getConfigurationSnapshot(),
       });
 
       this.activePipelineLoader_.load().then(

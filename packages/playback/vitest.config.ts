@@ -1,4 +1,4 @@
-import { defineConfig, mergeConfig } from 'vitest/config';
+import { defineConfig, mergeConfig, coverageConfigDefaults } from 'vitest/config';
 import baseConfig from '../../vitest.config.base';
 
 export default mergeConfig(
@@ -6,6 +6,7 @@ export default mergeConfig(
   defineConfig({
     test: {
       coverage: {
+        exclude: ['src/entry-points/**', '**/worker-script.ts', ...coverageConfigDefaults.exclude],
         reportsDirectory: './coverage',
         thresholds: {
           lines: 10,

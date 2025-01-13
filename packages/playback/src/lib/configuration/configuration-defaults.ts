@@ -1,6 +1,7 @@
 import type {
   NetworkConfiguration,
   PlayerConfiguration,
+  PlayerHlsConfiguration,
   PlayerMseConfiguration,
   PlayerNetworkConfiguration,
 } from '../types/configuration.declarations';
@@ -28,7 +29,15 @@ export const getPlayerMseConfigurationDefaults = (): PlayerMseConfiguration => (
   requiredBufferDuration: 30,
 });
 
+export const getPlayerHlsConfigurationDefaults = (): PlayerHlsConfiguration => ({
+  ignoreTags: new Set(),
+  customTagMap: new Map(),
+  transformTagValue: (tagKey, tagValue) => tagValue,
+  transformTagAttributes: (tagKey, tagAttributes) => tagAttributes,
+});
+
 export const getPlayerConfigurationDefaults = (): PlayerConfiguration => ({
   network: getPlayerNetworkConfigurationDefaults(),
   mse: getPlayerMseConfigurationDefaults(),
+  hls: getPlayerHlsConfigurationDefaults(),
 });

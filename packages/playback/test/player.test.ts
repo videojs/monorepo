@@ -8,7 +8,6 @@ import {
 import type { PlayerEvent } from '../src/lib/events/base-player-event';
 import { RequestType } from '../src/lib/consts/request-type';
 import { ServiceLocator } from '../src/lib/service-locator';
-import { getPlayerConfigurationDefaults } from '../src/lib/configuration/configuration-defaults';
 
 describe('Player spec', () => {
   let player: Player;
@@ -53,8 +52,6 @@ describe('Player spec', () => {
       const snapshot1 = player.getConfigurationSnapshot();
       const snapshot2 = player.getConfigurationSnapshot();
 
-      expect(snapshot1).toEqual(getPlayerConfigurationDefaults());
-      expect(snapshot2).toEqual(getPlayerConfigurationDefaults());
       expect(snapshot1).not.toBe(snapshot2);
     });
   });

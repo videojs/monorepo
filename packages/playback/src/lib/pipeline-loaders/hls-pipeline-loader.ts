@@ -5,6 +5,7 @@ import type { INetworkManager, INetworkRequest } from '../types/network.declarat
 import type { ILogger } from '../types/logger.declarations';
 import type { IPlayerSource } from '../types/source.declarations';
 import { RequestType } from '../consts/request-type';
+import type { PlayerConfiguration } from '../types/configuration.declarations';
 
 interface IHlsPipelineLoaderDependencies extends IPipelineLoaderDependencies {
   parser: ChunkPlaylistParser;
@@ -29,24 +30,18 @@ export class HlsPipelineLoader implements IPipelineLoader {
     }
 
     const parser = HlsPipelineLoader.hlsParserFactory_.create({
-      warnCallback: (warn) => {
-        logger.warn(warn);
-      },
-      debugCallback: (...debug) => {
-        logger.debug(...debug);
-      },
-      // TODO: add from the player's options
-      customTagMap: {},
-      ignoreTags: new Set(),
-      // transformTagValue: (tagKey, tagValue) => null,
-      // transformTagAttributes: (tagKey, tagAttributes) => {
-      //   return {};
-      // },
+      warnCallback: (warn) => logger.warn(warn),
+      debugCallback: (...debug) => logger.debug(...debug),
+      customTagMap: dependencies.configuration.hls.customTagMap,
+      ignoreTags: dependencies.configuration.hls.ignoreTags,
+      transformTagValue: dependencies.configuration.hls.transformTagValue,
+      transformTagAttributes: dependencies.configuration.hls.transformTagAttributes,
     });
 
     return new HlsPipelineLoader({
       videoElement: dependencies.videoElement,
       networkManager: dependencies.networkManager,
+      configuration: dependencies.configuration,
       source: dependencies.source,
       logger,
       parser,
@@ -59,6 +54,7 @@ export class HlsPipelineLoader implements IPipelineLoader {
   private readonly source_: IPlayerSource;
   private readonly parser_: ChunkPlaylistParser;
 
+  private configuration_: PlayerConfiguration;
   private activeNetworkRequest_: INetworkRequest<void> | null = null;
 
   public constructor(dependencies: IHlsPipelineLoaderDependencies) {
@@ -67,6 +63,7 @@ export class HlsPipelineLoader implements IPipelineLoader {
     this.logger_ = dependencies.logger;
     this.source_ = dependencies.source;
     this.parser_ = dependencies.parser;
+    this.configuration_ = dependencies.configuration;
   }
 
   public async load(): Promise<IPipeline> {
@@ -106,5 +103,10 @@ export class HlsPipelineLoader implements IPipelineLoader {
     if (this.activeNetworkRequest_) {
       this.activeNetworkRequest_.abort('abort requested by user');
     }
+  }
+
+  public updateConfiguration(configuration: PlayerConfiguration): void {
+    this.configuration_ = configuration;
+    this.parser_.updateOptions(configuration.hls);
   }
 }
