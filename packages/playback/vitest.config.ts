@@ -6,7 +6,7 @@ export default mergeConfig(
   defineConfig({
     test: {
       coverage: {
-        exclude: ['src/entry-points/**', ...coverageConfigDefaults.exclude],
+        exclude: ['src/entry-points/**', '**/worker-script.ts', ...coverageConfigDefaults.exclude],
         reportsDirectory: './coverage',
         thresholds: {
           lines: 10,
