@@ -16,3 +16,8 @@ export interface IEmeManager {
   handleWaitingForKey(): void;
   setInitData(type: string, data: ArrayBuffer): void;
 }
+
+export interface IEmeApiAdapter {
+  // TODO: implement this adapter type
+  id: string;
+}

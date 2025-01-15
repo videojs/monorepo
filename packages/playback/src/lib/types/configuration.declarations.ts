@@ -1,6 +1,5 @@
 import type { CustomTagMap, TransformTagValue, TransformTagAttributes } from '@videojs/hls-parser';
 import type { RequestType } from '../consts/request-type';
-import type { RobustnessLevel } from '../consts/eme-robustness';
 
 export interface NetworkConfiguration {
   /**
@@ -62,27 +61,28 @@ export interface PlayerHlsConfiguration {
   customTagMap: CustomTagMap;
   transformTagValue: TransformTagValue;
   transformTagAttributes: TransformTagAttributes;
-
 }
 
 export interface PlayerEmeConfiguration {
   /**
-   * Allows for using stored sessions. We store the session IDs internally.
-   * defaults to false
+   * When enabled, the player will save a mapping of the keyId to persistentSessionId
+   * to the localStorage. It will attempt to load it if encounters the same keyId and
+   * and the session is still valid.
+   * Defaults to false.
    */
-  enablePersistentKeySessions: boolean;
+  reusePersistentKeySessions: boolean;
 
   /**
    * The video robustness level associated with the content type.
    * Defults to an empty string.
    */
-  videoRobustness?: RobustnessLevel;
+  videoRobustness: string;
 
   /**
    * The audio robustness level associated with the content type.
    * Defaults to an emptry string.
    */
-  audioRobustness?: RobustnessLevel;
+  audioRobustness: string;
 }
 
 export interface PlayerConfiguration {

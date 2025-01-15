@@ -1,6 +1,7 @@
 import type {
   NetworkConfiguration,
   PlayerConfiguration,
+  PlayerEmeConfiguration,
   PlayerHlsConfiguration,
   PlayerMseConfiguration,
   PlayerNetworkConfiguration,
@@ -24,6 +25,12 @@ export const getPlayerNetworkConfigurationDefaults = (): PlayerNetworkConfigurat
   [RequestType.MediaSegment]: getNetworkConfigurationDefaults(),
 });
 
+export const getPlayerEmeConfigurationDefaults = (): PlayerEmeConfiguration => ({
+  reusePersistentKeySessions: false,
+  audioRobustness: '',
+  videoRobustness: '',
+});
+
 export const getPlayerMseConfigurationDefaults = (): PlayerMseConfiguration => ({
   useManagedMediaSourceIfAvailable: true,
   requiredBufferDuration: 30,
@@ -40,4 +47,5 @@ export const getPlayerConfigurationDefaults = (): PlayerConfiguration => ({
   network: getPlayerNetworkConfigurationDefaults(),
   mse: getPlayerMseConfigurationDefaults(),
   hls: getPlayerHlsConfigurationDefaults(),
+  eme: getPlayerEmeConfigurationDefaults(),
 });
