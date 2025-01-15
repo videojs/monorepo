@@ -63,8 +63,31 @@ export interface PlayerHlsConfiguration {
   transformTagAttributes: TransformTagAttributes;
 }
 
+export interface PlayerEmeConfiguration {
+  /**
+   * When enabled, the player will save a mapping of the keyId to persistentSessionId
+   * to the localStorage. It will attempt to load it if encounters the same keyId and
+   * and the session is still valid.
+   * Defaults to false.
+   */
+  reusePersistentKeySessions: boolean;
+
+  /**
+   * The video robustness level associated with the content type.
+   * Defults to an empty string.
+   */
+  videoRobustness: string;
+
+  /**
+   * The audio robustness level associated with the content type.
+   * Defaults to an emptry string.
+   */
+  audioRobustness: string;
+}
+
 export interface PlayerConfiguration {
   network: PlayerNetworkConfiguration;
   mse: PlayerMseConfiguration;
   hls: PlayerHlsConfiguration;
+  eme: PlayerEmeConfiguration;
 }

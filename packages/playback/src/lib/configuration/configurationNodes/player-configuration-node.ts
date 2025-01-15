@@ -3,6 +3,7 @@ import { StoreNode } from '../../utils/store';
 import type { PlayerConfiguration } from '../../types/configuration.declarations';
 import PlayerMseConfigurationImpl from './player-mse-configuration-node';
 import PlayerHlsConfigurationImpl from './player-hls-configuration-node';
+import PlayerEmeConfigurationImpl from './player-eme-configuration-node';
 
 export default class PlayerConfigurationImpl extends StoreNode<PlayerConfiguration> {
   public static default(): PlayerConfigurationImpl {
@@ -10,6 +11,7 @@ export default class PlayerConfigurationImpl extends StoreNode<PlayerConfigurati
       network: PlayerNetworkConfigurationImpl.default(),
       mse: PlayerMseConfigurationImpl.default(),
       hls: PlayerHlsConfigurationImpl.default(),
+      eme: PlayerEmeConfigurationImpl.default(),
     });
   }
 }

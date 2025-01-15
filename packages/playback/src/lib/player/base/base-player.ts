@@ -46,7 +46,7 @@ import {
   NetworkRequestAttemptFailedEvent,
   NetworkRequestAttemptStartedEvent,
 } from '../../events/network-events';
-import type { IEmeManager, IEmeManagerDependencies } from '../../types/eme-manager.declarations';
+import type { IEmeManager, IEmeManagerDependencies, IEmeApiAdapter } from '../../types/eme-manager.declarations';
 import { EncryptedEvent, WaitingForKeyEvent } from '../../events/eme-events';
 import type { PipelineLoaderFactoryStorage } from './pipeline-loader-factory-storage';
 
@@ -202,6 +202,13 @@ export abstract class BasePlayer {
   public resetEmeManager(): void {
     this.emeManager_?.dispose();
     this.emeManager_ = null;
+  }
+
+  // TODO: create adapter type
+  // eslint-disable-next-line
+  public registerEmeApiAdapter(adapter: IEmeApiAdapter): void {
+    // TODO: implement functionality to register adapter
+    // For example, this will be used for legacy fairplay.
   }
 
   protected readonly networkRequestInterceptor_ = (requestInfo: INetworkRequestInfo): Promise<INetworkRequestInfo> => {
