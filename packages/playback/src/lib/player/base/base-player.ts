@@ -204,6 +204,12 @@ export abstract class BasePlayer {
     this.emeManager_ = null;
   }
 
+  // TODO: create adapter type
+  public registerEmeApiAdapter(adapter: any): void {
+    // TODO: implement functionality to register adapter
+    // For example, this will be used for legacy fairplay.
+  }
+
   protected readonly networkRequestInterceptor_ = (requestInfo: INetworkRequestInfo): Promise<INetworkRequestInfo> => {
     return this.interceptorsStorage_.executeInterceptors(InterceptorType.NetworkRequest, requestInfo);
   };

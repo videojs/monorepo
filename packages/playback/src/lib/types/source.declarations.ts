@@ -4,10 +4,15 @@ export interface IKeySystemConfig {
   serverCertificate?: Uint8Array;
   persistentState?: MediaKeysRequirement;
   distinctiveIdentifier?: MediaKeysRequirement;
-  videoRobustness?: string;
-  audioRobustness?: string;
   sessionType?: MediaKeySessionType;
   sessionId?: string;
+  priority?: number;
+  /**
+   * A map of ClearKey key IDs to keys.
+   * These values should be encoded in hex or base64.
+   * Defaults to an empty object.
+   */
+  clearKeys?: Record<string, string>;
   /**
    * On 'individualization-request' events, this URI will be used for the license request.
    * playready specific
@@ -17,10 +22,6 @@ export interface IKeySystemConfig {
   getContentId?: (contentId: string) => string;
   // Rare cases when we want to leave it up to the user to get the license
   getLicense?: (contentId: string, keyMessage: MediaKeyMessageEvent) => void;
-  // In contrib-eme we give the user to update the values in MediaCapability. I don't think we want to do this??
-  // audioContentType: string;
-  // videoContentType: string;
-  // sessionType?? - we will get this from the request for configuration
 }
 
 export interface ILoadSource {
