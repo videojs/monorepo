@@ -17,7 +17,7 @@ import { ConfigurationManager } from './configuration/configuration-manager';
 import { EventEmitter } from './utils/event-emitter';
 import { NetworkManager } from './network/network-manager';
 import { PlayerEventType } from './consts/events';
-import { PipelineLoaderFactoryStorage } from './player/base/pipeline-loader-factory-storage';
+import { PipelineLoaderFactoryStorage } from './utils/pipeline-loader-factory-storage';
 
 export class ServiceLocator {
   public readonly logger: ILogger;

@@ -41,30 +41,30 @@
   "dependencies": {
     "@videojs/hls-parser": "*"
   },
-  "main": "./dist/main-with-worker/core/cjs/index.min.js",
-  "module": "./dist/main-with-worker/core/es/index.min.js",
-  "es2015": "./dist/main-with-worker/core/es/index.min.js",
-  "types": "./dist/main-with-worker/core/types/index.min.d.ts",
+  "main": "./dist/player-with-worker/core/cjs/index.min.js",
+  "module": "./dist/player-with-worker/core/es/index.min.js",
+  "es2015": "./dist/player-with-worker/core/es/index.min.js",
+  "types": "./dist/player-with-worker/core/types/index.min.d.ts",
   "exports": {
-    "./main-only/core": {
-      "types": "./dist/main-only/core/types/index.min.d.ts",
-      "require": "./dist/main-only/core/cjs/index.min.js",
-      "import": "./dist/main-only/core/es/index.min.js"
+    "./player/core": {
+      "types": "./dist/player/core/types/index.min.d.ts",
+      "require": "./dist/player/core/cjs/index.min.js",
+      "import": "./dist/player/core/es/index.min.js"
     },
-    "./main-only/core/debug": {
-      "types": "./dist/main-only/core/types/index.min.d.ts",
-      "require": "./dist/main-only/core/cjs/index.debug.js",
-      "import": "./dist/main-only/core/es/index.debug.js"
+    "./player/core/debug": {
+      "types": "./dist/player/core/types/index.min.d.ts",
+      "require": "./dist/player/core/cjs/index.debug.js",
+      "import": "./dist/player/core/es/index.debug.js"
     },
-    "./main-with-worker/core": {
-      "types": "./dist/main-with-worker/core/types/index.min.d.ts",
-      "require": "./dist/main-with-worker/core/cjs/index.min.js",
-      "import": "./dist/main-with-worker/core/es/index.min.js"
+    "./player-with-worker/core": {
+      "types": "./dist/player-with-worker/core/types/index.min.d.ts",
+      "require": "./dist/player-with-worker/core/cjs/index.min.js",
+      "import": "./dist/player-with-worker/core/es/index.min.js"
     },
-    "./main-with-worker/core/debug": {
-      "types": "./dist/main-with-worker/core/types/index.min.d.ts",
-      "require": "./dist/main-with-worker/core/cjs/index.debug.js",
-      "import": "./dist/main-with-worker/core/es/index.debug.js"
+    "./player-with-worker/core/debug": {
+      "types": "./dist/player-with-worker/core/types/index.min.d.ts",
+      "require": "./dist/player-with-worker/core/cjs/index.debug.js",
+      "import": "./dist/player-with-worker/core/es/index.debug.js"
     }
   }
 }

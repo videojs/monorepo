@@ -1,26 +1,26 @@
 [
   {
-    "path": "dist/main-only/core/cjs/index.min.js",
+    "path": "dist/player/core/cjs/index.min.js",
     "limit": "1 s"
   },
   {
-    "path": "dist/main-only/core/es/index.min.js",
+    "path": "dist/player/core/es/index.min.js",
     "limit": "1 s"
   },
   {
-    "path": "dist/main-only/core/iife/index.min.js",
+    "path": "dist/player/core/iife/index.min.js",
     "limit": "1 s"
   },
   {
-    "path": "dist/main-with-worker/core/cjs/index.min.js",
+    "path": "dist/player-with-worker/core/cjs/index.min.js",
     "limit": "1 s"
   },
   {
-    "path": "dist/main-with-worker/core/es/index.min.js",
+    "path": "dist/player-with-worker/core/es/index.min.js",
     "limit": "1 s"
   },
   {
-    "path": "dist/main-with-worker/core/iife/index.min.js",
+    "path": "dist/player-with-worker/core/iife/index.min.js",
     "limit": "1 s"
   }
 ]
