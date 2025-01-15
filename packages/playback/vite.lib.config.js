@@ -35,7 +35,7 @@ import { execSync } from 'node:child_process';
     __EXPERIMENTAL: false,
   };
 
-  // build production main with worker core
+  // build production player with worker core
   await build({
     mode: 'production',
     define,
@@ -48,21 +48,21 @@ import { execSync } from 'node:child_process';
           },
         ],
       }),
-      dts({ rollupTypes: true, outDir: 'dist/main-with-worker/core/types', tsconfigPath: 'tsconfig.json' }),
+      dts({ rollupTypes: true, outDir: 'dist/player-with-worker/core/types', tsconfigPath: 'tsconfig.json' }),
       bannerPlugin,
     ],
     build: {
       outDir: 'dist',
       lib: {
-        entry: 'src/entry-points/main-with-worker-core.ts',
-        fileName: (format) => `main-with-worker/core/${format}/index.min.js`,
+        entry: 'src/entry-points/player-with-worker.ts',
+        fileName: (format) => `player-with-worker/core/${format}/index.min.js`,
         formats,
         name,
       },
     },
   });
 
-  // build development main with worker core
+  // build development player with worker core
   await build({
     mode: 'development',
     define,
@@ -73,35 +73,35 @@ import { execSync } from 'node:child_process';
       emptyOutDir: false,
       minify: false,
       lib: {
-        entry: 'src/entry-points/main-with-worker-core.ts',
-        fileName: (format) => `main-with-worker/core/${format}/index.debug.js`,
+        entry: 'src/entry-points/player-with-worker.ts',
+        fileName: (format) => `player-with-worker/core/${format}/index.debug.js`,
         formats,
         name,
       },
     },
   });
 
-  // build production main-only core
+  // build production player core
   await build({
     mode: 'production',
     define,
     plugins: [
-      dts({ rollupTypes: true, outDir: 'dist/main-only/core/types', tsconfigPath: 'tsconfig.json' }),
+      dts({ rollupTypes: true, outDir: 'dist/player/core/types', tsconfigPath: 'tsconfig.json' }),
       bannerPlugin,
     ],
     build: {
       outDir: 'dist',
       emptyOutDir: false,
       lib: {
-        entry: 'src/entry-points/main-only-core.ts',
-        fileName: (format) => `main-only/core/${format}/index.min.js`,
+        entry: 'src/entry-points/player.ts',
+        fileName: (format) => `player/core/${format}/index.min.js`,
         formats,
         name,
       },
     },
   });
 
-  // build development main-only core
+  // build development player core
   await build({
     mode: 'development',
     define,
@@ -112,8 +112,8 @@ import { execSync } from 'node:child_process';
       emptyOutDir: false,
       minify: false,
       lib: {
-        entry: 'src/entry-points/main-only-core.ts',
-        fileName: (format) => `main-only/core/${format}/index.debug.js`,
+        entry: 'src/entry-points/player.ts',
+        fileName: (format) => `player/core/${format}/index.debug.js`,
         formats,
         name,
       },

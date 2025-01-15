@@ -4,34 +4,32 @@ import reactLogo from './assets/react.svg';
 import viteLogo from '/vite.svg';
 import './App.css';
 
-import { Player as MainThreadOnlyPlayer } from '../../src/entry-points/main-only-core';
-import { Player as MainThreadWithWorkerPlayer } from '../../src/entry-points/main-with-worker-core';
+import { Player } from '../../src/entry-points/player';
+import { Player as PlayerWithWorker } from '../../src/entry-points/player-with-worker';
 
-const mainThreadOnlyPlayer = MainThreadOnlyPlayer.create();
-const mainThreadWithWorkerPlayer = MainThreadWithWorkerPlayer.create();
+const player = Player.create();
+const playerWithWorker = PlayerWithWorker.create();
 
-const MAIN_THREAD_ONLY_VIDEO_ID = 'main-thread-only-player';
-const MAIN_THREAD_WITH_WORKER_VIDEO_ID = 'main-thread-with-worker-player';
+const PLAYER_ID = 'player';
+const PLAYER_WITH_WORKER_ID = 'player-with-worker';
 
 /**
  *
  */
 function App(): JSX.Element {
   useEffect(() => {
-    const mainThreadOnlyPlayerElem = document.getElementById(MAIN_THREAD_ONLY_VIDEO_ID) as HTMLVideoElement;
-    const mainThreadWithWorkerPlayerElem = document.getElementById(
-      MAIN_THREAD_WITH_WORKER_VIDEO_ID
-    ) as HTMLVideoElement;
+    const playerElem = document.getElementById(PLAYER_ID) as HTMLVideoElement;
+    const playerWithWorkerElem = document.getElementById(PLAYER_WITH_WORKER_ID) as HTMLVideoElement;
 
-    mainThreadOnlyPlayer.updateConfiguration({ mse: { requiredBufferDuration: 15 } });
-    mainThreadWithWorkerPlayer.updateConfiguration({ mse: { requiredBufferDuration: 15 } });
+    player.updateConfiguration({ mse: { requiredBufferDuration: 15 } });
+    playerWithWorker.updateConfiguration({ mse: { requiredBufferDuration: 15 } });
 
-    mainThreadOnlyPlayer.attach(mainThreadOnlyPlayerElem);
-    mainThreadWithWorkerPlayer.attach(mainThreadWithWorkerPlayerElem);
+    player.attach(playerElem);
+    playerWithWorker.attach(playerWithWorkerElem);
 
     return (): void => {
-      mainThreadOnlyPlayer.detach();
-      mainThreadWithWorkerPlayer.detach();
+      player.detach();
+      playerWithWorker.detach();
     };
   }, []);
 
@@ -51,12 +49,12 @@ function App(): JSX.Element {
       </div>
 
       <div className="player-container">
-        <h1>Main Thread Only Player</h1>
-        <video id="main-thread-only-player"></video>
+        <h1>Player</h1>
+        <video id="player"></video>
       </div>
       <div className="player-container">
-        <h1>Main Thread With Worker Player</h1>
-        <video id="main-thread-with-worker-player"></video>
+        <h1>Player with worker</h1>
+        <video id="player-with-worker"></video>
       </div>
     </>
   );
