@@ -66,6 +66,21 @@ export class EmeManager implements IEmeManager {
     // TODO: implement handling of initData
   }
 
+  // public initializeMediaKeys() {
+  //   // Getting this from contrib eme as it seems to fix a bug in older chrome browsers:
+  //   // https://bugs.chromium.org/p/chromium/issues/detail?id=895449
+  //   // It basically fakes the encrypted event to set up media keys.
+  //   // I'm 80 percent we don't want to keep this
+  // }
+
+  public getSupportedCDMs(): Array<string> {
+    // Get's a list of supported CDMs if the user is interested.
+    // should check FairPlay, PlayReady, Widevine, and ClearKey.
+    return [];
+  }
+
+  // Do we want a function to return the current mediaKeySession, licenses, etc.?
+
   public handleWaitingForKey(): void {
     // TODO: check if we have pending request or init one if we have init data
   }

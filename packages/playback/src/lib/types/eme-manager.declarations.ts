@@ -11,6 +11,7 @@ export interface IEmeManager {
   attach(videoElement: HTMLVideoElement): void;
   detach(): void;
   dispose(): void;
+  getSupportedCDMs(): Array<string>;
   stop(): void;
   setSource(source: IPlayerSource): void;
   handleWaitingForKey(): void;
