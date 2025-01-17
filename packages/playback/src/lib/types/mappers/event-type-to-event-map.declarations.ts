@@ -40,4 +40,11 @@ export interface PlayerEventMap {
   [PlayerEventType.Error]: ErrorEvent;
 }
 
+export interface ParseEventMap {
+  [PlayerEventType.HlsPlaylistParsed]: LoggerLevelChangedEvent;
+  [PlayerEventType.DashManifestParsed]: VolumeChangedEvent;
+}
+
 export type EventTypeToEventMap = NetworkEventMap & PlayerEventMap;
+
+export type PrivateEventTypeToEventMap = ParseEventMap;

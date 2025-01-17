@@ -16,4 +16,6 @@ export enum PlayerEventType {
   NetworkRequestAttemptCompletedSuccessfully = 'NetworkRequestAttemptCompletedSuccessfully',
   NetworkRequestAttemptCompletedUnsuccessfully = 'NetworkRequestAttemptCompletedUnsuccessfully',
   NetworkRequestAttemptFailed = 'NetworkRequestAttemptFailed',
+  HlsPlaylistParsed = 'HlsPlaylistParsed',
+  DashManifestParsed = 'DashManifestParsed',
 }

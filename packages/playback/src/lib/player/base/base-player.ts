@@ -9,7 +9,7 @@ import type { PlayerConfiguration } from '../../types/configuration.declarations
 import type { DeepPartial } from '../../types/utility.declarations';
 import type { IStore } from '../../types/store.declarations';
 import type { EventListener, IEventEmitter } from '../../types/event-emitter.declarations';
-import type { EventTypeToEventMap } from '../../types/mappers/event-type-to-event-map.declarations';
+import type { EventTypeToEventMap, PrivateEventTypeToEventMap } from '../../types/mappers/event-type-to-event-map.declarations';
 // events
 import {
   ConfigurationChangedEvent,
@@ -59,6 +59,7 @@ export interface PlayerDependencies {
   readonly interceptorsStorage: IInterceptorsStorage<InterceptorTypeToInterceptorPayloadMap>;
   readonly configurationManager: IStore<PlayerConfiguration>;
   readonly eventEmitter: IEventEmitter<EventTypeToEventMap>;
+  readonly privateEventEmitter: IEventEmitter<PrivateEventTypeToEventMap>;
   readonly pipelineLoaderFactoryStorage: PipelineLoaderFactoryStorage;
   // we have to duplicate network manager in both main and worker threads since we may have eme controller on main thread, which requires network manager
   readonly networkManager: INetworkManager;
@@ -133,9 +134,14 @@ export abstract class BasePlayer {
   protected readonly logger_: ILogger;
 
   /**
-   * internal event emitter service
+   * internal event emitter service for public events
    */
   protected readonly eventEmitter_: IEventEmitter<EventTypeToEventMap>;
+
+  /**
+   * internal event emitter service for private events used throughout the application.
+   */
+  protected readonly privateEventEmitter_: IEventEmitter<PrivateEventTypeToEventMap>;
 
   /**
    * internal interceptor's storage service
@@ -168,6 +174,7 @@ export abstract class BasePlayer {
   protected constructor(dependencies: PlayerDependencies) {
     this.logger_ = dependencies.logger;
     this.eventEmitter_ = dependencies.eventEmitter;
+    this.privateEventEmitter_ = dependencies.privateEventEmitter;
     this.interceptorsStorage_ = dependencies.interceptorsStorage;
     this.configurationManager_ = dependencies.configurationManager;
     this.networkManager_ = dependencies.networkManager;
@@ -188,6 +195,7 @@ export abstract class BasePlayer {
     this.emeManager_ = factory({
       logger: this.logger_.createSubLogger('EmeManager'),
       networkManager: this.networkManager_,
+      privateEventEmitter: this.privateEventEmitter_,
     });
 
     if (this.activeVideoElement_) {

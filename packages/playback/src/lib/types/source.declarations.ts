@@ -40,7 +40,7 @@ export interface ILoadSource {
 export interface ILoadRemoteSource extends ILoadSource {
   /**
    * Popular use-cases: (http:|https:|data:|blob:) all should work fine with fetch
-   * Potentially, could be any other protocols, so custom network manager should be provider by the client
+   * Potentially, could be any other protocols, so custom network manager should be provide by the client
    */
   readonly url: URL;
 }
