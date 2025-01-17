@@ -212,10 +212,10 @@ export class EmeManager implements IEmeManager {
         // TODO: Create an event for request media key system
         this.logger_.debug();
 
-        mediaKeySystemAccess =  await navigator.requestMediaKeySystemAccess(keySystem, [keySystemConfig]);
+        const mediaKeySystemAccess = await navigator.requestMediaKeySystemAccess(keySystem, [keySystemConfig]);
         return mediaKeySystemAccess;
       } catch (error) {
-        // Error: could not get system acces for keySystem with keySystemConfig
+        // Warn about a failed request, but loop should continue.
       }
     }
 
