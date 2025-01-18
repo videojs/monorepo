@@ -1,5 +1,6 @@
-export interface IPlayerThumbnailTrack {
-  id: string;
+import type { IPlayerTextTrack } from './text-track.declarations';
+
+export interface IPlayerThumbnailTrack extends IPlayerTextTrack {
   isActive: boolean;
 }
 

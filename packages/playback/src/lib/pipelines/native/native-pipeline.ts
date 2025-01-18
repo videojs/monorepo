@@ -5,10 +5,13 @@ import { PlayerAudioTrack } from '../../models/player-audio-track';
 import type { IQualityLevel } from '../../types/quality-level.declarations';
 import type { PlaybackState } from 'src/lib/consts/playback-state';
 import type { IPlayerTextTrack } from 'src/lib/types/text-track.declarations';
-import type {
-  IRemoteVttThumbnailTrackOptions,
-  IPlayerThumbnailTrack,
+import {
+  type IRemoteVttThumbnailTrackOptions,
+  type IPlayerThumbnailTrack,
 } from 'src/lib/types/thumbnail-track.declarations';
+import { PlayerTextTrack } from 'src/lib/models/player-text-tracks';
+import { PlayerThumbnailTrack } from 'src/lib/models/player-thumbnail-tracks';
+import { TextTrackKind, TextTrackMode, Thumbnails } from 'src/lib/consts/text-tracks';
 
 export class NativePipeline extends BasePipeline {
   public static create(dependencies: IPipelineDependencies): NativePipeline {
@@ -18,25 +21,57 @@ export class NativePipeline extends BasePipeline {
   }
 
   public getTextTracks(): Array<IPlayerTextTrack> {
-    throw new Error('Method not implemented.');
+    if (this.videoElement_.textTracks) {
+      return PlayerTextTrack.fromTextTracks(this.videoElement_.textTracks);
+    }
+    return [];
   }
 
-  // eslint-disable-next-line no-unused-vars,@typescript-eslint/no-unused-vars
   public removeRemoteThumbnailTrack(id: string): boolean {
-    throw new Error('Method not implemented.');
+    if (this.videoElement_.textTracks) {
+      const trackToRemove = this.videoElement_.textTracks.getTrackById(id);
+
+      if (!trackToRemove) {
+        return false;
+      }
+      const tracks = this.videoElement_.querySelectorAll('track');
+
+      for (let i = 0; tracks.length; i++) {
+        if (tracks[i].track === trackToRemove) {
+          this.videoElement_.removeChild(tracks[i]);
+          return true;
+        }
+      }
+    }
+    return false;
   }
 
-  // eslint-disable-next-line no-unused-vars,@typescript-eslint/no-unused-vars
   public addRemoteVttThumbnailTrack(options: IRemoteVttThumbnailTrackOptions): boolean {
-    throw new Error('Method not implemented.');
+    // TODO: Request and parse thumbnails
+    if (options.url) {
+      this.videoElement_.addTextTrack(TextTrackKind.Metadata, Thumbnails);
+      return true;
+    }
+    return false;
   }
 
-  // eslint-disable-next-line no-unused-vars,@typescript-eslint/no-unused-vars
   public selectThumbnailTrack(id: string): boolean {
-    throw new Error('Method not implemented.');
+    if (this.videoElement_.textTracks) {
+      const trackToSelect = this.videoElement_.textTracks.getTrackById(id);
+
+      if (trackToSelect && trackToSelect.mode === TextTrackMode.Disabled) {
+        trackToSelect.mode = TextTrackMode.Hidden;
+        return true;
+      }
+    }
+    return false;
   }
+
   public getThumbnailTracks(): Array<IPlayerThumbnailTrack> {
-    throw new Error('Method not implemented.');
+    if (this.videoElement_.textTracks) {
+      return PlayerThumbnailTrack.fromTextTracks(this.videoElement_.textTracks);
+    }
+    return [];
   }
   public getPlaybackState(): PlaybackState {
     throw new Error('Method not implemented.');
