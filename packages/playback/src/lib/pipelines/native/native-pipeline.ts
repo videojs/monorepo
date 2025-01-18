@@ -3,15 +3,15 @@ import type { IPipelineDependencies } from '../../types/pipeline.declarations';
 import type { IPlayerAudioTrack } from '../../types/audio-track.declarations';
 import { PlayerAudioTrack } from '../../models/player-audio-track';
 import type { IQualityLevel } from '../../types/quality-level.declarations';
-import type { PlaybackState } from 'src/lib/consts/playback-state';
-import type { IPlayerTextTrack } from 'src/lib/types/text-track.declarations';
+import type { PlaybackState } from '../../consts/playback-state';
+import type { IPlayerTextTrack } from '../../types/text-track.declarations';
 import {
   type IRemoteVttThumbnailTrackOptions,
   type IPlayerThumbnailTrack,
-} from 'src/lib/types/thumbnail-track.declarations';
-import { PlayerTextTrack } from 'src/lib/models/player-text-tracks';
-import { PlayerThumbnailTrack } from 'src/lib/models/player-thumbnail-tracks';
-import { TextTrackKind, TextTrackMode, Thumbnails } from 'src/lib/consts/text-tracks';
+} from '../../types/thumbnail-track.declarations';
+import { PlayerTextTrack } from '../../models/player-text-tracks';
+import { PlayerThumbnailTrack } from '../../models/player-thumbnail-tracks';
+import { TextTrackKind, TextTrackMode, Thumbnails } from '../../consts/text-tracks';
 
 export class NativePipeline extends BasePipeline {
   public static create(dependencies: IPipelineDependencies): NativePipeline {
