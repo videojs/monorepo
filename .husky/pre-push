@@ -1,1 +1,1 @@
-npm test:browser
+npm run test:browser
