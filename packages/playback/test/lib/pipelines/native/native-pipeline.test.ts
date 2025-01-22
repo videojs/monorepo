@@ -1,7 +1,7 @@
 import type { IPipelineDependencies } from 'src/entry-points/api-reference';
 import { NativePipeline } from '../../../../src/lib/pipelines/native/native-pipeline';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { TextTrackKind } from '../../../../src/lib/consts/text-tracks';
+import { TextTrackKind, TextTrackMode } from '../../../../src/lib/consts/text-tracks';
 
 describe('NativePipeline', () => {
   let nativePipeline: NativePipeline;
@@ -24,7 +24,6 @@ describe('NativePipeline', () => {
     });
 
     it('should get text tracks', () => {
-      // add text tracks.
       let tracks = nativePipeline.getTextTracks();
       const labelOne = 'foo';
       const languageOne = 'en';
@@ -43,8 +42,6 @@ describe('NativePipeline', () => {
       const labelTwo = 'bar';
       const languageTwo = 'sp';
       videoElement.addTextTrack(TextTrackKind.Subtitles, labelTwo, languageTwo);
-
-      // add metadata track
       videoElement.addTextTrack(TextTrackKind.Metadata, labelTwo, languageTwo);
 
       // should only return non-metadata tracks.
@@ -53,6 +50,25 @@ describe('NativePipeline', () => {
       expect(tracks[1].kind).toEqual(TextTrackKind.Subtitles);
       expect(tracks[1].label).toEqual(labelTwo);
       expect(tracks[1].language).toEqual(languageTwo);
+    });
+
+    it('should add and remove existing thumbnail track', () => {
+      // add thumbnail track.
+      const didAddTrack = nativePipeline.addRemoteVttThumbnailTrack({ url: new URL('https://foo.bar') });
+      expect(didAddTrack).toBeTruthy();
+
+      const thumbnailTracksBeforeRemove = nativePipeline.getThumbnailTracks();
+      expect(thumbnailTracksBeforeRemove.length).toEqual(1);
+      expect(thumbnailTracksBeforeRemove[0].mode).toEqual(TextTrackMode.Hidden);
+
+      const trackId = '';
+      const didRemoveTrack = nativePipeline.removeRemoteThumbnailTrack(trackId);
+      expect(didRemoveTrack).toBeTruthy();
+
+      // native text tracks can only be disabled as there is no track element to remove.
+      const thumbnailTracksAfterRemove = nativePipeline.getThumbnailTracks();
+      expect(thumbnailTracksAfterRemove.length).toEqual(1);
+      expect(thumbnailTracksAfterRemove[0].mode).toEqual(TextTrackMode.Disabled);
     });
   });
 });

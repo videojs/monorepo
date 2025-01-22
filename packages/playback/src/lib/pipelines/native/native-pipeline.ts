@@ -34,20 +34,15 @@ export class NativePipeline extends BasePipeline {
       if (!trackToRemove) {
         return false;
       }
-      const tracks = this.videoElement_.querySelectorAll('track');
-
-      for (let i = 0; tracks.length; i++) {
-        if (tracks[i].track === trackToRemove) {
-          this.videoElement_.removeChild(tracks[i]);
-          return true;
-        }
-      }
+      // disable native track since there is no Track element to remove.
+      trackToRemove.mode = TextTrackMode.Disabled;
+      return true;
     }
     return false;
   }
 
   public addRemoteVttThumbnailTrack(options: IRemoteVttThumbnailTrackOptions): boolean {
-    // TODO: Request and parse thumbnails
+    // TODO: Request and parse thumbnails.
     if (options.url) {
       this.videoElement_.addTextTrack(TextTrackKind.Metadata, Thumbnails);
       return true;
