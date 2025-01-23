@@ -3,7 +3,7 @@ import type { IPipelineDependencies } from '../../types/pipeline.declarations';
 import type { IPlayerAudioTrack } from '../../types/audio-track.declarations';
 import { PlayerAudioTrack } from '../../models/player-audio-track';
 import type { IQualityLevel } from '../../types/quality-level.declarations';
-import type { PlaybackState } from '../../consts/playback-state';
+import { PlaybackState } from '../../consts/playback-state';
 import type { IPlayerTextTrack } from '../../types/text-track.declarations';
 import {
   type IRemoteVttThumbnailTrackOptions,
@@ -14,6 +14,15 @@ import { PlayerThumbnailTrack } from '../../models/player-thumbnail-tracks';
 import { TextTrackKind, TextTrackMode, Thumbnails } from '../../consts/text-tracks';
 
 export class NativePipeline extends BasePipeline {
+  private playbackState_: PlaybackState = PlaybackState.Idle;
+
+  private constructor(dependencies: IPipelineDependencies) {
+    super(dependencies);
+    this.videoElement_.onwaiting = (): void => {
+      this.playbackState_ = PlaybackState.Buffering;
+    };
+  }
+
   public static create(dependencies: IPipelineDependencies): NativePipeline {
     dependencies.logger = dependencies.logger.createSubLogger('NativePipeline');
 
@@ -69,7 +78,7 @@ export class NativePipeline extends BasePipeline {
     return [];
   }
   public getPlaybackState(): PlaybackState {
-    throw new Error('Method not implemented.');
+    return this.playbackState_;
   }
 
   public getAudioTracks(): Array<IPlayerAudioTrack> {
@@ -119,10 +128,22 @@ export class NativePipeline extends BasePipeline {
 
     // TODO: check for autoplay/preload/etc
     this.videoElement_.load();
+    this.playbackState_ = PlaybackState.Loading;
   }
 
   public dispose(): void {
     this.videoElement_.removeAttribute('src');
     this.videoElement_.load();
+    this.playbackState_ = PlaybackState.Idle;
+  }
+
+  public play(): void {
+    super.play();
+    this.playbackState_ = PlaybackState.Playing;
+  }
+
+  public pause(): void {
+    super.pause();
+    this.playbackState_ = PlaybackState.Paused;
   }
 }
