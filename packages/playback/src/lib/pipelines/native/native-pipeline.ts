@@ -63,7 +63,7 @@ export class NativePipeline extends BasePipeline {
     if (this.videoElement_.textTracks) {
       const trackToSelect = this.videoElement_.textTracks.getTrackById(id);
 
-      if (trackToSelect && trackToSelect.mode === TextTrackMode.Disabled) {
+      if (trackToSelect) {
         trackToSelect.mode = TextTrackMode.Hidden;
         return true;
       }
