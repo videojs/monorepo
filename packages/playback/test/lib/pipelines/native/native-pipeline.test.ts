@@ -1,4 +1,4 @@
-import type { IPipelineDependencies } from 'src/entry-points/api-reference';
+import type { AudioTrack, AudioTrackList, IPipelineDependencies } from 'src/entry-points/api-reference';
 import { NativePipeline } from '../../../../src/lib/pipelines/native/native-pipeline';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { TextTrackKind, TextTrackMode } from '../../../../src/lib/consts/text-tracks';
@@ -85,6 +85,73 @@ describe('NativePipeline', () => {
       const wrongTrackId = 'foo';
       trackWasSelected = nativePipeline.selectThumbnailTrack(wrongTrackId);
       expect(trackWasSelected).toBe(false);
+    });
+
+    // chrome does not support the audioTrack API. So need to mock everything.
+    it('should get audio tracks', () => {
+      const id = 'foo';
+      const enabled = true;
+      const kind = 'main';
+      const label = 'bar';
+      const language = 'en';
+      const audioTrack: AudioTrack = {
+        id,
+        enabled,
+        kind,
+        label,
+        language,
+      };
+
+      let nativeAudioTracks = nativePipeline.getAudioTracks();
+      expect(nativeAudioTracks).toEqual([]);
+
+      // add audio track
+      videoElement.audioTracks = {
+        length: 1,
+      } as AudioTrackList;
+      videoElement.audioTracks[0] = audioTrack;
+
+      nativeAudioTracks = nativePipeline.getAudioTracks();
+      expect(nativeAudioTracks.length).toBe(1);
+      expect(nativeAudioTracks).toBeDefined();
+      expect(nativeAudioTracks[0].id).toEqual(id);
+      expect(nativeAudioTracks[0].isActive).toEqual(enabled);
+      expect(nativeAudioTracks[0].kind).toEqual(kind);
+      expect(nativeAudioTracks[0].label).toEqual(label);
+      expect(nativeAudioTracks[0].language).toEqual(language);
+    });
+
+    it('should select audio track', () => {
+      const id = 'foo';
+      const audioTrack: AudioTrack = {
+        id,
+        enabled: false,
+        kind: 'alternate',
+        label: 'bar',
+        language: 'sp',
+      };
+      // add audio track
+      videoElement.audioTracks = {
+        length: 1,
+        getTrackById: (id_: string) => {
+          // simple mock for one track
+          const isSameId = videoElement.audioTracks && videoElement.audioTracks[0].id === id_;
+          if (isSameId) {
+            return videoElement.audioTracks ? videoElement.audioTracks[0] : null;
+          }
+          return null;
+        },
+        [Symbol.iterator]: function* () {
+          yield audioTrack;
+        },
+      } as unknown as AudioTrackList;
+      videoElement.audioTracks[0] = audioTrack;
+
+      let didSelectTrack = nativePipeline.selectAudioTrack('bar');
+      expect(didSelectTrack).toBe(false);
+
+      didSelectTrack = nativePipeline.selectAudioTrack(id);
+      expect(didSelectTrack).toBe(true);
     });
   });
 });
