@@ -2,6 +2,7 @@ import type { AudioTrack, AudioTrackList, IPipelineDependencies } from 'src/entr
 import { NativePipeline } from '../../../../src/lib/pipelines/native/native-pipeline';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { TextTrackKind, TextTrackMode } from '../../../../src/lib/consts/text-tracks';
+import { PlaybackState } from '../../../../src/lib/consts/playback-state';
 
 describe('NativePipeline', () => {
   let nativePipeline: NativePipeline;
@@ -15,6 +16,9 @@ describe('NativePipeline', () => {
         },
       },
       videoElement,
+      source: {
+        url: new URL('https://foo.bar.m3u8'),
+      },
     } as IPipelineDependencies);
   });
 
@@ -112,7 +116,7 @@ describe('NativePipeline', () => {
       videoElement.audioTracks[0] = audioTrack;
 
       nativeAudioTracks = nativePipeline.getAudioTracks();
-      expect(nativeAudioTracks.length).toBe(1);
+      expect(nativeAudioTracks.length).toEqual(1);
       expect(nativeAudioTracks).toBeDefined();
       expect(nativeAudioTracks[0].id).toEqual(id);
       expect(nativeAudioTracks[0].isActive).toEqual(enabled);
@@ -152,6 +156,47 @@ describe('NativePipeline', () => {
 
       didSelectTrack = nativePipeline.selectAudioTrack(id);
       expect(didSelectTrack).toBe(true);
+    });
+
+    it('should set src and state on start', () => {
+      const expectedSrc = 'https://foo.bar.m3u8/';
+      let expectedState = PlaybackState.Idle;
+      expect(videoElement.src).toBe('');
+      expect(nativePipeline.getPlaybackState()).toBe(expectedState);
+      nativePipeline.start();
+      expectedState = PlaybackState.Loading;
+      expect(videoElement.src).toEqual(expectedSrc);
+      expect(nativePipeline.getPlaybackState()).toBe(expectedState);
+    });
+
+    it('should remove src and state on dispose', () => {
+      nativePipeline.start();
+      nativePipeline.dispose();
+      expect(videoElement.src).toBe('');
+      expect(nativePipeline.getPlaybackState()).toEqual(PlaybackState.Idle);
+    });
+
+    // TODO: fix play throwing error without user interaction.
+    it.skip('should set state on play', () => {
+      nativePipeline.play();
+      expect(nativePipeline.getPlaybackState()).toEqual(PlaybackState.Playing);
+    });
+
+    it('should set state on pause', () => {
+      nativePipeline.pause();
+      expect(nativePipeline.getPlaybackState()).toEqual(PlaybackState.Paused);
+    });
+
+    it('getQualityLevels should return empty array', () => {
+      expect(nativePipeline.getQualityLevels()).toEqual([]);
+    });
+
+    it('selectQualityLevel should return false', () => {
+      expect(nativePipeline.selectQualityLevel()).toBe(false);
+    });
+
+    it('selectAutoQualityLevel should return false', () => {
+      expect(nativePipeline.selectAutoQualityLevel()).toBe(false);
     });
   });
 });
