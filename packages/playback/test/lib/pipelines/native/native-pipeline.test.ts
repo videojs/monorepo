@@ -20,6 +20,26 @@ describe('NativePipeline', () => {
         url: new URL('https://foo.bar.m3u8'),
       },
     } as IPipelineDependencies);
+    // add text mocks here.
+    window.HTMLMediaElement.prototype.addTextTrack = (kind: string, label?: string, language?: string): TextTrack => {
+      const textTrack = {
+        kind,
+        label,
+        language,
+        mode: TextTrackMode.Hidden,
+        id: `id-${label}-${language}`,
+      } as TextTrack;
+      videoElement.textTracks[videoElement.textTracks.length] = textTrack;
+      return textTrack;
+    };
+    videoElement.textTracks.getTrackById = (id: string): TextTrack | null => {
+      for (let i = 0; i < videoElement.textTracks.length; i++) {
+        if (videoElement.textTracks[i].id === id) {
+          return videoElement.textTracks[i];
+        }
+      }
+      return null;
+    };
   });
 
   describe('Basic Pipeline Operations', () => {
@@ -65,7 +85,7 @@ describe('NativePipeline', () => {
       expect(thumbnailTracksBeforeRemove.length).toEqual(1);
       expect(thumbnailTracksBeforeRemove[0].mode).toEqual(TextTrackMode.Hidden);
 
-      const trackId = '';
+      const trackId = `id-thumbnails-undefined`;
       const didRemoveTrack = nativePipeline.removeRemoteThumbnailTrack(trackId);
       expect(didRemoveTrack).toBe(true);
 
@@ -81,7 +101,7 @@ describe('NativePipeline', () => {
       expect(didAddTrack).toBe(true);
 
       // select track
-      const trackId = '';
+      const trackId = `id-thumbnails-undefined`;
       let trackWasSelected = nativePipeline.selectThumbnailTrack(trackId);
       expect(trackWasSelected).toBe(true);
 
@@ -110,11 +130,16 @@ describe('NativePipeline', () => {
       expect(nativeAudioTracks).toEqual([]);
 
       // add audio track
-      videoElement.audioTracks = {
+      const audioTracks = {
         length: 1,
-      } as AudioTrackList;
-      videoElement.audioTracks[0] = audioTrack;
-
+        [Symbol.iterator]: function* () {
+          yield audioTrack;
+        },
+      } as unknown as AudioTrackList;
+      Object.defineProperty(videoElement, 'audioTracks', { value: audioTracks });
+      if (videoElement.audioTracks) {
+        videoElement.audioTracks[0] = audioTrack;
+      }
       nativeAudioTracks = nativePipeline.getAudioTracks();
       expect(nativeAudioTracks.length).toEqual(1);
       expect(nativeAudioTracks).toBeDefined();
@@ -135,7 +160,7 @@ describe('NativePipeline', () => {
         language: 'sp',
       };
       // add audio track
-      videoElement.audioTracks = {
+      const audioTracks = {
         length: 1,
         getTrackById: (id_: string) => {
           // simple mock for one track
@@ -149,7 +174,10 @@ describe('NativePipeline', () => {
           yield audioTrack;
         },
       } as unknown as AudioTrackList;
-      videoElement.audioTracks[0] = audioTrack;
+      Object.defineProperty(videoElement, 'audioTracks', { value: audioTracks });
+      if (videoElement.audioTracks) {
+        videoElement.audioTracks[0] = audioTrack;
+      }
 
       let didSelectTrack = nativePipeline.selectAudioTrack('bar');
       expect(didSelectTrack).toBe(false);
@@ -176,8 +204,7 @@ describe('NativePipeline', () => {
       expect(nativePipeline.getPlaybackState()).toEqual(PlaybackState.Idle);
     });
 
-    // TODO: fix play throwing error without user interaction.
-    it.skip('should set state on play', () => {
+    it('should set state on play', () => {
       nativePipeline.play();
       expect(nativePipeline.getPlaybackState()).toEqual(PlaybackState.Playing);
     });
