@@ -1,4 +1,9 @@
-import type { AudioTrack, AudioTrackList, IPipelineDependencies } from 'src/entry-points/api-reference';
+import type {
+  AudioTrack,
+  AudioTrackList,
+  IPipelineDependencies,
+  IRemoteVttThumbnailTrackOptions,
+} from 'src/entry-points/api-reference';
 import { NativePipeline } from '../../../../src/lib/pipelines/native/native-pipeline';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { TextTrackKind, TextTrackMode } from '../../../../src/lib/consts/text-tracks';
@@ -20,7 +25,8 @@ describe('NativePipeline', () => {
         url: new URL('https://foo.bar.m3u8'),
       },
     } as IPipelineDependencies);
-    // add text mocks here.
+
+    // text mocks.
     window.HTMLMediaElement.prototype.addTextTrack = (kind: string, label?: string, language?: string): TextTrack => {
       const textTrack = {
         kind,
@@ -77,16 +83,28 @@ describe('NativePipeline', () => {
     });
 
     it('should add, get, and remove existing thumbnail track', () => {
+      // no tracks.
+      expect(nativePipeline.getThumbnailTracks()).toEqual([]);
+
       // add thumbnail track.
-      const didAddTrack = nativePipeline.addRemoteVttThumbnailTrack({ url: new URL('https://foo.bar') });
+      let didAddTrack = nativePipeline.addRemoteVttThumbnailTrack({} as IRemoteVttThumbnailTrackOptions);
+      expect(didAddTrack).toBe(false);
+      didAddTrack = nativePipeline.addRemoteVttThumbnailTrack({ url: new URL('https://foo.bar') });
       expect(didAddTrack).toBe(true);
 
+      // get thumbnail tracks.
       const thumbnailTracksBeforeRemove = nativePipeline.getThumbnailTracks();
       expect(thumbnailTracksBeforeRemove.length).toEqual(1);
       expect(thumbnailTracksBeforeRemove[0].mode).toEqual(TextTrackMode.Hidden);
 
-      const trackId = `id-thumbnails-undefined`;
-      const didRemoveTrack = nativePipeline.removeRemoteThumbnailTrack(trackId);
+      // remove wrong thumbnail track.
+      const wrongTrackId = 'id-foo-bar';
+      let didRemoveTrack = nativePipeline.removeRemoteThumbnailTrack(wrongTrackId);
+      expect(didRemoveTrack).toBe(false);
+
+      // remove thumbnail track.
+      const trackId = 'id-thumbnails-undefined';
+      didRemoveTrack = nativePipeline.removeRemoteThumbnailTrack(trackId);
       expect(didRemoveTrack).toBe(true);
 
       // native text tracks can only be disabled as there is no track element to remove.
@@ -101,7 +119,7 @@ describe('NativePipeline', () => {
       expect(didAddTrack).toBe(true);
 
       // select track
-      const trackId = `id-thumbnails-undefined`;
+      const trackId = 'id-thumbnails-undefined';
       let trackWasSelected = nativePipeline.selectThumbnailTrack(trackId);
       expect(trackWasSelected).toBe(true);
 
@@ -224,6 +242,20 @@ describe('NativePipeline', () => {
 
     it('selectAutoQualityLevel should return false', () => {
       expect(nativePipeline.selectAutoQualityLevel()).toBe(false);
+    });
+
+    it('state should be set to buffering on waiting', async () => {
+      const checkState = (): void => {
+        expect(nativePipeline.getPlaybackState()).toEqual(PlaybackState.Buffering);
+      };
+      expect(nativePipeline.getPlaybackState()).toEqual(PlaybackState.Idle);
+      // first waiting to set state.
+      const waitingEvent = new Event('waiting');
+      videoElement.dispatchEvent(waitingEvent);
+
+      // check state on second waiting.
+      videoElement.onwaiting = await checkState;
+      videoElement.dispatchEvent(waitingEvent);
     });
   });
 });
