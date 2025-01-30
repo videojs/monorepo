@@ -1,4 +1,4 @@
-import { TextTrackMode } from '../consts/text-tracks';
+import { TextTrackMode, Thumbnails } from '../consts/text-tracks';
 import type { IPlayerThumbnailTrack } from '../types/thumbnail-track.declarations';
 import { PlayerTextTrack } from './player-text-tracks';
 
@@ -13,7 +13,7 @@ export class PlayerThumbnailTrack extends PlayerTextTrack implements IPlayerThum
   public static fromTextTracks(textTrackList: TextTrackList): Array<PlayerThumbnailTrack> {
     const playerThumbnailTracks = [];
     for (let i = 0; i < textTrackList.length; i++) {
-      if (textTrackList[i].label.startsWith('thumbnails')) {
+      if (textTrackList[i].label.startsWith(Thumbnails)) {
         playerThumbnailTracks.push(new PlayerThumbnailTrack(textTrackList[i]));
       }
     }

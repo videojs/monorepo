@@ -40,18 +40,17 @@ export class NativePipeline extends BasePipeline {
     if (this.videoElement_.textTracks) {
       const trackToRemove = this.videoElement_.textTracks.getTrackById(id);
 
-      if (!trackToRemove) {
-        return false;
-      }
       // disable native track since there is no Track element to remove.
-      trackToRemove.mode = TextTrackMode.Disabled;
-      return true;
+      if (trackToRemove && trackToRemove.label.startsWith(Thumbnails)) {
+        trackToRemove.mode = TextTrackMode.Disabled;
+        return true;
+      }
     }
     return false;
   }
 
   public addRemoteVttThumbnailTrack(options: IRemoteVttThumbnailTrackOptions): boolean {
-    // TODO: Request and parse thumbnails.
+    // TODO: Request and parse thumbnails from VTT file or manifest.
     if (options.url) {
       this.videoElement_.addTextTrack(TextTrackKind.Metadata, Thumbnails);
       return true;
@@ -63,7 +62,7 @@ export class NativePipeline extends BasePipeline {
     if (this.videoElement_.textTracks) {
       const trackToSelect = this.videoElement_.textTracks.getTrackById(id);
 
-      if (trackToSelect) {
+      if (trackToSelect && trackToSelect.label.startsWith(Thumbnails)) {
         trackToSelect.mode = TextTrackMode.Hidden;
         return true;
       }
