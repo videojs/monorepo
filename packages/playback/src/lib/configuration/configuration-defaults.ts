@@ -32,8 +32,6 @@ export const getPlayerMseConfigurationDefaults = (): PlayerMseConfiguration => (
 export const getPlayerHlsConfigurationDefaults = (): PlayerHlsConfiguration => ({
   ignoreTags: new Set(),
   customTagMap: new Map(),
-  transformTagValue: (tagKey, tagValue) => tagValue,
-  transformTagAttributes: (tagKey, tagAttributes) => tagAttributes,
 });
 
 export const getPlayerConfigurationDefaults = (): PlayerConfiguration => ({
