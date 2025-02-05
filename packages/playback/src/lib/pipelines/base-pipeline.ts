@@ -71,7 +71,9 @@ export abstract class BasePipeline implements IPipeline {
   }
 
   public play(): void {
-    void this.videoElement_.play();
+    void this.videoElement_.play().catch((error) => {
+      this.logger_.error(error);
+    });
   }
 
   public seek(seekTarget: number): boolean {

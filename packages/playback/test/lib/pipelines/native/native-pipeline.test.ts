@@ -46,6 +46,9 @@ describe('NativePipeline', () => {
       }
       return null;
     };
+    window.HTMLMediaElement.prototype.play = (): Promise<void> => {
+      return Promise.resolve();
+    };
   });
 
   describe('Basic Pipeline Operations', () => {
