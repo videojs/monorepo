@@ -34,8 +34,6 @@ export class HlsPipelineLoader implements IPipelineLoader {
       debugCallback: (...debug) => logger.debug(...debug),
       customTagMap: dependencies.configuration.hls.customTagMap,
       ignoreTags: dependencies.configuration.hls.ignoreTags,
-      transformTagValue: dependencies.configuration.hls.transformTagValue,
-      transformTagAttributes: dependencies.configuration.hls.transformTagAttributes,
     });
 
     return new HlsPipelineLoader({
