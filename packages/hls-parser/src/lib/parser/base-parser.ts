@@ -1,12 +1,4 @@
-import type {
-  CustomTagMap,
-  DebugCallback,
-  ParseOptions,
-  ParserOptions,
-  TransformTagAttributes,
-  TransformTagValue,
-  WarnCallback,
-} from '../types/parser-options';
+import type { CustomTagMap, DebugCallback, ParseOptions, ParserOptions, WarnCallback } from '../types/parser-options';
 import type { EmptyTagProcessor } from '../tags/empty-tag-processors';
 import {
   ExtM3u,
@@ -106,8 +98,6 @@ export class Parser {
   private debugCallback_: DebugCallback;
   private customTagMap_: CustomTagMap;
   private ignoreTags_: Set<string>;
-  private transformTagValue_: TransformTagValue;
-  private transformTagAttributes_: TransformTagAttributes;
 
   private readonly emptyTagMap_: Record<string, EmptyTagProcessor>;
   private readonly tagValueMap_: Record<string, TagWithValueProcessor>;
@@ -121,9 +111,6 @@ export class Parser {
     this.debugCallback_ = options.debugCallback || ((): void => {});
     this.customTagMap_ = options.customTagMap || new Map();
     this.ignoreTags_ = options.ignoreTags || new Set();
-    this.transformTagValue_ = options.transformTagValue || ((tagKey, tagValue): string | null => tagValue);
-    this.transformTagAttributes_ =
-      options.transformTagAttributes || ((tagKey, tagAttributes): Record<string, string> => tagAttributes);
 
     this.parsedPlaylist_ = createDefaultParsedPlaylist();
     this.sharedState_ = createDefaultSharedState();
@@ -170,13 +157,31 @@ export class Parser {
     };
   }
 
+  /**
+   * Transforms tag attributes before processing them.
+   * Override this method for custom tag attribute transformations.
+   * @param tagKey - tag key
+   * @param tagValue - tag value
+   */
+  public transformTagValue(tagKey: string, tagValue: string | null): string | null {
+    return tagValue;
+  }
+
+  /**
+   * Transforms tag attributes before processing them.
+   * Override this method for custom tag attribute transformations.
+   * @param tagKey - tag key
+   * @param tagAttributes - tag attributes
+   */
+  public transformTagAttributes(tagKey: string, tagAttributes: Record<string, string>): Record<string, string> {
+    return tagAttributes;
+  }
+
   public updateOptions(options: ParserOptions): void {
     this.warnCallback_ = options.warnCallback ?? this.warnCallback_;
     this.debugCallback_ = options.debugCallback ?? this.debugCallback_;
     this.customTagMap_ = options.customTagMap ?? this.customTagMap_;
     this.ignoreTags_ = options.ignoreTags ?? this.ignoreTags_;
-    this.transformTagValue_ = options.transformTagValue ?? this.transformTagValue_;
-    this.transformTagAttributes_ = options.transformTagAttributes ?? this.transformTagAttributes_;
   }
 
   protected readonly tagInfoCallback_ = (
@@ -198,7 +203,7 @@ export class Parser {
 
     //2. Process tags with values:
     if (tagKey in this.tagValueMap_) {
-      tagValue = this.transformTagValue_(tagKey, tagValue);
+      tagValue = this.transformTagValue(tagKey, tagValue);
 
       if (tagValue === null) {
         return this.warnCallback_(missingTagValueWarn(tagKey));
@@ -210,7 +215,7 @@ export class Parser {
 
     //3. Process tags with attributes:
     if (tagKey in this.tagAttributesMap_) {
-      tagAttributes = this.transformTagAttributes_(tagKey, tagAttributes);
+      tagAttributes = this.transformTagAttributes(tagKey, tagAttributes);
       const tagWithAttributesProcessor = this.tagAttributesMap_[tagKey];
 
       return tagWithAttributesProcessor.process(tagAttributes, this.parsedPlaylist_, this.sharedState_);
