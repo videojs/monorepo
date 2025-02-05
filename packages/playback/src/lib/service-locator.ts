@@ -18,7 +18,8 @@ import { EventEmitter } from './utils/event-emitter';
 import { NetworkManager } from './network/network-manager';
 import { PlayerEventType } from './consts/events';
 import { PipelineLoaderFactoryStorage } from './utils/pipeline-loader-factory-storage';
-import { FullPlaylistParser } from '@videojs/hls-parser';
+import type { ChunkPlaylistParser, FullPlaylistParser } from '@videojs/hls-parser';
+import { HlsPipeline } from './pipelines/mse/hls-pipeline';
 
 export class ServiceLocator {
   public readonly logger: ILogger;
@@ -68,11 +69,7 @@ export class ServiceLocator {
     return new NetworkManager(dependencies);
   }
 
-  public getHlsParser(): FullPlaylistParser {
-    const hlsParserLogger = this.logger.createSubLogger('HLSFullPlaylistParser');
-    return FullPlaylistParser.create({
-      debugCallback: hlsParserLogger.debug,
-      warnCallback: hlsParserLogger.warn,
-    });
+  public getHlsParser(): FullPlaylistParser | ChunkPlaylistParser {
+    return HlsPipeline.parser;
   }
 }
