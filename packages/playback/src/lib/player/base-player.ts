@@ -400,6 +400,7 @@ export abstract class BasePlayer {
     this.activeVideoElement_.addEventListener('volumechange', this.handleVolumeChange_);
     this.activeVideoElement_.addEventListener('ratechange', this.handleRateChange_);
     this.activeVideoElement_.addEventListener('timeupdate', this.handleTimeUpdate_);
+    this.activeVideoElement_.addEventListener('waiting', this.handleWaiting_);
     // EME
     this.activeVideoElement_.addEventListener('encrypted', this.handleEncryptedEvent_);
     this.activeVideoElement_.addEventListener('waitingforkey', this.handleWaitingForKeyEvent_);
@@ -428,6 +429,7 @@ export abstract class BasePlayer {
     this.activeVideoElement_.removeEventListener('volumechange', this.handleVolumeChange_);
     this.activeVideoElement_.removeEventListener('ratechange', this.handleRateChange_);
     this.activeVideoElement_.removeEventListener('timeupdate', this.handleTimeUpdate_);
+    this.activeVideoElement_.removeEventListener('waiting', this.handleWaiting_);
     // EME
     this.activeVideoElement_.removeEventListener('encrypted', this.handleEncryptedEvent_);
     this.activeVideoElement_.removeEventListener('waitingforkey', this.handleWaitingForKeyEvent_);
@@ -575,6 +577,10 @@ export abstract class BasePlayer {
     this.eventEmitter_.emitEvent(new CurrentTimeChangedEvent(target.currentTime));
   };
 
+  protected readonly handleWaiting_ = (): void => {
+    this.transitionPlaybackState_(PlaybackState.Buffering);
+  };
+
   protected readonly handleEncryptedEvent_ = (event: MediaEncryptedEvent): void => {
     this.logger_.debug('received encrypted event', event);
 
@@ -621,6 +627,7 @@ export abstract class BasePlayer {
    */
   public play(): void {
     this.activeVideoElement_?.play();
+    this.transitionPlaybackState_(PlaybackState.Playing);
     // TODO: pass command to loader/pipeline
   }
 
@@ -629,6 +636,7 @@ export abstract class BasePlayer {
    */
   public pause(): void {
     this.activeVideoElement_?.pause();
+    this.transitionPlaybackState_(PlaybackState.Paused);
     // TODO: pass command to loader/pipeline
   }
 

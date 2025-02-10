@@ -3,14 +3,20 @@ import type { IPipelineDependencies } from '../../types/pipeline.declarations';
 import type { IPlayerAudioTrack } from '../../types/audio-track.declarations';
 import { PlayerAudioTrack } from '../../models/player-audio-track';
 import type { IQualityLevel } from '../../types/quality-level.declarations';
-import type { PlaybackState } from 'src/lib/consts/playback-state';
-import type { IPlayerTextTrack } from 'src/lib/types/text-track.declarations';
-import type {
-  IRemoteVttThumbnailTrackOptions,
-  IPlayerThumbnailTrack,
-} from 'src/lib/types/thumbnail-track.declarations';
+import type { IPlayerTextTrack } from '../../types/text-track.declarations';
+import {
+  type IRemoteVttThumbnailTrackOptions,
+  type IPlayerThumbnailTrack,
+} from '../../types/thumbnail-track.declarations';
+import { PlayerTextTrack } from '../../models/player-text-tracks';
+import { PlayerThumbnailTrack } from '../../models/player-thumbnail-tracks';
+import { TextTrackKind, TextTrackMode, Thumbnails } from '../../consts/text-tracks';
 
 export class NativePipeline extends BasePipeline {
+  private constructor(dependencies: IPipelineDependencies) {
+    super(dependencies);
+  }
+
   public static create(dependencies: IPipelineDependencies): NativePipeline {
     dependencies.logger = dependencies.logger.createSubLogger('NativePipeline');
 
@@ -18,28 +24,51 @@ export class NativePipeline extends BasePipeline {
   }
 
   public getTextTracks(): Array<IPlayerTextTrack> {
-    throw new Error('Method not implemented.');
+    if (this.videoElement_.textTracks) {
+      return PlayerTextTrack.fromTextTracks(this.videoElement_.textTracks);
+    }
+    return [];
   }
 
-  // eslint-disable-next-line no-unused-vars,@typescript-eslint/no-unused-vars
   public removeRemoteThumbnailTrack(id: string): boolean {
-    throw new Error('Method not implemented.');
+    if (this.videoElement_.textTracks) {
+      const trackToRemove = this.videoElement_.textTracks.getTrackById(id);
+
+      // disable native track since there is no Track element to remove.
+      if (trackToRemove && trackToRemove.label.startsWith(Thumbnails)) {
+        trackToRemove.mode = TextTrackMode.Disabled;
+        return true;
+      }
+    }
+    return false;
   }
 
-  // eslint-disable-next-line no-unused-vars,@typescript-eslint/no-unused-vars
   public addRemoteVttThumbnailTrack(options: IRemoteVttThumbnailTrackOptions): boolean {
-    throw new Error('Method not implemented.');
+    // TODO: Request and parse thumbnails from VTT file or manifest.
+    if (options.url) {
+      this.videoElement_.addTextTrack(TextTrackKind.Metadata, Thumbnails);
+      return true;
+    }
+    return false;
   }
 
-  // eslint-disable-next-line no-unused-vars,@typescript-eslint/no-unused-vars
   public selectThumbnailTrack(id: string): boolean {
-    throw new Error('Method not implemented.');
+    if (this.videoElement_.textTracks) {
+      const trackToSelect = this.videoElement_.textTracks.getTrackById(id);
+
+      if (trackToSelect && trackToSelect.label.startsWith(Thumbnails)) {
+        trackToSelect.mode = TextTrackMode.Hidden;
+        return true;
+      }
+    }
+    return false;
   }
+
   public getThumbnailTracks(): Array<IPlayerThumbnailTrack> {
-    throw new Error('Method not implemented.');
-  }
-  public getPlaybackState(): PlaybackState {
-    throw new Error('Method not implemented.');
+    if (this.videoElement_.textTracks) {
+      return PlayerThumbnailTrack.fromTextTracks(this.videoElement_.textTracks);
+    }
+    return [];
   }
 
   public getAudioTracks(): Array<IPlayerAudioTrack> {
@@ -94,5 +123,13 @@ export class NativePipeline extends BasePipeline {
   public dispose(): void {
     this.videoElement_.removeAttribute('src');
     this.videoElement_.load();
+  }
+
+  public play(): void {
+    super.play();
+  }
+
+  public pause(): void {
+    super.pause();
   }
 }
