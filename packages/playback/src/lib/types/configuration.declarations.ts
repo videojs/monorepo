@@ -1,4 +1,4 @@
-import type { CustomTagMap, TransformTagValue, TransformTagAttributes } from '@videojs/hls-parser';
+import type { CustomTagMap } from '@videojs/hls-parser';
 import type { RequestType } from '../consts/request-type';
 
 export interface NetworkConfiguration {
@@ -59,8 +59,6 @@ export interface PlayerMseConfiguration {
 export interface PlayerHlsConfiguration {
   ignoreTags: Set<string>;
   customTagMap: CustomTagMap;
-  transformTagValue: TransformTagValue;
-  transformTagAttributes: TransformTagAttributes;
 }
 
 export interface PlayerConfiguration {
