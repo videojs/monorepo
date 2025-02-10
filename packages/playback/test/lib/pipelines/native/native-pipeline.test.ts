@@ -7,7 +7,6 @@ import type {
 import { NativePipeline } from '../../../../src/lib/pipelines/native/native-pipeline';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { TextTrackKind, TextTrackMode } from '../../../../src/lib/consts/text-tracks';
-import { PlaybackState } from '../../../../src/lib/consts/playback-state';
 
 describe('NativePipeline', () => {
   let nativePipeline: NativePipeline;
@@ -209,30 +208,15 @@ describe('NativePipeline', () => {
 
     it('should set src and state on start', () => {
       const expectedSrc = 'https://foo.bar.m3u8/';
-      let expectedState = PlaybackState.Idle;
       expect(videoElement.src).toBe('');
-      expect(nativePipeline.getPlaybackState()).toBe(expectedState);
       nativePipeline.start();
-      expectedState = PlaybackState.Loading;
       expect(videoElement.src).toEqual(expectedSrc);
-      expect(nativePipeline.getPlaybackState()).toBe(expectedState);
     });
 
     it('should remove src and state on dispose', () => {
       nativePipeline.start();
       nativePipeline.dispose();
       expect(videoElement.src).toBe('');
-      expect(nativePipeline.getPlaybackState()).toEqual(PlaybackState.Idle);
-    });
-
-    it('should set state on play', () => {
-      nativePipeline.play();
-      expect(nativePipeline.getPlaybackState()).toEqual(PlaybackState.Playing);
-    });
-
-    it('should set state on pause', () => {
-      nativePipeline.pause();
-      expect(nativePipeline.getPlaybackState()).toEqual(PlaybackState.Paused);
     });
 
     it('getQualityLevels should return empty array', () => {
@@ -245,20 +229,6 @@ describe('NativePipeline', () => {
 
     it('selectAutoQualityLevel should return false', () => {
       expect(nativePipeline.selectAutoQualityLevel()).toBe(false);
-    });
-
-    it('state should be set to buffering on waiting', async () => {
-      const checkState = (): void => {
-        expect(nativePipeline.getPlaybackState()).toEqual(PlaybackState.Buffering);
-      };
-      expect(nativePipeline.getPlaybackState()).toEqual(PlaybackState.Idle);
-      // first waiting to set state.
-      const waitingEvent = new Event('waiting');
-      videoElement.dispatchEvent(waitingEvent);
-
-      // check state on second waiting.
-      videoElement.onwaiting = await checkState;
-      videoElement.dispatchEvent(waitingEvent);
     });
   });
 });

@@ -1,4 +1,3 @@
-import type { PlaybackState } from '../consts/playback-state';
 import type { IPlaybackStats } from './playback-stats.declarations';
 import type { ILogger } from './logger.declarations';
 import type { INetworkManager } from './network.declarations';
@@ -47,7 +46,6 @@ export interface IPipelineFactoryConfiguration {
 export interface IPipeline {
   play(): void;
   pause(): void;
-  getPlaybackState(): PlaybackState;
   seek(seekTarget: number): boolean;
   getSeekableRanges(): Array<IPlayerTimeRange>;
   getBufferedRanges(): Array<IPlayerTimeRange>;

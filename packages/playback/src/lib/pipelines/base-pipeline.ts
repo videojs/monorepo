@@ -1,6 +1,5 @@
 import type { IPipeline, IPipelineDependencies } from '../types/pipeline.declarations';
 import { PlayerTimeRange } from '../models/player-time-range';
-import type { PlaybackState } from '../consts/playback-state';
 import type { IPlaybackStats } from '../types/playback-stats.declarations';
 import type { INetworkManager } from '../types/network.declarations';
 import type { IQualityLevel } from '../types/quality-level.declarations';
@@ -45,8 +44,6 @@ export abstract class BasePipeline implements IPipeline {
   public abstract selectThumbnailTrack(id: string): boolean;
 
   public abstract getThumbnailTracks(): Array<IPlayerThumbnailTrack>;
-
-  public abstract getPlaybackState(): PlaybackState;
 
   public abstract start(): void;
 

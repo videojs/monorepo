@@ -8,6 +8,7 @@ import {
 import type { PlayerEvent } from '../../../src/lib/events/base-player-event';
 import { RequestType } from '../../../src/lib/consts/request-type';
 import { ServiceLocator } from '../../../src/lib/service-locator';
+import { PlaybackState } from '../../../src/lib/consts/playback-state';
 
 describe('Player spec', () => {
   let player: Player;
@@ -249,6 +250,25 @@ describe('Player spec', () => {
       serviceLocator.eventEmitter.emitEvent(new VolumeChangedEvent(0.5));
 
       expect(expectedEvents).toEqual(actualEvents);
+    });
+  });
+
+  describe('state', () => {
+    it('should transition to playing', () => {
+      player.play();
+      expect(player.getPlaybackState()).toEqual(PlaybackState.Playing);
+    });
+
+    it('should transition to paused', () => {
+      player.pause();
+      expect(player.getPlaybackState()).toEqual(PlaybackState.Paused);
+    });
+
+    it('should transition to buffering', () => {
+      // cast as any to call handleWaiting directly.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (player as any).handleWaiting_();
+      expect(player.getPlaybackState()).toEqual(PlaybackState.Buffering);
     });
   });
 });
