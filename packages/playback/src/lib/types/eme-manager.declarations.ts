@@ -25,12 +25,14 @@ export interface IEmeApiAdapter {
   id: string;
 }
 
-export interface IKeySystemConfiguration {
-  label?: string;
-  initDataTypes?: Array<string>;
-  audioCapabilities?: Array<MediaKeySystemMediaCapability>;
-  videoCapabilities?: Array<MediaKeySystemMediaCapability>;
-  distinctiveIdentifier?: MediaKeysRequirement;
-  persistentState?: MediaKeysRequirement;
-  sessionTypes?: Array<string>;
+export interface IKeySessionMetadata {
+  loaded: boolean;
+  initData: Uint8Array;
+  initDataType?: string;
+  session: MediaKeySession;
+  type?: string;
+  // oldExpiration? - The expiration of the session on the last check.  This is used to fire  an event when it changes.
+  // updatePromise? - An optional Promise that will be resolved/rejected on the next update()
+  // call.  This is used to track the 'license-release' message when calling
+  // remove().
 }
