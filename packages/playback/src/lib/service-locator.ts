@@ -18,6 +18,8 @@ import { EventEmitter } from './utils/event-emitter';
 import { NetworkManager } from './network/network-manager';
 import { PlayerEventType } from './consts/events';
 import { PipelineLoaderFactoryStorage } from './utils/pipeline-loader-factory-storage';
+import type { ChunkPlaylistParser } from '@videojs/hls-parser';
+import { HlsPipelineLoader } from './pipeline-loaders/hls-pipeline-loader';
 
 export class ServiceLocator {
   public readonly logger: ILogger;
@@ -65,5 +67,9 @@ export class ServiceLocator {
 
   protected createNetworkManager_(dependencies: NetworkManagerDependencies): INetworkManager {
     return new NetworkManager(dependencies);
+  }
+
+  public getHlsParser(): typeof ChunkPlaylistParser | null {
+    return HlsPipelineLoader.getHlsParser();
   }
 }

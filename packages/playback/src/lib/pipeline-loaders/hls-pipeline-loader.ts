@@ -1,5 +1,4 @@
 import type { ChunkPlaylistParser } from '@videojs/hls-parser';
-
 import type { IPipeline, IPipelineLoader, IPipelineLoaderDependencies } from '../types/pipeline.declarations';
 import type { INetworkManager, INetworkRequest } from '../types/network.declarations';
 import type { ILogger } from '../types/logger.declarations';
@@ -16,6 +15,10 @@ export class HlsPipelineLoader implements IPipelineLoader {
 
   public static setHlsParser(parser: typeof ChunkPlaylistParser): void {
     HlsPipelineLoader.hlsParserFactory_ = parser;
+  }
+
+  public static getHlsParser(): typeof ChunkPlaylistParser | null {
+    return HlsPipelineLoader.hlsParserFactory_;
   }
 
   public static setVodPipelineFactory(): void {}
