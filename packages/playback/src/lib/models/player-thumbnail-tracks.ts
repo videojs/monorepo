@@ -1,4 +1,4 @@
-import { TextTrackMode, Thumbnails } from '../consts/text-tracks';
+import { Thumbnails } from '../consts/text-tracks';
 import type { IPlayerThumbnailTrack } from '../types/thumbnail-track.declarations';
 import { PlayerTextTrack } from './player-text-tracks';
 
@@ -7,7 +7,7 @@ export class PlayerThumbnailTrack extends PlayerTextTrack implements IPlayerThum
 
   public constructor(textTrack: TextTrack) {
     super(textTrack);
-    this.isActive = this.mode !== TextTrackMode.Disabled;
+    this.isActive = this.mode !== 'disabled';
   }
 
   public static fromTextTracks(textTrackList: TextTrackList): Array<PlayerThumbnailTrack> {

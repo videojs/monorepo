@@ -6,7 +6,6 @@ import type {
 } from 'src/entry-points/api-reference';
 import { NativePipeline } from '../../../../src/lib/pipelines/native/native-pipeline';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { TextTrackKind, TextTrackMode } from '../../../../src/lib/consts/text-tracks';
 
 describe('NativePipeline', () => {
   let nativePipeline: NativePipeline;
@@ -25,13 +24,13 @@ describe('NativePipeline', () => {
       },
     } as IPipelineDependencies);
 
-    // text mocks.
+    // text mocks and test utility.
     window.HTMLMediaElement.prototype.addTextTrack = (kind: string, label?: string, language?: string): TextTrack => {
       const textTrack = {
         kind,
         label,
         language,
-        mode: TextTrackMode.Hidden,
+        mode: 'hidden',
         id: `id-${label}-${language}`,
       } as TextTrack;
       videoElement.textTracks[videoElement.textTracks.length] = textTrack;
@@ -59,27 +58,30 @@ describe('NativePipeline', () => {
       let tracks = nativePipeline.getTextTracks();
       const labelOne = 'foo';
       const languageOne = 'en';
+      const kind = 'captions';
 
       expect(tracks).toEqual([]);
 
       // add one track
-      videoElement.addTextTrack(TextTrackKind.Captions, labelOne, languageOne);
+      videoElement.addTextTrack(kind, labelOne, languageOne);
       tracks = nativePipeline.getTextTracks();
       expect(tracks.length).toEqual(1);
-      expect(tracks[0].kind).toEqual(TextTrackKind.Captions);
+      expect(tracks[0].kind).toEqual(kind);
       expect(tracks[0].label).toEqual(labelOne);
       expect(tracks[0].language).toEqual(languageOne);
 
       // add more tracks
       const labelTwo = 'bar';
       const languageTwo = 'sp';
-      videoElement.addTextTrack(TextTrackKind.Subtitles, labelTwo, languageTwo);
-      videoElement.addTextTrack(TextTrackKind.Metadata, labelTwo, languageTwo);
+      const kindTwo = 'subtitles';
+
+      videoElement.addTextTrack(kindTwo, labelTwo, languageTwo);
+      videoElement.addTextTrack('metadata', labelTwo, languageTwo);
 
       // should only return non-metadata tracks.
       tracks = nativePipeline.getTextTracks();
       expect(tracks.length).toEqual(2);
-      expect(tracks[1].kind).toEqual(TextTrackKind.Subtitles);
+      expect(tracks[1].kind).toEqual(kindTwo);
       expect(tracks[1].label).toEqual(labelTwo);
       expect(tracks[1].language).toEqual(languageTwo);
     });
@@ -97,7 +99,7 @@ describe('NativePipeline', () => {
       // get thumbnail tracks.
       const thumbnailTracksBeforeRemove = nativePipeline.getThumbnailTracks();
       expect(thumbnailTracksBeforeRemove.length).toEqual(1);
-      expect(thumbnailTracksBeforeRemove[0].mode).toEqual(TextTrackMode.Hidden);
+      expect(thumbnailTracksBeforeRemove[0].mode).toEqual('hidden');
 
       // remove wrong thumbnail track.
       const wrongTrackId = 'id-foo-bar';
@@ -112,7 +114,7 @@ describe('NativePipeline', () => {
       // native text tracks can only be disabled as there is no track element to remove.
       const thumbnailTracksAfterRemove = nativePipeline.getThumbnailTracks();
       expect(thumbnailTracksAfterRemove.length).toEqual(1);
-      expect(thumbnailTracksAfterRemove[0].mode).toEqual(TextTrackMode.Disabled);
+      expect(thumbnailTracksAfterRemove[0].mode).toEqual('disabled');
     });
 
     it('should select thumbnail track', () => {

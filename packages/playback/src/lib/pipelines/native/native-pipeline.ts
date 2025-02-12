@@ -10,7 +10,7 @@ import {
 } from '../../types/thumbnail-track.declarations';
 import { PlayerTextTrack } from '../../models/player-text-tracks';
 import { PlayerThumbnailTrack } from '../../models/player-thumbnail-tracks';
-import { TextTrackKind, TextTrackMode, Thumbnails } from '../../consts/text-tracks';
+import { Thumbnails } from '../../consts/text-tracks';
 
 export class NativePipeline extends BasePipeline {
   private constructor(dependencies: IPipelineDependencies) {
@@ -36,7 +36,7 @@ export class NativePipeline extends BasePipeline {
 
       // disable native track since there is no Track element to remove.
       if (trackToRemove && trackToRemove.label.startsWith(Thumbnails)) {
-        trackToRemove.mode = TextTrackMode.Disabled;
+        trackToRemove.mode = 'disabled';
         return true;
       }
     }
@@ -46,7 +46,7 @@ export class NativePipeline extends BasePipeline {
   public addRemoteVttThumbnailTrack(options: IRemoteVttThumbnailTrackOptions): boolean {
     // TODO: Request and parse thumbnails from VTT file or manifest.
     if (options.url) {
-      this.videoElement_.addTextTrack(TextTrackKind.Metadata, Thumbnails);
+      this.videoElement_.addTextTrack('metadata', Thumbnails);
       return true;
     }
     return false;
@@ -57,7 +57,7 @@ export class NativePipeline extends BasePipeline {
       const trackToSelect = this.videoElement_.textTracks.getTrackById(id);
 
       if (trackToSelect && trackToSelect.label.startsWith(Thumbnails)) {
-        trackToSelect.mode = TextTrackMode.Hidden;
+        trackToSelect.mode = 'hidden';
         return true;
       }
     }

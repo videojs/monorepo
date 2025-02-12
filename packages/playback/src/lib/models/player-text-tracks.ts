@@ -1,4 +1,3 @@
-import { TextTrackKind } from '../consts/text-tracks';
 import type { IPlayerTextTrack } from '../types/text-track.declarations';
 
 export class PlayerTextTrack implements IPlayerTextTrack {
@@ -23,7 +22,7 @@ export class PlayerTextTrack implements IPlayerTextTrack {
   public static fromTextTracks(textTrackList: TextTrackList): Array<PlayerTextTrack> {
     const playerTextTracks = [];
     for (let i = 0; i < textTrackList.length; i++) {
-      if (textTrackList[i].kind !== TextTrackKind.Metadata) {
+      if (textTrackList[i].kind !== 'metadata') {
         playerTextTracks.push(new PlayerTextTrack(textTrackList[i]));
       }
     }
