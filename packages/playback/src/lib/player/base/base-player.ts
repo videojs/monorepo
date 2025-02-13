@@ -24,10 +24,18 @@ import {
   VolumeChangedEvent,
   PlaybackStateChangedEvent,
 } from '../../events/player-events';
+import { EncryptedEvent, WaitingForKeyEvent } from '../../events/eme-events';
+import {
+  NetworkRequestAttemptCompletedSuccessfullyEvent,
+  NetworkRequestAttemptCompletedUnsuccessfullyEvent,
+  NetworkRequestAttemptFailedEvent,
+  NetworkRequestAttemptStartedEvent,
+} from '../../events/network-events';
 // models
 import { PlayerSource } from '../../models/player-source';
 // errors
 import { NoSupportedPipelineError, PipelineLoaderFailedToDeterminePipelineError } from '../../errors/pipeline-errors';
+import { EmeManagerMissingError } from '../../errors/eme-errors';
 // pipelines
 import { InterceptorType } from '../../consts/interceptor-type';
 import type { InterceptorTypeToInterceptorPayloadMap } from '../../types/mappers/interceptor-type-to-interceptor-map.declarations';
@@ -43,16 +51,8 @@ import type { IPlayerTextTrack } from '../../types/text-track.declarations';
 import { NativePipeline } from '../../pipelines/native/native-pipeline';
 import type { IPipeline, IPipelineLoader, IPipelineLoaderFactory } from '../../types/pipeline.declarations';
 import type { INetworkManager, INetworkRequestInfo, INetworkResponseInfo } from '../../types/network.declarations';
-import {
-  NetworkRequestAttemptCompletedSuccessfullyEvent,
-  NetworkRequestAttemptCompletedUnsuccessfullyEvent,
-  NetworkRequestAttemptFailedEvent,
-  NetworkRequestAttemptStartedEvent,
-} from '../../events/network-events';
 import type { IEmeManager, IEmeManagerDependencies, IEmeApiAdapter } from '../../types/eme-manager.declarations';
-import { EncryptedEvent, WaitingForKeyEvent } from '../../events/eme-events';
 import type { PipelineLoaderFactoryStorage } from './pipeline-loader-factory-storage';
-import { EmeManagerMissingError } from 'src/lib/errors/eme-errors';
 
 declare const __COMMIT_HASH: string;
 declare const __VERSION: string;
