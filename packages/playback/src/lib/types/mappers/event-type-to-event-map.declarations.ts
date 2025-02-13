@@ -17,7 +17,14 @@ import type {
   NetworkRequestAttemptStartedEvent,
 } from '../../events/network-events';
 import type { PlayerEvent } from '../../events/base-player-event';
-import type { EncryptedEvent, WaitingForKeyEvent } from '../../events/eme-events';
+import type {
+  EncryptedEvent,
+  KeySessionClosedEvent,
+  KeySessionCreatedEvent,
+  KeySessionUpdatedEvent,
+  KeySystemAccessRequestedEvent,
+  WaitingForKeyEvent,
+} from '../../events/eme-events';
 
 export interface NetworkEventMap {
   [PlayerEventType.NetworkRequestAttemptStarted]: NetworkRequestAttemptStartedEvent;
@@ -45,6 +52,16 @@ export interface ParseEventMap {
   [PlayerEventType.DashManifestParsed]: VolumeChangedEvent;
 }
 
-export type EventTypeToEventMap = NetworkEventMap & PlayerEventMap;
+export interface EmeEventMap {
+  [PlayerEventType.KeySessionCreated]: KeySessionCreatedEvent;
+  [PlayerEventType.KeySystemAccessRequested]: KeySystemAccessRequestedEvent;
+  [PlayerEventType.KeySessionClosed]: KeySessionClosedEvent;
+}
 
-export type PrivateEventTypeToEventMap = ParseEventMap;
+export interface EmePrivateEventMap {
+  [PlayerEventType.KeySessionUpdated]: KeySessionUpdatedEvent;
+}
+
+export type EventTypeToEventMap = NetworkEventMap & PlayerEventMap & EmeEventMap;
+
+export type PrivateEventTypeToEventMap = ParseEventMap & EmePrivateEventMap;

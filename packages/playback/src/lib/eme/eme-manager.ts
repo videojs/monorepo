@@ -1,22 +1,38 @@
-import type {
-  IEmeManager,
-  IEmeManagerDependencies,
-  IKeySessionMetadata
-} from '../types/eme-manager.declarations';
+import type { IEmeManager, IEmeManagerDependencies, IKeySessionMetadata } from '../types/eme-manager.declarations';
 import type { INetworkManager } from '../types/network.declarations';
 import type { ILogger } from '../types/logger.declarations';
 import type { IPlayerSource } from '../types/source.declarations';
-import { IEventEmitter } from '../types/event-emitter.declarations';
-import { PrivateEventTypeToEventMap } from '../types/mappers/event-type-to-event-map.declarations';
+import type { IEventEmitter } from '../types/event-emitter.declarations';
+import type {
+  EventTypeToEventMap,
+  PrivateEventTypeToEventMap,
+} from '../types/mappers/event-type-to-event-map.declarations';
 import { PlayerEventType } from '../consts/events';
 import { RequestType } from '../consts/request-type';
+import {
+  InvalidServerCertificateError,
+  KeySessionClosedError,
+  KeySessionCreateError,
+  LicenseRequestError,
+  LicenseResponseRejectedError,
+  MediaKeyCreateError,
+  MissingEmeSupportError,
+  SourceMissingKeySystemsError,
+  SourceNotSetError,
+} from '../errors/eme-errors';
+import { ErrorEvent } from '../events/player-events';
+import {
+  KeySessionClosedEvent,
+  KeySessionCreatedEvent,
+  KeySessionUpdatedEvent,
+  KeySystemAccessRequestedEvent,
+} from '../events/eme-events';
 
-const IS_EDGE = navigator.userAgent.indexOf("Edg") > -1
+const IS_EDGE = navigator.userAgent.indexOf('Edg') > -1;
 
 /**
  * Eme Manager should be shipped as a separate bundle and included in the player as opt-in feature
  */
-
 export class EmeManager implements IEmeManager {
   private static areInitDataEqual_(a: ArrayBuffer, b: ArrayBuffer): boolean {
     if (a.byteLength !== b.byteLength) {
@@ -38,6 +54,7 @@ export class EmeManager implements IEmeManager {
 
   protected readonly networkManager_: INetworkManager;
   protected readonly logger_: ILogger;
+  protected readonly eventEmitter_: IEventEmitter<EventTypeToEventMap>;
   protected readonly privateEventEmitter_: IEventEmitter<PrivateEventTypeToEventMap>;
 
   protected activeVideoElement_: HTMLVideoElement | null = null;
@@ -45,13 +62,14 @@ export class EmeManager implements IEmeManager {
   protected activeMediaKeys_: MediaKeys | null = null;
   protected activeKeySystem_: string | null = null;
   protected activeKeySystemConfig_: MediaKeySystemConfiguration | null = null;
-  protected activeSessions_: Map<string, IKeySessionMetadata> = new Map();
-  protected storedSessions_:  Map<string, IKeySessionMetadata> = new Map();
-  protected currentKeyStatuses_: Map<string, string> = new Map();
+  protected activeSessions_ = new Map<string, IKeySessionMetadata>();
+  protected storedSessions_ = new Map<string, IKeySessionMetadata>();
+  protected currentKeyStatuses_ = new Map<string, string>();
 
   public constructor(dependencies: IEmeManagerDependencies) {
     this.networkManager_ = dependencies.networkManager;
     this.logger_ = dependencies.logger;
+    this.eventEmitter_ = dependencies.eventEmitter;
     this.privateEventEmitter_ = dependencies.privateEventEmitter;
   }
 
@@ -68,7 +86,7 @@ export class EmeManager implements IEmeManager {
     // Check if init data is already set!!
 
     if (!this.activeSource_) {
-      // return error that source is not set
+      this.eventEmitter_.emitEvent(new ErrorEvent(new SourceNotSetError(false)));
       return;
     }
 
@@ -94,31 +112,33 @@ export class EmeManager implements IEmeManager {
         // Create a session and init a request
         // This kicks off the whole process of setting event listeners, which
         // is where the bulk of the logic occurs.
-        this.createKeySession_(new Uint8Array(data), type, this.activeKeySystemConfig_).then(() => {
-          //
-        }).catch(() => {
-          // error creating key session
+        this.createKeySession_(new Uint8Array(data), type).then(() => {
+          // key session was successfully created
         });
-      }).catch(() => {
-        // error while selecting the key system
       });
-    }).catch(() => {
-      // error while getting the key system access
     });
-
-    // TODO: implement handling of initData
   }
 
   public handleWaitingForKey(): void {
+    if (!this.activeVideoElement_) {
+      return;
+    }
+
+    this.activeSessions_.forEach((sessionMetadata) => {
+      if (!sessionMetadata.loaded) {
+        // This means `status-pending` was set on any value in sessionMetadata.session.keyStatuses
+      }
+    });
+
     // TODO: check if we have pending request or init one if we have init data
   }
 
   public stop(): void {
-    for (const [id, session] of this.activeSessions_) {
+    for (const [id] of this.activeSessions_) {
       this.closeKeySession_(id);
     }
 
-    this.activeMediaKeys_= null;
+    this.activeMediaKeys_ = null;
     this.activeKeySystem_ = null;
     this.activeKeySystemConfig_ = null;
     this.activeSessions_.clear();
@@ -148,14 +168,8 @@ export class EmeManager implements IEmeManager {
   }
 
   private initEmeManager_(): void {
-    this.privateEventEmitter_.addEventListener(
-      PlayerEventType.HlsPlaylistParsed,
-      this.handleParsedManifestEvent_
-    );
-    this.privateEventEmitter_.addEventListener(
-      PlayerEventType.DashManifestParsed,
-      this.handleParsedManifestEvent_
-    )
+    this.privateEventEmitter_.addEventListener(PlayerEventType.HlsPlaylistParsed, this.handleParsedManifestEvent_);
+    this.privateEventEmitter_.addEventListener(PlayerEventType.DashManifestParsed, this.handleParsedManifestEvent_);
   }
 
   private getKeySystemConfig_(): Record<string, MediaKeySystemConfiguration> {
@@ -164,22 +178,27 @@ export class EmeManager implements IEmeManager {
 
     return {
       'com.widevine.alpha': {
-        videoCapabilities: [{
-          contentType: 'video/webm; codecs="vp9"',
-          robustness: 'SW_SECURE_CRYPTO'
-        }],
-        audioCapabilities: [{
-          contentType: 'audio/webm; codecs="vorbis"',
-          robustness: 'SW_SECURE_CRYPTO'
-        }]
-      }
+        videoCapabilities: [
+          {
+            contentType: 'video/webm; codecs="vp9"',
+            robustness: 'SW_SECURE_CRYPTO',
+          },
+        ],
+        audioCapabilities: [
+          {
+            contentType: 'audio/webm; codecs="vorbis"',
+            robustness: 'SW_SECURE_CRYPTO',
+          },
+        ],
+      },
     };
-
   }
 
+  /**
+   * Converts the parsed manifest data to keySystemConfig values.
+   */
   private handleParsedManifestEvent_(): void {
-    let mediaKeySystemAccess = {} as MediaKeySystemAccess;
-
+    // let mediaKeySystemAccess = {} as MediaKeySystemAccess;
     // TODO: update this function to take in parsed data and turn it into keySystemConfig values
     // We may need diffrent functions for DASH and HLS
     // We may want to call `setInitData` in here
@@ -190,7 +209,6 @@ export class EmeManager implements IEmeManager {
    * the source allows. Once those are created, we request a MediaKeySystemAccess
    * using the aforementioned config. This method returns a promise containing
    * a MediaKeySystemAccess instance.
-   * 
    * @returns A promise containing the MediaKeySystemAccess
    */
   private async getKeySystemAccess_(): Promise<MediaKeySystemAccess> {
@@ -199,30 +217,36 @@ export class EmeManager implements IEmeManager {
     const keySystems = this.activeSource_?.keySystems;
 
     if (!keySystems) {
-      // TODO: thow error and ignore EME
+      this.eventEmitter_.emitEvent(new ErrorEvent(new SourceMissingKeySystemsError(false)));
       return mediaKeySystemAccess;
     }
 
-    // If `requestMediaKeySystemAccess` report an error
-    if (navigator.requestMediaKeySystemAccess === undefined ||
-      typeof navigator.requestMediaKeySystemAccess !== 'function') {
-      // trigger error 
+    // If `requestMediaKeySystemAccess` is missing report an error
+    if (
+      navigator.requestMediaKeySystemAccess === undefined ||
+      typeof navigator.requestMediaKeySystemAccess !== 'function'
+    ) {
+      this.eventEmitter_.emitEvent(new ErrorEvent(new MissingEmeSupportError(false)));
       return mediaKeySystemAccess;
     }
 
-    // TODO: Sort by priority before this 
+    // TODO: Sort by priority before this
 
     for (const keySystem in keySystems) {
       const keySystemConfig = this.getKeySystemConfig_();
 
       try {
-        // TODO: Create an event for request media key system
-        this.logger_.debug();
+        this.eventEmitter_.emitEvent(new KeySystemAccessRequestedEvent(keySystem));
+        this.logger_.debug('EME: Requesting media key system access.');
 
-        const mediaKeySystemAccess = await navigator.requestMediaKeySystemAccess(keySystem, [keySystemConfig]);
+        mediaKeySystemAccess = await navigator.requestMediaKeySystemAccess(keySystem, [keySystemConfig]);
+
         return mediaKeySystemAccess;
       } catch (error) {
-        // TODO: Warn about a failed request, but loop should continue.
+        // Warn about a failed request, but loop should continue.
+        this.logger_.warn(
+          `EME: Media key system access request failed. Key System: ${keySystem} Error: ${error as Error}`
+        );
       }
     }
 
@@ -231,8 +255,7 @@ export class EmeManager implements IEmeManager {
 
   /**
    * Creates media keys and adds them to the video element.
-   * 
-   * @param keySystemAccess
+   * @param keySystemAccess The media key system access
    * @returns A promise containing the Key System name or null if no key system was valid.
    */
   private async selectKeySystem_(keySystemAccess: MediaKeySystemAccess): Promise<string | null> {
@@ -243,37 +266,43 @@ export class EmeManager implements IEmeManager {
       this.activeKeySystemConfig_ = this.activeSource_?.keySystems[this.activeKeySystem_] || null;
       return this.activeKeySystem_;
     }
-    
-    return new Promise((resolve, reject) => {
-      keySystemAccess.createMediaKeys().then((mediaKeys) => {
-        this.activeKeySystem_ = keySystemAccess.keySystem;
-        this.activeMediaKeys_ = mediaKeys;
-        this.activeKeySystemConfig_ = this.activeSource_?.keySystems[this.activeKeySystem_] || null;
 
-        if (this.activeVideoElement_) {
-          return this.activeVideoElement_.setMediaKeys(this.activeMediaKeys_);
-        } else {
-          this.logger_.warn(`WARNING: Attempting to set media keys on an invalid media element.`)
-          Promise.resolve();
-        }
-      }).then(() => {
-        this.logger_.debug(`Successfully set media keys in the video element for ${this.activeKeySystem_}.`)
-        resolve(this.activeKeySystem_)
-      }).catch(function () {
-        reject();
-         // error could not create media keys
-      });
-    })
+    return new Promise((resolve, reject) => {
+      keySystemAccess
+        .createMediaKeys()
+        .then((mediaKeys) => {
+          this.activeKeySystem_ = keySystemAccess.keySystem;
+          this.activeMediaKeys_ = mediaKeys;
+          this.activeKeySystemConfig_ = this.activeSource_?.keySystems[this.activeKeySystem_] || null;
+
+          if (this.activeVideoElement_) {
+            return this.activeVideoElement_.setMediaKeys(this.activeMediaKeys_);
+          } else {
+            this.logger_.warn(`EME: Attempting to set media keys on an invalid media element.`);
+            Promise.resolve();
+          }
+        })
+        .then(() => {
+          this.logger_.debug(`Successfully set media keys in the video element for ${this.activeKeySystem_}.`);
+          resolve(this.activeKeySystem_);
+        })
+        .catch((error) => {
+          this.eventEmitter_.emitEvent(new ErrorEvent(new MediaKeyCreateError(false, error)));
+          reject();
+        });
+    });
   }
 
   /**
    * Creates a key session on the active media keys.
-   * 
-   * @param keySystemConfig 
-   * @returns an empty promise
+   * @param initData The init data to generate a license request
+   * @param initDataType The init data format
+   * @returns An empty promise
    */
-  private async createKeySession_(initData: Uint8Array, initDataType: string, keySystemConfig: MediaKeySystemConfiguration): Promise<void> {
-    if (!this.activeKeySystem_ || !this.activeMediaKeys_){
+  private async createKeySession_(initData: Uint8Array, initDataType: string): Promise<void> {
+    // TODO: Do we need keySystemConfig in this function?
+
+    if (!this.activeKeySystem_ || !this.activeMediaKeys_) {
       // error
       return;
     }
@@ -290,8 +319,8 @@ export class EmeManager implements IEmeManager {
     try {
       // Pass in the session type from the source if it exists.
       mediaKeySession = this.activeMediaKeys_.createSession(sessionType || undefined);
-    } catch {
-      // TODO: ERROR: Failed to create session
+    } catch (error) {
+      this.eventEmitter_.emitEvent(new ErrorEvent(new KeySessionCreateError(false, error as Error)));
       return;
     }
 
@@ -310,7 +339,7 @@ export class EmeManager implements IEmeManager {
       });
 
       // Received new init data/type
-  
+
       // Do we need this?? Can we just store the initData in the array of activeSessions?
       // this.logger_.debug(
       //   `Updating init data: previous(${type}, length: ${data.byteLength}) --> new(${type}, length: ${data.byteLength})`
@@ -319,15 +348,16 @@ export class EmeManager implements IEmeManager {
 
     const sessionId = mediaKeySession.sessionId;
 
-    mediaKeySession.addEventListener('keystatuseschange', (event) => this.onKeyStatusesChange_(event as ExtendableEvent));
+    mediaKeySession.addEventListener('keystatuseschange', (event) =>
+      this.onKeyStatusesChange_(event as ExtendableEvent)
+    );
     mediaKeySession.addEventListener('message', (event) => this.onSessionMessage_(event));
 
     // Register callback for session closed Promise
     mediaKeySession.closed.then(() => {
       this.removeSession_(sessionId);
       this.logger_.debug('EME Key Session closed. sessionId: ' + sessionId);
-      // TODO: KEY_SESSION_CLOSED event
-      // eventBus.trigger(events.KEY_SESSION_CLOSED, { data: token.getSessionId() });
+      this.eventEmitter_.emitEvent(new KeySessionClosedEvent(sessionId));
     });
 
     const metadata = {
@@ -335,31 +365,26 @@ export class EmeManager implements IEmeManager {
       initDataType,
       loaded: false,
       type: sessionType,
-      session: mediaKeySession
+      session: mediaKeySession,
     };
 
     this.activeSessions_.set(mediaKeySession.sessionId, metadata);
 
-    mediaKeySession.generateRequest(initDataType, initData)
+    mediaKeySession
+      .generateRequest(initDataType, initData)
       .then(() => {
-        this.logger_.debug('DRM: Session created.  SessionID = ' + sessionId);
-        // TODO: KEY SESSION created event
-        // eventBus.trigger(events.KEY_SESSION_CREATED, { data: sessionToken });
+        this.logger_.debug('EME: Session created.  SessionID: ' + sessionId);
+        this.eventEmitter_.emitEvent(new KeySessionCreatedEvent(sessionId));
       })
       .catch((error) => {
         this.removeSession_(sessionId);
-        // TODO: ERROR: KEY_SESSION_CREATED_FAILED
-        // eventBus.trigger(events.KEY_SESSION_CREATED, {
-        //     data: null,
-        //     error: new DashJSError(ProtectionErrors.KEY_SESSION_CREATED_ERROR_CODE, ProtectionErrors.KEY_SESSION_CREATED_ERROR_MESSAGE + 'Error generating key request -- ' + error.name)
-        // });
+        this.eventEmitter_.emitEvent(new ErrorEvent(new KeySessionCreateError(false, error as Error)));
       });
   }
 
   /**
    * Sets the server certificate on the active media keys.
-   * 
-   * @param certificate
+   * @param certificate The server certificate
    * @returns an empty promise.
    */
   private async setServerCertificate_(certificate: Uint8Array): Promise<void> {
@@ -381,16 +406,14 @@ export class EmeManager implements IEmeManager {
       }
 
       return;
-    } catch(exception) {
-      // TODO: throw error for invalid server certificate
+    } catch (error) {
+      this.eventEmitter_.emitEvent(new ErrorEvent(new InvalidServerCertificateError(false, error as Error)));
     }
   }
 
   /**
    * Event to handle key status changes event on session.
-   * 
-   * @param event 
-   * @returns 
+   * @param event The event containing the media key session
    */
   private onKeyStatusesChange_(event: ExtendableEvent): void {
     const session = event.target as MediaKeySession;
@@ -414,9 +437,12 @@ export class EmeManager implements IEmeManager {
 
       // NOTE: Skip if byteLength != 16.
       // Edge uses single-byte dummy key IDs. Tizen doesn't have this problem.
-      // TODO: Do we want to check if it is PS4?
-      if (this.activeKeySystem_ && this.isPlayReadyKeySystem_(this.activeKeySystem_) &&
-        keyId.byteLength === 16 && IS_EDGE) {
+      if (
+        this.activeKeySystem_ &&
+        this.isPlayReadyKeySystem_(this.activeKeySystem_) &&
+        keyId.byteLength === 16 &&
+        IS_EDGE
+      ) {
         // Get little-endian values:
         const dataView = this.toDataView_(keyId);
         const le0 = dataView.getUint32(0, true);
@@ -428,9 +454,13 @@ export class EmeManager implements IEmeManager {
         dataView.setUint16(6, le2, false);
       }
 
+      const keyIdHexString = this.toHex_(keyId);
+
       if (!activeSession) {
         if (status === 'usable') {
-          this.logger_.warn(`A usable key was found on a closed session. Session ID: ${session.sessionId} Key ID: ${keyId}`);
+          this.logger_.warn(
+            `A usable key was found on a closed session. Session ID: ${session.sessionId} Key ID: ${keyIdHexString}`
+          );
         }
         return;
       }
@@ -442,8 +472,6 @@ export class EmeManager implements IEmeManager {
       if (status === 'expired') {
         hasExpiredKeys = true;
       }
-
-      const keyIdHexString = this.toHex(keyId);
 
       this.currentKeyStatuses_.set(keyIdHexString, status);
 
@@ -469,13 +497,15 @@ export class EmeManager implements IEmeManager {
   }
 
   /**
-   * @param {!MediaKeyMessageEvent} event
-   * @private
+   * On a message event, we get the key session from the event and update the session
+   * with the license that was requested,
+   * @param event The media key message event
+   * @returns An empty promise
    */
   private async onSessionMessage_(event: MediaKeyMessageEvent): Promise<void> {
     const session = event.target as MediaKeySession;
 
-    if(!session) {
+    if (!session) {
       this.logger_.warn('EME: A message event was received but it did not contain the session.');
       return;
     }
@@ -488,7 +518,8 @@ export class EmeManager implements IEmeManager {
     this.logger_.debug(`Sending license request for session ${session.sessionId} of type ${event.messageType}`);
 
     let licenseServerUri = this.activeSource_?.keySystems[this.activeKeySystem_ as string].licenseServerUri;
-    let individualizationSever = this.activeSource_?.keySystems[this.activeKeySystem_ as string].individualizationServerUri;
+    const individualizationSever =
+      this.activeSource_?.keySystems[this.activeKeySystem_ as string].individualizationServerUri;
 
     if (event.messageType === 'individualization-request' && individualizationSever) {
       this.logger_.debug(`Using individualization server for license request: ${individualizationSever}`);
@@ -496,36 +527,38 @@ export class EmeManager implements IEmeManager {
     }
 
     // TODO: We may want to add things to the request (sessionId, drmInfo, messageType, etc.)
-    let message = ArrayBuffer.isView(event.message) ? event.message.buffer : event.message;
+    const message = ArrayBuffer.isView(event.message) ? event.message.buffer : event.message;
 
     const payload = {
       url: licenseServerUri as unknown as URL,
-      mapper: (body: Uint8Array) => message,
-      requestType: RequestType.License
-    }
+      mapper: (): ArrayBufferLike => message,
+      requestType: RequestType.License,
+    };
 
     const licenseRequest = this.networkManager_.post(payload);
 
-    licenseRequest.done.then((response) => {
-      try {
-        // TODO: Handle this for different DRM scenarios
-        // TODO: Do we want to log this response in debug mode?
-        session.update(response);
-      } catch {
-        // TODO: Error that the license response was rejected.
-      }
-    }).catch(() => {
-      // TODO: Error that license request failed
-    });
+    licenseRequest.done
+      .then((response) => {
+        try {
+          // TODO: Handle this for different DRM scenarios
+          session.update(response);
+        } catch (error) {
+          this.eventEmitter_.emitEvent(new ErrorEvent(new LicenseResponseRejectedError(false, error as Error)));
+        }
+      })
+      .catch((error) => {
+        this.eventEmitter_.emitEvent(new ErrorEvent(new LicenseRequestError(false, error)));
+      });
 
-    // TODO: INTERNAL_KEY_MESSAGE Internal event that says we updated the session with the new license?
-    // { data: new KeyMessage(this, message, undefined, event.messageType) });
+    this.logger_.debug(
+      `EME: Key session updated with new license. SessionID: ${session.sessionId} MessageType: ${event.messageType}`
+    );
+    this.privateEventEmitter_.emitEvent(new KeySessionUpdatedEvent(session.sessionId, event.messageType));
   }
 
   /**
    * Removes the selected session from the list of active sessions.
-   * 
-   * @param sessionId 
+   * @param sessionId Key session ID
    */
   private removeSession_(sessionId: string): void {
     this.activeSessions_.delete(sessionId);
@@ -533,8 +566,7 @@ export class EmeManager implements IEmeManager {
 
   /**
    * Closes the chosen media key session and removes all listeners.
-   * 
-   * @param sessionId 
+   * @param sessionId Key session ID
    */
   private async closeKeySession_(sessionId: string): Promise<void> {
     if (!sessionId) {
@@ -544,46 +576,48 @@ export class EmeManager implements IEmeManager {
     // Send our request to the key session
     const activeSession = this.activeSessions_.get(sessionId)?.session;
 
-    if(!activeSession) {
+    if (!activeSession) {
       return Promise.resolve();
     }
 
     // Remove event listeners
-    activeSession.removeEventListener('keystatuseschange', (event) => this.onKeyStatusesChange_(event as ExtendableEvent));
+    activeSession.removeEventListener('keystatuseschange', (event) =>
+      this.onKeyStatusesChange_(event as ExtendableEvent)
+    );
     activeSession.removeEventListener('message', (event) => this.onSessionMessage_(event));
 
     // Send our request to the key session
-    return activeSession.close().then(() => {
-      this.logger_.debug(`Key session sucessfully closed. Session ID: ${sessionId}`)
-    }).catch(() => {
-      this.removeSession_(sessionId);
-      // TODO: KEYSESSIONCLOSED error
-      // error: 'Error closing session (' + sessionToken.getSessionId() + ') ' + error.name
-    });
+    return activeSession
+      .close()
+      .then(() => {
+        this.logger_.debug(`Key session sucessfully closed. Session ID: ${sessionId}`);
+      })
+      .catch((error) => {
+        this.removeSession_(sessionId);
+        this.eventEmitter_.emitEvent(new ErrorEvent(new KeySessionClosedError(false, sessionId, error)));
+      });
   }
 
   /**
    * A helper function that returns a list of all init data currently active.
-   * 
    * @returns A list of init data for all active sessions.
    */
   private getAllInitData_(): Array<Uint8Array> {
     const initDataArray: Array<Uint8Array> = [];
-    for (const [id, session] of this.activeSessions_) {
-        if (session.initData) {
-          initDataArray.push(session.initData);
-        }
+    for (const session of this.activeSessions_.values()) {
+      if (session.initData) {
+        initDataArray.push(session.initData);
+      }
     }
     return initDataArray;
   }
 
   /**
-   * A helper method to determine if the keySystem is PlayReady 
-   *
-   * @param {string} keySystem
-   * @return {boolean}
+   * A helper method to determine if the keySystem is PlayReady
+   * @param keySystem The key system string
+   * @returns Whether the key system is PlayReady
    */
-  private isPlayReadyKeySystem_(keySystem: string) {
+  private isPlayReadyKeySystem_(keySystem: string): boolean {
     if (keySystem) {
       return !!keySystem.match(/^com\.(microsoft|chromecast)\.playready/);
     }
@@ -592,10 +626,8 @@ export class EmeManager implements IEmeManager {
   }
 
   /**
-   * A helper method to determine if the keySystem is ClearKey 
-   *
-   * @param {string} keySystem
-   * @return {boolean}
+   * @param keySystem The key system type
+   * @returns Whether the keySystem is ClearKey
    */
   private isClearKeySystem_(keySystem: string): boolean {
     return keySystem === 'org.w3.clearkey';
@@ -604,13 +636,12 @@ export class EmeManager implements IEmeManager {
   /**
    * Convert a buffer to a DataView type for additional utilities to deal with
    * different different array types.
-   *
-   * @param bufferSource 
-   * @returns 
+   * @param bufferSource The buffer containing key data
+   * @returns The data view of the key data
    */
   private toDataView_(bufferSource: BufferSource): DataView {
     const buffer = this.getArrayBuffer_(bufferSource);
-    let bytesPerElement = 1;
+    const bytesPerElement = 1;
 
     // TODO: Can this case ever happen??
     // if ('BYTES_PER_ELEMENT' in DataView) {
@@ -626,15 +657,15 @@ export class EmeManager implements IEmeManager {
   }
 
   /**
-   * @param data 
+   * @param data A buffer source
    * @returns A hex string key ID
    */
-  private toHex(data: BufferSource): string {
+  private toHex_(data: BufferSource): string {
     const arrayBuffer = this.getArrayBuffer_(data);
     const arr = new Uint8Array(arrayBuffer);
     let hex = '';
     let stringValue;
-    for (let value of arr) {
+    for (const value of arr) {
       stringValue = value.toString(16);
       if (stringValue.length === 1) {
         stringValue = '0' + stringValue;
@@ -646,15 +677,14 @@ export class EmeManager implements IEmeManager {
 
   /**
    * Get the array buffer even if it is inside the BufferSource.
-   * 
-   * @param source 
+   * @param source The buffer source
    * @returns The array buffer
    */
   private getArrayBuffer_(source: BufferSource): ArrayBuffer {
     if (source instanceof ArrayBuffer) {
-        return source;
+      return source;
     } else {
-        return source.buffer;
+      return source.buffer;
     }
   }
 
@@ -666,7 +696,7 @@ export class EmeManager implements IEmeManager {
       if (!sessionMetadata.loaded) {
         return false;
       }
-    })
+    });
 
     return true;
   }

@@ -9,13 +9,20 @@ export enum PlayerEventType {
   CurrentTimeChanged = 'CurrentTimeChanged',
   MutedStatusChanged = 'MutedStatusChanged',
   PlaybackStateChanged = 'PlaybackStateChanged',
+  // EME Events
   Encrypted = 'Encrypted',
   WaitingForKey = 'WaitingForKey',
+  KeySessionCreated = 'KeySessionCreated',
+  KeySessionUpdated = 'KeySessionUpdated',
+  KeySessionClosed = 'KeySessionClosed',
+  KeySystemAccessRequested = 'KeySystemAccessRequested',
   Error = 'Error',
+  // Network Events
   NetworkRequestAttemptStarted = 'NetworkRequestAttemptStarted',
   NetworkRequestAttemptCompletedSuccessfully = 'NetworkRequestAttemptCompletedSuccessfully',
   NetworkRequestAttemptCompletedUnsuccessfully = 'NetworkRequestAttemptCompletedUnsuccessfully',
   NetworkRequestAttemptFailed = 'NetworkRequestAttemptFailed',
+  // Parse Events
   HlsPlaylistParsed = 'HlsPlaylistParsed',
   DashManifestParsed = 'DashManifestParsed',
 }

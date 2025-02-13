@@ -16,3 +16,45 @@ export class EncryptedEvent extends PlayerEvent {
 export class WaitingForKeyEvent extends PlayerEvent {
   public readonly type = PlayerEventType.WaitingForKey;
 }
+
+export class KeySessionCreatedEvent extends PlayerEvent {
+  public readonly type = PlayerEventType.KeySessionCreated;
+  public readonly sessionId: string;
+
+  public constructor(sessionId: string) {
+    super();
+    this.sessionId = sessionId;
+  }
+}
+
+export class KeySessionUpdatedEvent extends PlayerEvent {
+  public readonly type = PlayerEventType.KeySessionUpdated;
+  public readonly sessionId: string;
+  public readonly messageType: string;
+
+  public constructor(sessionId: string, messageType: string) {
+    super();
+    this.sessionId = sessionId;
+    this.messageType = messageType;
+  }
+}
+
+export class KeySystemAccessRequestedEvent extends PlayerEvent {
+  public readonly type = PlayerEventType.KeySystemAccessRequested;
+  public readonly keySystem: string;
+
+  public constructor(keySystem: string) {
+    super();
+    this.keySystem = keySystem;
+  }
+}
+
+export class KeySessionClosedEvent extends PlayerEvent {
+  public readonly type = PlayerEventType.KeySessionClosed;
+  public readonly sessionId: string;
+
+  public constructor(sessionId: string) {
+    super();
+    this.sessionId = sessionId;
+  }
+}

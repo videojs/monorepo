@@ -1,12 +1,13 @@
 import type { INetworkManager } from './network.declarations';
 import type { ILogger } from './logger.declarations';
 import type { IPlayerSource } from './source.declarations';
-import { IEventEmitter } from './event-emitter.declarations';
-import { PrivateEventTypeToEventMap } from './mappers/event-type-to-event-map.declarations';
+import type { IEventEmitter } from './event-emitter.declarations';
+import type { PrivateEventTypeToEventMap, EventTypeToEventMap } from './mappers/event-type-to-event-map.declarations';
 
 export interface IEmeManagerDependencies {
   networkManager: INetworkManager;
   logger: ILogger;
+  eventEmitter: IEventEmitter<EventTypeToEventMap>;
   privateEventEmitter: IEventEmitter<PrivateEventTypeToEventMap>;
 }
 

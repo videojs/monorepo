@@ -9,7 +9,10 @@ import type { PlayerConfiguration } from '../../types/configuration.declarations
 import type { DeepPartial } from '../../types/utility.declarations';
 import type { IStore } from '../../types/store.declarations';
 import type { EventListener, IEventEmitter } from '../../types/event-emitter.declarations';
-import type { EventTypeToEventMap, PrivateEventTypeToEventMap } from '../../types/mappers/event-type-to-event-map.declarations';
+import type {
+  EventTypeToEventMap,
+  PrivateEventTypeToEventMap,
+} from '../../types/mappers/event-type-to-event-map.declarations';
 // events
 import {
   ConfigurationChangedEvent,
@@ -49,6 +52,7 @@ import {
 import type { IEmeManager, IEmeManagerDependencies, IEmeApiAdapter } from '../../types/eme-manager.declarations';
 import { EncryptedEvent, WaitingForKeyEvent } from '../../events/eme-events';
 import type { PipelineLoaderFactoryStorage } from './pipeline-loader-factory-storage';
+import { EmeManagerMissingError } from 'src/lib/errors/eme-errors';
 
 declare const __COMMIT_HASH: string;
 declare const __VERSION: string;
@@ -195,6 +199,7 @@ export abstract class BasePlayer {
     this.emeManager_ = factory({
       logger: this.logger_.createSubLogger('EmeManager'),
       networkManager: this.networkManager_,
+      eventEmitter: this.eventEmitter_,
       privateEventEmitter: this.privateEventEmitter_,
     });
 
@@ -594,7 +599,7 @@ export abstract class BasePlayer {
     this.logger_.debug('received encrypted event', event);
 
     if (!this.emeManager_) {
-      // TODO: stop and emit error
+      this.eventEmitter_.emitEvent(new ErrorEvent(new EmeManagerMissingError(true)));
       return;
     }
 
@@ -610,7 +615,7 @@ export abstract class BasePlayer {
     this.logger_.debug('received "waitingforkey" event');
 
     if (!this.emeManager_) {
-      // TODO: stop and emit error
+      this.eventEmitter_.emitEvent(new ErrorEvent(new EmeManagerMissingError(true)));
       return;
     }
 
