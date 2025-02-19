@@ -1,5 +1,3 @@
-import type { TextTrackKind } from '../consts/text-tracks';
-
 export interface IPlayerTextTrack {
   readonly id: string;
   readonly activeCues: TextTrackCueList | null;
