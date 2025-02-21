@@ -58,3 +58,13 @@ export class KeySessionClosedEvent extends PlayerEvent {
     this.sessionId = sessionId;
   }
 }
+
+export class KeyStatusesUpdatedEvent extends PlayerEvent {
+  public readonly type = PlayerEventType.KeyStatusesUpdated;
+  public readonly keyStatusMap: Map<string, string>;
+
+  public constructor(keyStatusMap: Map<string, string>) {
+    super();
+    this.keyStatusMap = keyStatusMap;
+  }
+}

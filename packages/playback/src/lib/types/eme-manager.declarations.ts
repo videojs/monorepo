@@ -3,12 +3,14 @@ import type { ILogger } from './logger.declarations';
 import type { IPlayerSource } from './source.declarations';
 import type { IEventEmitter } from './event-emitter.declarations';
 import type { PrivateEventTypeToEventMap, EventTypeToEventMap } from './mappers/event-type-to-event-map.declarations';
+import type { PlayerEmeConfiguration } from './configuration.declarations';
 
 export interface IEmeManagerDependencies {
   networkManager: INetworkManager;
   logger: ILogger;
   eventEmitter: IEventEmitter<EventTypeToEventMap>;
   privateEventEmitter: IEventEmitter<PrivateEventTypeToEventMap>;
+  configuration: PlayerEmeConfiguration;
 }
 
 export interface IEmeManager {

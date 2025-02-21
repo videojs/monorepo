@@ -201,6 +201,7 @@ export abstract class BasePlayer {
       networkManager: this.networkManager_,
       eventEmitter: this.eventEmitter_,
       privateEventEmitter: this.privateEventEmitter_,
+      configuration: this.configurationManager_.getSnapshot().eme,
     });
 
     if (this.activeVideoElement_) {
@@ -358,9 +359,9 @@ export abstract class BasePlayer {
    */
   public addEventListener<K extends PlayerEventType>(
     eventType: K,
-    eventListener: EventListener<EventTypeToEventMap[K]>
+    eventListener: EventListener<EventTypeToEventMap[keyof EventTypeToEventMap]>
   ): void {
-    return this.eventEmitter_.addEventListener(eventType, eventListener);
+    return this.eventEmitter_.addEventListener(eventType as keyof EventTypeToEventMap, eventListener);
   }
 
   /**
@@ -368,8 +369,11 @@ export abstract class BasePlayer {
    * @param eventType - specific event type
    * @param eventListener - event listener
    */
-  public once<K extends PlayerEventType>(eventType: K, eventListener: EventListener<EventTypeToEventMap[K]>): void {
-    return this.eventEmitter_.once(eventType, eventListener);
+  public once<K extends PlayerEventType>(
+    eventType: K,
+    eventListener: EventListener<EventTypeToEventMap[keyof EventTypeToEventMap]>
+  ): void {
+    return this.eventEmitter_.once(eventType as keyof EventTypeToEventMap, eventListener);
   }
   /**
    * Remove specific registered event listener for a specific event type
@@ -378,9 +382,9 @@ export abstract class BasePlayer {
    */
   public removeEventListener<K extends PlayerEventType>(
     eventType: K,
-    eventListener: EventListener<EventTypeToEventMap[K]>
+    eventListener: EventListener<EventTypeToEventMap[keyof EventTypeToEventMap]>
   ): void {
-    return this.eventEmitter_.removeEventListener(eventType, eventListener);
+    return this.eventEmitter_.removeEventListener(eventType as keyof EventTypeToEventMap, eventListener);
   }
 
   /**
@@ -388,7 +392,7 @@ export abstract class BasePlayer {
    * @param eventType - specific event type
    */
   public removeAllEventListenersForType<K extends PlayerEventType>(eventType: K): void {
-    return this.eventEmitter_.removeAllEventListenersFor(eventType);
+    return this.eventEmitter_.removeAllEventListenersFor(eventType as keyof EventTypeToEventMap);
   }
 
   /**
@@ -423,6 +427,7 @@ export abstract class BasePlayer {
     // EME
     this.activeVideoElement_.addEventListener('encrypted', this.handleEncryptedEvent_);
     this.activeVideoElement_.addEventListener('waitingforkey', this.handleWaitingForKeyEvent_);
+    this.privateEventEmitter_.addEventListener(PlayerEventType.KeyStatusesUpdated, this.handleKeyStatusesUpdated_);
   }
 
   /**
@@ -451,6 +456,7 @@ export abstract class BasePlayer {
     // EME
     this.activeVideoElement_.removeEventListener('encrypted', this.handleEncryptedEvent_);
     this.activeVideoElement_.removeEventListener('waitingforkey', this.handleWaitingForKeyEvent_);
+    this.privateEventEmitter_.removeEventListener(PlayerEventType.KeyStatusesUpdated, this.handleKeyStatusesUpdated_);
 
     this.emeManager_?.detach();
     this.activeVideoElement_ = null;
@@ -621,6 +627,11 @@ export abstract class BasePlayer {
 
     this.eventEmitter_.emitEvent(new WaitingForKeyEvent());
     this.emeManager_.handleWaitingForKey();
+  };
+
+  protected readonly handleKeyStatusesUpdated_ = (): void => {
+    // TODO: Handle filtering out invalid key stauses from variants/representations/renditions
+    // event.keyStatusMap should contain the necessary info from the EME controller
   };
 
   private transitionPlaybackState_(to: PlaybackState): void {

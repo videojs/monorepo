@@ -19,9 +19,12 @@ export interface IKeySystemConfig {
    * Defaults to ''.
    */
   individualizationServerUri?: string;
-  getContentId?: (contentId: string) => string;
-  // Rare cases when we want to leave it up to the user to get the license
-  getLicense?: (contentId: string, keyMessage: MediaKeyMessageEvent) => void;
+  getContentId?: (initData: ArrayBuffer) => string;
+  /**
+   * Rare cases when we want to leave it up to the user to get the license
+   * This function should return the response from the license request
+   */
+  getLicense?: (contentId: string, keyMessage: MediaKeyMessageEvent) => ArrayBufferLike;
 }
 
 export interface ILoadSource {

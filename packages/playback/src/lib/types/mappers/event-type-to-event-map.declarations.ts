@@ -22,6 +22,7 @@ import type {
   KeySessionClosedEvent,
   KeySessionCreatedEvent,
   KeySessionUpdatedEvent,
+  KeyStatusesUpdatedEvent,
   KeySystemAccessRequestedEvent,
   WaitingForKeyEvent,
 } from '../../events/eme-events';
@@ -60,6 +61,7 @@ export interface EmeEventMap {
 
 export interface EmePrivateEventMap {
   [PlayerEventType.KeySessionUpdated]: KeySessionUpdatedEvent;
+  [PlayerEventType.KeyStatusesUpdated]: KeyStatusesUpdatedEvent;
 }
 
 export type EventTypeToEventMap = NetworkEventMap & PlayerEventMap & EmeEventMap;

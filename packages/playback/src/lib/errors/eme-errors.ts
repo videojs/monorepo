@@ -118,3 +118,13 @@ export class MissingEmeSupportError extends EmeError {
     this.isFatal = isFatal;
   }
 }
+
+export class MissingServerCertificateError extends EmeError {
+  public readonly code = ErrorCode.MissingServerCertificate;
+  public readonly isFatal: boolean;
+
+  public constructor(isFatal: boolean) {
+    super();
+    this.isFatal = isFatal;
+  }
+}

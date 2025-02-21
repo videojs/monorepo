@@ -16,6 +16,7 @@ export enum PlayerEventType {
   KeySessionUpdated = 'KeySessionUpdated',
   KeySessionClosed = 'KeySessionClosed',
   KeySystemAccessRequested = 'KeySystemAccessRequested',
+  KeyStatusesUpdated = 'KeyStatusesUpdated',
   Error = 'Error',
   // Network Events
   NetworkRequestAttemptStarted = 'NetworkRequestAttemptStarted',

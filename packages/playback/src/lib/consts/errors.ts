@@ -22,4 +22,5 @@ export enum ErrorCode {
   LicenseRequestFailed,
   MediaKeyCreateFailed,
   MissingEmeSupport,
+  MissingServerCertificate,
 }

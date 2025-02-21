@@ -17,6 +17,7 @@ import {
   LicenseResponseRejectedError,
   MediaKeyCreateError,
   MissingEmeSupportError,
+  MissingServerCertificateError,
   SourceMissingKeySystemsError,
   SourceNotSetError,
 } from '../errors/eme-errors';
@@ -25,37 +26,27 @@ import {
   KeySessionClosedEvent,
   KeySessionCreatedEvent,
   KeySessionUpdatedEvent,
+  KeyStatusesUpdatedEvent,
   KeySystemAccessRequestedEvent,
 } from '../events/eme-events';
+import type { PlayerEmeConfiguration } from '../types/configuration.declarations';
+import { bufferToString, toUTF16 } from './string-utils';
+import { toHex, areBuffersEqual, toUint8, toDataView } from './buffer-utils';
+import { isFairPlayKeySystem, isPlayReadyKeySystem } from './eme-utils';
 
 const IS_EDGE = navigator.userAgent.indexOf('Edg') > -1;
+
+// Minimum HDCP versions will exist in the manifests
 
 /**
  * Eme Manager should be shipped as a separate bundle and included in the player as opt-in feature
  */
 export class EmeManager implements IEmeManager {
-  private static areInitDataEqual_(a: ArrayBuffer, b: ArrayBuffer): boolean {
-    if (a.byteLength !== b.byteLength) {
-      return false;
-    }
-
-    const dataA = new Uint8Array(a);
-    const dataB = new Uint8Array(b);
-    const l = dataA.length;
-
-    for (let i = 0; i < l; i++) {
-      if (dataA[i] !== dataB[i]) {
-        return false;
-      }
-    }
-
-    return true;
-  }
-
   protected readonly networkManager_: INetworkManager;
   protected readonly logger_: ILogger;
   protected readonly eventEmitter_: IEventEmitter<EventTypeToEventMap>;
   protected readonly privateEventEmitter_: IEventEmitter<PrivateEventTypeToEventMap>;
+  protected readonly configuration_: PlayerEmeConfiguration;
 
   protected activeVideoElement_: HTMLVideoElement | null = null;
   protected activeSource_: IPlayerSource | null = null;
@@ -71,6 +62,7 @@ export class EmeManager implements IEmeManager {
     this.logger_ = dependencies.logger;
     this.eventEmitter_ = dependencies.eventEmitter;
     this.privateEventEmitter_ = dependencies.privateEventEmitter;
+    this.configuration_ = dependencies.configuration;
   }
 
   public setSource(source: IPlayerSource): void {
@@ -102,6 +94,8 @@ export class EmeManager implements IEmeManager {
         // Set server certificate if we have it from the source config
         const activeKeySystemConfig = this.activeSource_?.keySystems[this.activeKeySystem_ as string];
         const activeKeySystemCertificate = activeKeySystemConfig?.serverCertificate;
+
+        // TODO: handle all configs in activeKeySystemConfig
 
         if (activeKeySystemCertificate) {
           // TODO: use then()??
@@ -190,6 +184,7 @@ export class EmeManager implements IEmeManager {
             robustness: 'SW_SECURE_CRYPTO',
           },
         ],
+        sessionTypes: ['persistent-license'],
       },
     };
   }
@@ -275,12 +270,13 @@ export class EmeManager implements IEmeManager {
           this.activeMediaKeys_ = mediaKeys;
           this.activeKeySystemConfig_ = this.activeSource_?.keySystems[this.activeKeySystem_] || null;
 
-          if (this.activeVideoElement_) {
-            return this.activeVideoElement_.setMediaKeys(this.activeMediaKeys_);
-          } else {
+          if (!this.activeVideoElement_) {
             this.logger_.warn(`EME: Attempting to set media keys on an invalid media element.`);
             Promise.resolve();
+            return;
           }
+
+          return this.activeVideoElement_.setMediaKeys(this.activeMediaKeys_);
         })
         .then(() => {
           this.logger_.debug(`Successfully set media keys in the video element for ${this.activeKeySystem_}.`);
@@ -332,7 +328,7 @@ export class EmeManager implements IEmeManager {
       const allInitData = this.getAllInitData_();
 
       allInitData.forEach((data) => {
-        if (EmeManager.areInitDataEqual_(initData, data)) {
+        if (areBuffersEqual(initData, data)) {
           this.logger_.debug('Received duplicate initData. The key session will not be created.');
           return;
         }
@@ -369,6 +365,18 @@ export class EmeManager implements IEmeManager {
     };
 
     this.activeSessions_.set(mediaKeySession.sessionId, metadata);
+
+    // Transform the initData if FairPlay is being used
+    if (isFairPlayKeySystem(this.activeKeySystem_)) {
+      const activeKeySystemConfig = this.activeSource_?.keySystems[this.activeKeySystem_ as string];
+      const activeKeySystemCertificate = activeKeySystemConfig?.serverCertificate;
+
+      initData = this.initDataTransform_(
+        initData,
+        initDataType,
+        activeKeySystemCertificate as BufferSource
+      ) as Uint8Array;
+    }
 
     mediaKeySession
       .generateRequest(initDataType, initData)
@@ -431,30 +439,28 @@ export class EmeManager implements IEmeManager {
         status = tmp as unknown as MediaKeyStatus;
       }
 
-      // Microsoft's implementation in Edge seems to present key IDs as
-      // little-endian UUIDs.
+      // Edge uses little endian for Key IDs IDs
       // https://bit.ly/2thuzXu
 
       // NOTE: Skip if byteLength != 16.
       // Edge uses single-byte dummy key IDs. Tizen doesn't have this problem.
-      if (
-        this.activeKeySystem_ &&
-        this.isPlayReadyKeySystem_(this.activeKeySystem_) &&
-        keyId.byteLength === 16 &&
-        IS_EDGE
-      ) {
+      if (this.activeKeySystem_ && isPlayReadyKeySystem(this.activeKeySystem_) && keyId.byteLength === 16 && IS_EDGE) {
         // Get little-endian values:
-        const dataView = this.toDataView_(keyId);
-        const le0 = dataView.getUint32(0, true);
-        const le1 = dataView.getUint16(4, true);
-        const le2 = dataView.getUint16(6, true);
-        // Write it back in big-endian
-        dataView.setUint32(0, le0, false);
-        dataView.setUint16(4, le1, false);
-        dataView.setUint16(6, le2, false);
+        const dataView = toDataView(keyId) as DataView | null;
+
+        // If KeyID was invalid, ignore the current key and continue
+        if (dataView) {
+          const le0 = dataView.getUint32(0, true);
+          const le1 = dataView.getUint16(4, true);
+          const le2 = dataView.getUint16(6, true);
+          // Write it back in big-endian
+          dataView.setUint32(0, le0, false);
+          dataView.setUint16(4, le1, false);
+          dataView.setUint16(6, le2, false);
+        }
       }
 
-      const keyIdHexString = this.toHex_(keyId);
+      const keyIdHexString = toHex(keyId);
 
       if (!activeSession) {
         if (status === 'usable') {
@@ -476,6 +482,7 @@ export class EmeManager implements IEmeManager {
       this.currentKeyStatuses_.set(keyIdHexString, status);
 
       // TODO: How do we want ot use these stored keys? We probably need to handle the ones with status-pending
+      // See shaka onKeyStatus on their player (they use a timer)
     });
 
     // Close session when it has expired keys.
@@ -493,6 +500,7 @@ export class EmeManager implements IEmeManager {
       return;
     }
 
+    this.privateEventEmitter_.emitEvent(new KeyStatusesUpdatedEvent(this.currentKeyStatuses_));
     // TODO: Resolve all unloaded sessions.
   }
 
@@ -503,6 +511,8 @@ export class EmeManager implements IEmeManager {
    * @returns An empty promise
    */
   private async onSessionMessage_(event: MediaKeyMessageEvent): Promise<void> {
+    const customLicenseRequest = this.activeSource_?.keySystems[this.activeKeySystem_ as string].getLicense;
+    const customContentIdTransform = this.activeSource_?.keySystems[this.activeKeySystem_ as string].getContentId;
     const session = event.target as MediaKeySession;
 
     if (!session) {
@@ -516,6 +526,36 @@ export class EmeManager implements IEmeManager {
     }
 
     this.logger_.debug(`Sending license request for session ${session.sessionId} of type ${event.messageType}`);
+
+    if (customLicenseRequest) {
+      this.logger_.debug(
+        `A custom license request function was configured for KeySystem: ${this.activeKeySystem_} for Session: ${session.sessionId}`
+      );
+
+      const initData = this.activeSessions_.get(session.sessionId)?.initData;
+      const initDataType = this.activeSessions_.get(session.sessionId)?.initDataType;
+
+      let contentId = '';
+
+      if (customContentIdTransform) {
+        contentId = customContentIdTransform(initData as Uint8Array);
+      } else {
+        // TODO: Is this the correct content id?
+        contentId = initDataType || '';
+      }
+
+      const licenseResponse = customLicenseRequest(contentId, event);
+
+      try {
+        // TODO: Handle this for different DRM scenarios
+        session.update(licenseResponse);
+        this.privateEventEmitter_.emitEvent(new KeySessionUpdatedEvent(session.sessionId, event.messageType));
+      } catch (error) {
+        this.eventEmitter_.emitEvent(new ErrorEvent(new LicenseResponseRejectedError(false, error as Error)));
+      }
+
+      return;
+    }
 
     let licenseServerUri = this.activeSource_?.keySystems[this.activeKeySystem_ as string].licenseServerUri;
     const individualizationSever =
@@ -542,6 +582,10 @@ export class EmeManager implements IEmeManager {
         try {
           // TODO: Handle this for different DRM scenarios
           session.update(response);
+          this.logger_.debug(
+            `EME: Key session updated with new license. SessionID: ${session.sessionId} MessageType: ${event.messageType}`
+          );
+          this.privateEventEmitter_.emitEvent(new KeySessionUpdatedEvent(session.sessionId, event.messageType));
         } catch (error) {
           this.eventEmitter_.emitEvent(new ErrorEvent(new LicenseResponseRejectedError(false, error as Error)));
         }
@@ -549,11 +593,6 @@ export class EmeManager implements IEmeManager {
       .catch((error) => {
         this.eventEmitter_.emitEvent(new ErrorEvent(new LicenseRequestError(false, error)));
       });
-
-    this.logger_.debug(
-      `EME: Key session updated with new license. SessionID: ${session.sessionId} MessageType: ${event.messageType}`
-    );
-    this.privateEventEmitter_.emitEvent(new KeySessionUpdatedEvent(session.sessionId, event.messageType));
   }
 
   /**
@@ -613,82 +652,6 @@ export class EmeManager implements IEmeManager {
   }
 
   /**
-   * A helper method to determine if the keySystem is PlayReady
-   * @param keySystem The key system string
-   * @returns Whether the key system is PlayReady
-   */
-  private isPlayReadyKeySystem_(keySystem: string): boolean {
-    if (keySystem) {
-      return !!keySystem.match(/^com\.(microsoft|chromecast)\.playready/);
-    }
-
-    return false;
-  }
-
-  /**
-   * @param keySystem The key system type
-   * @returns Whether the keySystem is ClearKey
-   */
-  private isClearKeySystem_(keySystem: string): boolean {
-    return keySystem === 'org.w3.clearkey';
-  }
-
-  /**
-   * Convert a buffer to a DataView type for additional utilities to deal with
-   * different different array types.
-   * @param bufferSource The buffer containing key data
-   * @returns The data view of the key data
-   */
-  private toDataView_(bufferSource: BufferSource): DataView {
-    const buffer = this.getArrayBuffer_(bufferSource);
-    const bytesPerElement = 1;
-
-    // TODO: Can this case ever happen??
-    // if ('BYTES_PER_ELEMENT' in DataView) {
-    //     bytesPerElement = DataView.BYTES_PER_ELEMENT;
-    // }
-
-    // Note: It can be implied that the byteOffset for an arrayBuffer is 0.
-    const dataEnd = bufferSource.byteLength / bytesPerElement;
-    const sourceStart = 0;
-    const start = Math.floor(Math.max(0, Math.min(sourceStart, dataEnd)));
-    const end = Math.floor(Math.min(start + Math.max(Infinity, 0), dataEnd));
-    return new DataView(buffer, start, end - start);
-  }
-
-  /**
-   * @param data A buffer source
-   * @returns A hex string key ID
-   */
-  private toHex_(data: BufferSource): string {
-    const arrayBuffer = this.getArrayBuffer_(data);
-    const arr = new Uint8Array(arrayBuffer);
-    let hex = '';
-    let stringValue;
-    for (const value of arr) {
-      stringValue = value.toString(16);
-      if (stringValue.length === 1) {
-        stringValue = '0' + stringValue;
-      }
-      hex += stringValue;
-    }
-    return hex;
-  }
-
-  /**
-   * Get the array buffer even if it is inside the BufferSource.
-   * @param source The buffer source
-   * @returns The array buffer
-   */
-  private getArrayBuffer_(source: BufferSource): ArrayBuffer {
-    if (source instanceof ArrayBuffer) {
-      return source;
-    } else {
-      return source.buffer;
-    }
-  }
-
-  /**
    * @returns Whether or not all key sessions are loaded.
    */
   private areAllSessionsLoaded_(): boolean {
@@ -699,5 +662,84 @@ export class EmeManager implements IEmeManager {
     });
 
     return true;
+  }
+
+  /**
+   * Transforms the init data buffer using the given data. The format is:
+   * [4 bytes] initDataSize
+   * [initDataSize bytes] initData
+   * [4 bytes] contentIdSize
+   * [contentIdSize bytes] contentId
+   * [4 bytes] certSize
+   * [certSize bytes] cert
+   * @param initData The initData to transform
+   * @param contentId The content ID containing information about the stream
+   * @param cert The certificate for the license
+   * @returns The transformed init data
+   */
+  private initDataTransform_(
+    initData: BufferSource,
+    contentId: BufferSource | string,
+    cert: BufferSource
+  ): BufferSource {
+    if (!cert || !cert.byteLength) {
+      this.eventEmitter_.emitEvent(new ErrorEvent(new MissingServerCertificateError(false)));
+      return initData;
+    }
+
+    let contentIdArray;
+
+    const customContentIdTransform = this.activeSource_?.keySystems[this.activeKeySystem_ as string].getContentId;
+
+    if (customContentIdTransform) {
+      contentId = customContentIdTransform(initData as ArrayBuffer);
+    }
+
+    if (typeof contentId == 'string') {
+      contentIdArray = toUTF16(contentId, true);
+    } else {
+      contentIdArray = contentId;
+    }
+
+    // The init data we get is a UTF-8 string; convert that to a UTF-16 string.
+    const skdUri = bufferToString(initData);
+
+    if (!skdUri) {
+      // There was a failure getting the SDK URI. Return original init data.
+      return initData;
+    }
+
+    const utf16 = toUTF16(skdUri, true);
+
+    const newData = new Uint8Array(12 + utf16.byteLength + contentIdArray.byteLength + cert.byteLength);
+
+    let offset = 0;
+
+    // Add to the new data and update the offset considering byte length.
+    const addToNewData = (array: BufferSource): void => {
+      const view = toDataView(newData);
+
+      if (!view) {
+        // error converting newData to DataView
+        return;
+      }
+
+      const value = array.byteLength;
+      (view as DataView).setUint32(offset, value, true);
+      offset += 4;
+
+      newData.set(toUint8(array), offset);
+      offset += array.byteLength;
+    };
+
+    addToNewData(utf16);
+    addToNewData(contentIdArray);
+    addToNewData(cert);
+
+    if (offset !== newData.length) {
+      this.logger_.warn('EME: Transformed init data length does not match the original.');
+    }
+
+    return newData;
   }
 }
