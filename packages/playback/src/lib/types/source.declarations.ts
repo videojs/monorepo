@@ -19,6 +19,9 @@ export interface IKeySystemConfig {
    * Defaults to ''.
    */
   individualizationServerUri?: string;
+  /**
+   * A custom function to find the content ID from the init data.
+   */
   getContentId?: (initData: ArrayBuffer) => string;
   /**
    * Rare cases when we want to leave it up to the user to get the license

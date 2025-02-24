@@ -1,7 +1,7 @@
 import type { IEmeManager, IEmeManagerDependencies, IKeySessionMetadata } from '../types/eme-manager.declarations';
 import type { INetworkManager } from '../types/network.declarations';
 import type { ILogger } from '../types/logger.declarations';
-import type { IPlayerSource } from '../types/source.declarations';
+import type { IKeySystemConfig, IPlayerSource } from '../types/source.declarations';
 import type { IEventEmitter } from '../types/event-emitter.declarations';
 import type {
   EventTypeToEventMap,
@@ -166,7 +166,7 @@ export class EmeManager implements IEmeManager {
     this.privateEventEmitter_.addEventListener(PlayerEventType.DashManifestParsed, this.handleParsedManifestEvent_);
   }
 
-  private getKeySystemConfig_(): Record<string, MediaKeySystemConfiguration> {
+  private getMediaKeySystemConfig_(): Record<string, MediaKeySystemConfiguration> {
     // TODO: Write logic to get this info from manifests and segment data
     // We will probably need to pass in a list of key systems
 
@@ -225,16 +225,35 @@ export class EmeManager implements IEmeManager {
       return mediaKeySystemAccess;
     }
 
-    // TODO: Sort by priority before this
+    // Sort key systems by priority
+    const keySystemsArray = Object.keys(keySystems).map((key) => [key, keySystems[key]]);
 
-    for (const keySystem in keySystems) {
-      const keySystemConfig = this.getKeySystemConfig_();
+    keySystemsArray.sort((a, b) => {
+      const keySystemPriorityA = (a[1] as IKeySystemConfig).priority;
+      const keySystemPriorityB = (b[1] as IKeySystemConfig).priority;
+
+      if (!keySystemPriorityA && !keySystemPriorityB) {
+        return 0;
+      } else if (!keySystemPriorityA) {
+        return 1;
+      } else if (!keySystemPriorityB) {
+        return -1;
+      }
+
+      return keySystemPriorityA - keySystemPriorityB;
+    });
+
+    keySystemsArray.forEach(async (keySystemArr) => {
+      const keySystem = keySystemArr[0] as string;
+      // const keySystemConfig = keySystemArr[1] as IKeySystemConfig;
+      // TODO: Pass in key system info
+      const mediaKeySystemConfig = this.getMediaKeySystemConfig_();
 
       try {
         this.eventEmitter_.emitEvent(new KeySystemAccessRequestedEvent(keySystem));
         this.logger_.debug('EME: Requesting media key system access.');
 
-        mediaKeySystemAccess = await navigator.requestMediaKeySystemAccess(keySystem, [keySystemConfig]);
+        mediaKeySystemAccess = await navigator.requestMediaKeySystemAccess(keySystem, [mediaKeySystemConfig]);
 
         return mediaKeySystemAccess;
       } catch (error) {
@@ -243,7 +262,7 @@ export class EmeManager implements IEmeManager {
           `EME: Media key system access request failed. Key System: ${keySystem} Error: ${error as Error}`
         );
       }
-    }
+    });
 
     return mediaKeySystemAccess;
   }
