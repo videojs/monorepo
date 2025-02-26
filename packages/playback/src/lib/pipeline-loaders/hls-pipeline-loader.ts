@@ -13,11 +13,11 @@ interface IHlsPipelineLoaderDependencies extends IPipelineLoaderDependencies {
 export class HlsPipelineLoader implements IPipelineLoader {
   private static hlsParserFactory_: typeof ChunkPlaylistParser | null = null;
 
-  public static setHlsParser(parser: typeof ChunkPlaylistParser): void {
+  public static setHlsParserFactory(parser: typeof ChunkPlaylistParser): void {
     HlsPipelineLoader.hlsParserFactory_ = parser;
   }
 
-  public static getHlsParser(): typeof ChunkPlaylistParser | null {
+  public static getHlsParserFactory(): typeof ChunkPlaylistParser | null {
     return HlsPipelineLoader.hlsParserFactory_;
   }
 

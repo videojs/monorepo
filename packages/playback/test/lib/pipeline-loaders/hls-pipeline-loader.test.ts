@@ -4,10 +4,10 @@ import { ChunkPlaylistParser } from '@videojs/hls-parser';
 
 describe('hls-pipeline-loader spec', () => {
   it('parser is static pipeline loader member', () => {
-    expect(HlsPipelineLoader.getHlsParser()).toBe(null);
+    expect(HlsPipelineLoader.getHlsParserFactory()).toBe(null);
     // set parser
-    HlsPipelineLoader.setHlsParser(ChunkPlaylistParser);
-    const ChunkHlsParser = HlsPipelineLoader.getHlsParser();
+    HlsPipelineLoader.setHlsParserFactory(ChunkPlaylistParser);
+    const ChunkHlsParser = HlsPipelineLoader.getHlsParserFactory();
     expect(ChunkHlsParser).toBeTypeOf('function');
     const parser = ChunkHlsParser ? ChunkHlsParser.create({}) : null;
     expect(parser).toBeInstanceOf(ChunkPlaylistParser);
