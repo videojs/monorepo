@@ -357,11 +357,11 @@ export abstract class BasePlayer {
    * @param eventType - specific event type
    * @param eventListener - event listener
    */
-  public addEventListener<K extends PlayerEventType>(
+  public addEventListener<K extends keyof EventTypeToEventMap>(
     eventType: K,
-    eventListener: EventListener<EventTypeToEventMap[keyof EventTypeToEventMap]>
+    eventListener: EventListener<EventTypeToEventMap[K]>
   ): void {
-    return this.eventEmitter_.addEventListener(eventType as keyof EventTypeToEventMap, eventListener);
+    return this.eventEmitter_.addEventListener(eventType, eventListener);
   }
 
   /**
@@ -369,30 +369,30 @@ export abstract class BasePlayer {
    * @param eventType - specific event type
    * @param eventListener - event listener
    */
-  public once<K extends PlayerEventType>(
+  public once<K extends keyof EventTypeToEventMap>(
     eventType: K,
-    eventListener: EventListener<EventTypeToEventMap[keyof EventTypeToEventMap]>
+    eventListener: EventListener<EventTypeToEventMap[K]>
   ): void {
-    return this.eventEmitter_.once(eventType as keyof EventTypeToEventMap, eventListener);
+    return this.eventEmitter_.once(eventType, eventListener);
   }
   /**
    * Remove specific registered event listener for a specific event type
    * @param eventType - specific event type
    * @param eventListener - specific event listener
    */
-  public removeEventListener<K extends PlayerEventType>(
+  public removeEventListener<K extends keyof EventTypeToEventMap>(
     eventType: K,
-    eventListener: EventListener<EventTypeToEventMap[keyof EventTypeToEventMap]>
+    eventListener: EventListener<EventTypeToEventMap[K]>
   ): void {
-    return this.eventEmitter_.removeEventListener(eventType as keyof EventTypeToEventMap, eventListener);
+    return this.eventEmitter_.removeEventListener(eventType, eventListener);
   }
 
   /**
    * Remove all registered event handlers for specific event type
    * @param eventType - specific event type
    */
-  public removeAllEventListenersForType<K extends PlayerEventType>(eventType: K): void {
-    return this.eventEmitter_.removeAllEventListenersFor(eventType as keyof EventTypeToEventMap);
+  public removeAllEventListenersForType<K extends keyof EventTypeToEventMap>(eventType: K): void {
+    return this.eventEmitter_.removeAllEventListenersFor(eventType);
   }
 
   /**

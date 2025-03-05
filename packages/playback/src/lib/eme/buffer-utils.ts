@@ -49,7 +49,7 @@ export const getArrayBuffer = (source: BufferSource): ArrayBuffer => {
   if (source instanceof ArrayBuffer) {
     return source;
   } else {
-    return source.buffer;
+    return source.buffer as ArrayBuffer;
   }
 };
 
@@ -67,12 +67,12 @@ export const toArrayBuffer = (buffer: BufferSource): ArrayBuffer => {
     const arrayView = buffer as ArrayBufferView;
     if (arrayView.byteOffset == 0 && arrayView.byteLength == arrayView.buffer.byteLength) {
       // TypedArray for the buffer.
-      return arrayView.buffer;
+      return arrayView.buffer as ArrayBuffer;
     }
     // View on the buffer. Create a new buffer that only contains
     // the data. Note that since this isn't an ArrayBuffer, the "new" call
     // will allocate a new buffer to hold the copy.
-    return new Uint8Array(arrayView as unknown as ArrayBufferLike).buffer;
+    return new Uint8Array(arrayView as unknown as ArrayBufferLike).buffer as ArrayBuffer;
   }
 };
 
@@ -100,9 +100,9 @@ export const bufferSourceToTypedArray = (
   if (type === 'DataView') {
     return new DataView(buffer, start, end - start);
   } else if (type === 'Uint16Array') {
-    return new Uint8Array(buffer, start, end - start);
+    return new Uint8Array(buffer, start, end - start) as unknown as ArrayBuffer;
   } else if (type === 'Uint8Array') {
-    return new Uint16Array(buffer, start, end - start);
+    return new Uint16Array(buffer, start, end - start) as unknown as ArrayBuffer;
   } else {
     return null;
   }
@@ -115,7 +115,7 @@ export const bufferSourceToTypedArray = (
  * @returns A Uint8Array from the buffer
  */
 export const toUint8 = (buffer: BufferSource, offset = 0, length = Infinity): Uint8Array => {
-  return bufferSourceToTypedArray(buffer, offset, length, 'Uint8Array') as Uint8Array;
+  return bufferSourceToTypedArray(buffer, offset, length, 'Uint8Array') as unknown as Uint8Array;
 };
 
 /**
@@ -125,7 +125,7 @@ export const toUint8 = (buffer: BufferSource, offset = 0, length = Infinity): Ui
  * @returns A Uint16Array from the buffer
  */
 export const toUint16 = (buffer: BufferSource, offset = 0, length = Infinity): Uint16Array => {
-  return bufferSourceToTypedArray(buffer, offset, length, 'Uint16Array') as Uint16Array;
+  return bufferSourceToTypedArray(buffer, offset, length, 'Uint16Array') as unknown as Uint16Array;
 };
 
 /**

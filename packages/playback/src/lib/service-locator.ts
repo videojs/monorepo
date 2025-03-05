@@ -5,7 +5,10 @@ import type { IInterceptorsStorage } from './types/interceptors.declarations';
 import type { PlayerConfiguration } from './types/configuration.declarations';
 import type { IStore } from './types/store.declarations';
 import type { IEventEmitter } from './types/event-emitter.declarations';
-import type { EventTypeToEventMap } from './types/mappers/event-type-to-event-map.declarations';
+import type {
+  EventTypeToEventMap,
+  PrivateEventTypeToEventMap,
+} from './types/mappers/event-type-to-event-map.declarations';
 import type { INetworkManager } from './types/network.declarations';
 import type { InterceptorTypeToInterceptorPayloadMap } from './types/mappers/interceptor-type-to-interceptor-map.declarations';
 import type { NetworkManagerDependencies } from './network/network-manager';
@@ -24,6 +27,7 @@ export class ServiceLocator {
   public readonly interceptorsStorage: IInterceptorsStorage<InterceptorTypeToInterceptorPayloadMap>;
   public readonly configurationManager: IStore<PlayerConfiguration>;
   public readonly eventEmitter: IEventEmitter<EventTypeToEventMap>;
+  public readonly privateEventEmitter: IEventEmitter<PrivateEventTypeToEventMap>;
   public readonly networkManager: INetworkManager;
   public readonly pipelineLoaderFactoryStorage: PipelineLoaderFactoryStorage;
 
@@ -40,6 +44,7 @@ export class ServiceLocator {
 
     this.interceptorsStorage = this.createInterceptorsStorage_();
     this.eventEmitter = this.createEventEmitter_();
+    this.privateEventEmitter = this.createPrivateEventEmitter_();
     this.networkManager = this.createNetworkManager_({
       logger: this.logger.createSubLogger('NetworkManager'),
       configuration: configuration.network,
@@ -61,6 +66,10 @@ export class ServiceLocator {
 
   protected createEventEmitter_(): IEventEmitter<EventTypeToEventMap> {
     return new EventEmitter<EventTypeToEventMap>(PlayerEventType.All);
+  }
+
+  protected createPrivateEventEmitter_(): IEventEmitter<PrivateEventTypeToEventMap> {
+    return new EventEmitter<PrivateEventTypeToEventMap>(PlayerEventType.All);
   }
 
   protected createNetworkManager_(dependencies: NetworkManagerDependencies): INetworkManager {

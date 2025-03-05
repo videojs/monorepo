@@ -75,11 +75,18 @@ export class EmeManager implements IEmeManager {
 
     // can receive from both pssh or encrypted event
 
-    // Check if init data is already set!!
-
     if (!this.activeSource_) {
       this.eventEmitter_.emitEvent(new ErrorEvent(new SourceNotSetError(false)));
       return;
+    }
+
+    const activeSessions = this.activeSessions_.values();
+
+    for (const session of activeSessions) {
+      if (areBuffersEqual(session.initData as unknown as ArrayBuffer, data as unknown as ArrayBuffer)) {
+        this.logger_.debug('EME: Init data already exists on an active session. Ignoring this update.');
+        return;
+      }
     }
 
     this.getKeySystemAccess_().then((keySystemAccess) => {
@@ -185,6 +192,7 @@ export class EmeManager implements IEmeManager {
           },
         ],
         sessionTypes: ['persistent-license'],
+        persistentState: 'required',
       },
     };
   }
@@ -197,13 +205,36 @@ export class EmeManager implements IEmeManager {
     // TODO: update this function to take in parsed data and turn it into keySystemConfig values
     // We may need diffrent functions for DASH and HLS
     // We may want to call `setInitData` in here
+
+    // TODO: This keyID, initData, initDataType can come from the parsed manifest data
+    const keyId = 'test';
+    const initData = new ArrayBuffer(8);
+    const initDataType = 'test';
+
+    // We already are persisting the current keyId, so we can skip
+    // and continue using the current one.
+    if (this.currentKeyStatuses_.has(keyId)) {
+      // If we implement timers and other things, that can be updated
+      return;
+    }
+
+    const currentKeyStatus = this.currentKeyStatuses_.get(keyId) as string;
+
+    // Is there anything else we need to check for validity?
+    // Like set up timers?
+
+    if (currentKeyStatus !== 'usable') {
+      // TODO: error or warning to let the user know the key is not usable.
+      return;
+    }
+
+    this.setInitData(initDataType, initData);
   }
 
   /**
    * First, this function creates keySystemConfigurations for each key system
    * the source allows. Once those are created, we request a MediaKeySystemAccess
-   * using the aforementioned config. This method returns a promise containing
-   * a MediaKeySystemAccess instance.
+   * using the aforementioned config.
    * @returns A promise containing the MediaKeySystemAccess
    */
   private async getKeySystemAccess_(): Promise<MediaKeySystemAccess> {
@@ -347,7 +378,7 @@ export class EmeManager implements IEmeManager {
       const allInitData = this.getAllInitData_();
 
       allInitData.forEach((data) => {
-        if (areBuffersEqual(initData, data)) {
+        if (areBuffersEqual(initData as unknown as ArrayBuffer, data as unknown as ArrayBuffer)) {
           this.logger_.debug('Received duplicate initData. The key session will not be created.');
           return;
         }
@@ -370,7 +401,7 @@ export class EmeManager implements IEmeManager {
 
     // Register callback for session closed Promise
     mediaKeySession.closed.then(() => {
-      this.removeSession_(sessionId);
+      this.removeActiveSession_(sessionId);
       this.logger_.debug('EME Key Session closed. sessionId: ' + sessionId);
       this.eventEmitter_.emitEvent(new KeySessionClosedEvent(sessionId));
     });
@@ -384,6 +415,10 @@ export class EmeManager implements IEmeManager {
     };
 
     this.activeSessions_.set(mediaKeySession.sessionId, metadata);
+    // Check if this session should be persisted
+    if (this.activeKeySystemConfig_?.persistentState === 'required' && sessionType === 'persistent-license') {
+      this.storedSessions_.set(mediaKeySession.sessionId, metadata);
+    }
 
     // Transform the initData if FairPlay is being used
     if (isFairPlayKeySystem(this.activeKeySystem_)) {
@@ -397,16 +432,28 @@ export class EmeManager implements IEmeManager {
       ) as Uint8Array;
     }
 
-    mediaKeySession
-      .generateRequest(initDataType, initData)
-      .then(() => {
-        this.logger_.debug('EME: Session created.  SessionID: ' + sessionId);
-        this.eventEmitter_.emitEvent(new KeySessionCreatedEvent(sessionId));
-      })
-      .catch((error) => {
-        this.removeSession_(sessionId);
-        this.eventEmitter_.emitEvent(new ErrorEvent(new KeySessionCreateError(false, error as Error)));
+    // Check to see if the session is already stored
+    if (this.storedSessions_.has(sessionId)) {
+      // If it is, simply load the session.
+      mediaKeySession.load(sessionId).then((loaded) => {
+        if (!loaded) {
+          this.removeActiveSession_(sessionId);
+          this.removeStoredSession_(sessionId);
+        }
       });
+    } else {
+      // If it is not persisted already, we need to generate a request
+      mediaKeySession
+        .generateRequest(initDataType, initData)
+        .then(() => {
+          this.logger_.debug('EME: Session created.  SessionID: ' + sessionId);
+          this.eventEmitter_.emitEvent(new KeySessionCreatedEvent(sessionId));
+        })
+        .catch((error) => {
+          this.removeActiveSession_(sessionId);
+          this.eventEmitter_.emitEvent(new ErrorEvent(new KeySessionCreateError(false, error as Error)));
+        });
+    }
   }
 
   /**
@@ -557,7 +604,7 @@ export class EmeManager implements IEmeManager {
       let contentId = '';
 
       if (customContentIdTransform) {
-        contentId = customContentIdTransform(initData as Uint8Array);
+        contentId = customContentIdTransform(initData as unknown as ArrayBuffer);
       } else {
         // TODO: Is this the correct content id?
         contentId = initDataType || '';
@@ -567,7 +614,7 @@ export class EmeManager implements IEmeManager {
 
       try {
         // TODO: Handle this for different DRM scenarios
-        session.update(licenseResponse);
+        session.update(licenseResponse as BufferSource);
         this.privateEventEmitter_.emitEvent(new KeySessionUpdatedEvent(session.sessionId, event.messageType));
       } catch (error) {
         this.eventEmitter_.emitEvent(new ErrorEvent(new LicenseResponseRejectedError(false, error as Error)));
@@ -600,7 +647,7 @@ export class EmeManager implements IEmeManager {
       .then((response) => {
         try {
           // TODO: Handle this for different DRM scenarios
-          session.update(response);
+          session.update(response as BufferSource);
           this.logger_.debug(
             `EME: Key session updated with new license. SessionID: ${session.sessionId} MessageType: ${event.messageType}`
           );
@@ -618,8 +665,21 @@ export class EmeManager implements IEmeManager {
    * Removes the selected session from the list of active sessions.
    * @param sessionId Key session ID
    */
-  private removeSession_(sessionId: string): void {
+  private removeActiveSession_(sessionId: string): void {
     this.activeSessions_.delete(sessionId);
+  }
+
+  /**
+   * Removes the selected session from the list of active sessions.
+   * @param sessionId Key session ID
+   */
+  private removeStoredSession_(sessionId: string): void {
+    const stored = this.storedSessions_.get(sessionId);
+    const session = stored?.session;
+
+    session?.remove().then(() => {
+      this.storedSessions_.delete(sessionId);
+    });
   }
 
   /**
@@ -644,6 +704,8 @@ export class EmeManager implements IEmeManager {
     );
     activeSession.removeEventListener('message', (event) => this.onSessionMessage_(event));
 
+    this.removeActiveSession_(sessionId);
+
     // Send our request to the key session
     return activeSession
       .close()
@@ -651,7 +713,6 @@ export class EmeManager implements IEmeManager {
         this.logger_.debug(`Key session sucessfully closed. Session ID: ${sessionId}`);
       })
       .catch((error) => {
-        this.removeSession_(sessionId);
         this.eventEmitter_.emitEvent(new ErrorEvent(new KeySessionClosedError(false, sessionId, error)));
       });
   }
@@ -760,5 +821,51 @@ export class EmeManager implements IEmeManager {
     }
 
     return newData;
+  }
+
+  /**
+   * Parse pssh from a media segment and announce new initData
+   * This is used for offline DRM.
+   * @param contentType type of media content
+   * @param mediaSegment Segment data used to find the pssh box
+   * @returns An empty promise
+   */
+  private parsePssh_(contentType: string, mediaSegment: BufferSource): Promise<void> {
+    if (!['audio', 'video'].includes(contentType)) {
+      return Promise.resolve();
+    }
+
+    // TODO: We need to write utilities to parse a pssh box
+    // Will this be done in parsers or will this be in the EME utilities?
+    // toUint8(mediaSegment) is the pssh box
+    toUint8(mediaSegment);
+
+    const psshInfo = {
+      systemIds: ['test'] as Array<string>,
+      cencKeyids: ['test'] as Array<string>,
+      data: [] as Array<Uint8Array>,
+    };
+
+    let dataLength = 0;
+
+    for (const data of psshInfo.data) {
+      dataLength += data.length;
+    }
+
+    if (dataLength == 0) {
+      return Promise.resolve();
+    }
+
+    const newData = new Uint8Array(dataLength);
+
+    let pos = 0;
+    for (const data of psshInfo.data) {
+      newData.set(data, pos);
+      pos += data.length;
+    }
+
+    this.setInitData('cenc', newData as unknown as ArrayBuffer);
+
+    return Promise.resolve();
   }
 }

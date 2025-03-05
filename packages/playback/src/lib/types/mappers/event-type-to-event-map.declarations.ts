@@ -26,6 +26,7 @@ import type {
   KeySystemAccessRequestedEvent,
   WaitingForKeyEvent,
 } from '../../events/eme-events';
+import type { HlsPlaylistParsedEvent, DashManifestParsedEvent } from 'src/lib/events/parse-events';
 
 export interface NetworkEventMap {
   [PlayerEventType.NetworkRequestAttemptStarted]: NetworkRequestAttemptStartedEvent;
@@ -49,8 +50,8 @@ export interface PlayerEventMap {
 }
 
 export interface ParseEventMap {
-  [PlayerEventType.HlsPlaylistParsed]: LoggerLevelChangedEvent;
-  [PlayerEventType.DashManifestParsed]: VolumeChangedEvent;
+  [PlayerEventType.HlsPlaylistParsed]: HlsPlaylistParsedEvent;
+  [PlayerEventType.DashManifestParsed]: DashManifestParsedEvent;
 }
 
 export interface EmeEventMap {
@@ -64,6 +65,8 @@ export interface EmePrivateEventMap {
   [PlayerEventType.KeyStatusesUpdated]: KeyStatusesUpdatedEvent;
 }
 
-export type EventTypeToEventMap = NetworkEventMap & PlayerEventMap & EmeEventMap;
+export interface EventTypeToEventMap extends PlayerEventMap, NetworkEventMap, EmeEventMap {}
 
-export type PrivateEventTypeToEventMap = ParseEventMap & EmePrivateEventMap;
+export interface PrivateEventTypeToEventMap extends ParseEventMap, EmePrivateEventMap {
+  [PlayerEventType.All]: PlayerEvent;
+}

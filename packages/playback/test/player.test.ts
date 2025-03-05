@@ -34,7 +34,7 @@ describe('Player spec', () => {
       const actualEvents: Array<LoggerLevelChangedEvent> = [];
 
       player.addEventListener(Player.EventType.LoggerLevelChanged, (event) => {
-        actualEvents.push(event);
+        actualEvents.push(event as LoggerLevelChangedEvent);
       });
 
       expect(player.getLoggerLevel()).toBe(Player.LoggerLevel.Debug);
@@ -62,7 +62,7 @@ describe('Player spec', () => {
       const actualEvents: Array<ConfigurationChangedEvent> = [];
 
       player.addEventListener(Player.EventType.ConfigurationChanged, (event) => {
-        actualEvents.push(event);
+        actualEvents.push(event as ConfigurationChangedEvent);
       });
 
       const snapshot1 = player.getConfigurationSnapshot();
@@ -90,7 +90,7 @@ describe('Player spec', () => {
       const actualEvents: Array<ConfigurationChangedEvent> = [];
 
       player.addEventListener(Player.EventType.ConfigurationChanged, (event) => {
-        actualEvents.push(event);
+        actualEvents.push(event as ConfigurationChangedEvent);
       });
 
       const snapshot1 = player.getConfigurationSnapshot();

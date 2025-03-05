@@ -83,6 +83,7 @@ export class Player extends BasePlayer {
   };
 
   private handleEmitEventMessage_(message: EmitEventMessage): void {
+    // @ts-expect-error PlayerEventType will always match key of the EventToTypeMap in this scenario.
     this.eventEmitter_.emitEvent(message.event);
   }
 
