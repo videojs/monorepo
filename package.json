@@ -27,12 +27,17 @@
   "devDependencies": {
     "@commitlint/cli": "^19.6.1",
     "@commitlint/config-conventional": "^19.6.0",
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.0",
     "@eslint/js": "^9.17.0",
+    "@mui/icons-material": "^6.3.1",
+    "@mui/material": "^6.3.1",
     "@nx/js": "20.3.1",
     "@size-limit/preset-big-lib": "^11.1.6",
     "@types/eslint__js": "^8.42.3",
     "@types/react": "^19.0.4",
     "@types/react-dom": "^19.0.2",
+    "@types/react-router-dom": "^5.3.3",
     "@typestrong/ts-mockito": "^2.7.12",
     "@vitejs/plugin-react": "^4.3.4",
     "@vitest/browser": "^2.1.8",
@@ -46,6 +51,8 @@
     "eslint-plugin-react-refresh": "^0.4.16",
     "eslint-plugin-unicorn": "^56.0.1",
     "eslint-plugin-vitest": "^0.5.4",
+    "firebase": "^10.14.1",
+    "firebaseui": "^6.1.0",
     "globals": "^15.14.0",
     "http-server": "^14.1.1",
     "husky": "^9.1.7",
@@ -57,6 +64,7 @@
     "prettier": "^3.4.2",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "react-router-dom": "^7.1.1",
     "rimraf": "^6.0.1",
     "size-limit": "^11.1.6",
     "typedoc": "^0.27.6",
@@ -66,6 +74,7 @@
     "vite-plugin-banner": "^0.8.0",
     "vite-plugin-dts": "^4.4.0",
     "vite-plugin-static-copy": "^2.2.0",
-    "vitest": "^2.1.8"
+    "vitest": "^2.1.8",
+    "zustand": "^5.0.3"
   }
 }

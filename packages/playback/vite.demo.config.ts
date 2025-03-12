@@ -5,9 +5,15 @@ import react from '@vitejs/plugin-react';
 export default defineConfig({
   plugins: [react()],
   root: 'demo',
-  base: '/demo/playback',
+  base: '/',
   build: {
     outDir: '../dist-demo',
     emptyOutDir: true,
   },
+  server: {
+    watch: {
+      usePolling: true,
+    },
+    hmr: true,
+  }
 });
